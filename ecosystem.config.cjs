@@ -1,0 +1,37 @@
+// pm2 process file: one swarm process per trading wallet, each with its own env file.
+// Usage on the server:   npx pm2 start ecosystem.config.cjs && npx pm2 save
+// Logs:                  npx pm2 logs
+// Pause one bot:         touch data/w1/KILL   (delete the file to resume)
+const fs = require("fs");
+const path = require("path");
+
+function envFile(name) {
+  const p = path.join(__dirname, name);
+  if (!fs.existsSync(p)) return null;
+  const out = {};
+  for (const line of fs.readFileSync(p, "utf8").split("\n")) {
+    const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/);
+    if (m) out[m[1]] = m[2];
+  }
+  return out;
+}
+
+const bots = ["w1", "w2", "w3"]
+  .map((w) => ({ name: `dot-bot-${w}`, env: envFile(`.env.${w}`) }))
+  .filter((b) => b.env);
+
+module.exports = {
+  apps: bots.map((b) => ({
+    name: b.name,
+    script: "npx",
+    args: "tsx src/main.ts",
+    cwd: __dirname,
+    env: b.env,
+    autorestart: true,
+    restart_delay: 10000,
+    max_memory_restart: "300M",
+    out_file: `logs/${b.name}.log`,
+    error_file: `logs/${b.name}.err.log`,
+    time: true,
+  })),
+};

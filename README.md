@@ -83,6 +83,14 @@ Watch the risk agent's rejections and the grid anchoring. Nothing is broadcast; 
 **4. Flip `LIVE=1`** and restart both processes. On the first sell the executor sends one ERC-20 approval of DOT to the
 KyberSwap router, then swaps. Every fill logs its BaseScan hash and appears on the site with a proof link.
 
+**Keep it running with pm2** (so it survives reboots and restarts on crashes):
+
+```bash
+npx pm2 start ecosystem.config.cjs   # starts one process per .env.w* file it finds
+npx pm2 save && npx pm2 startup      # re-launch on reboot (follow the printed command once)
+npx pm2 logs                         # watch all bots
+```
+
 **5. Operate.** `touch data/w1/KILL` pauses that wallet instantly; delete the file to resume. Watch the ETH balance:
 each swap costs well under a cent on Base, but the risk agent stops trading below `GAS_RESERVE_ETH`.
 
