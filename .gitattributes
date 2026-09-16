@@ -1,0 +1,9 @@
+# Keep data files LF everywhere so the Windows publisher and other machines never fight over line endings.
+*.json text eol=lf
+*.ndjson text eol=lf
+*.md text eol=lf
+*.ts text eol=lf
+*.mjs text eol=lf
+*.cjs text eol=lf
+*.html text eol=lf
+*.yml text eol=lf
