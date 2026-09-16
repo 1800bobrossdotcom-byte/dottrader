@@ -16,6 +16,8 @@ export interface Stats {
   vault: { address: string; sweptDot: number; unsweptEarned: number; sweeps: Sweep[] };
   wallets: { address: string; dot: number; eth: number; usdc: number; role: "vault" | "trading" }[];
   onchain: { dot: number; eth: number; usdc: number; dotEquivalent: number } | null;
+  /** When the wallets/onchain figures were last read successfully (they are reused when the RPC hiccups). */
+  onchainAt?: string;
   now: { dot: number; eth: number; usdc: number; priceUsd: number; priceEth: number; ethUsd: number; usd: number; dotEquivalent: number };
   dotEarned: { total: number; pct: number; byAgent: Record<string, number> };
   openLots: { id: string; agent: string; dotSold: number; ethReceived: number; sellPriceEth: number; targetBuyPriceEth: number; ts: number }[];
@@ -39,11 +41,17 @@ export async function buildStats(swarm: Swarm, snap: MarketSnapshot): Promise<St
   const total = L.totalDotEarned();
   let wallets: Stats["wallets"] = [];
   let onchain: Stats["onchain"] = null;
+  let onchainAt: string | undefined;
   try {
     const tp = await getTrackedPortfolios();
     wallets = tp.wallets.map((w) => ({ ...w, role: w.address.toLowerCase() === config.VAULT_ADDRESS.toLowerCase() ? "vault" : "trading" }));
     onchain = { ...tp.total, dotEquivalent: tp.total.dot + (snap.priceEth > 0 ? tp.total.eth / snap.priceEth : 0) };
-  } catch { /* RPC hiccup: leave wallets empty; the page handles it */ }
+    onchainAt = new Date().toISOString();
+  } catch {
+    // RPC hiccup (public endpoints rate-limit): reuse the last successful read from this process's previous stats file.
+    const prev = readPrevStats();
+    if (prev?.wallets?.length) { wallets = prev.wallets; onchain = prev.onchain; onchainAt = prev.onchainAt; }
+  }
   // Equity curve: the on-chain DOT-equivalent of ALL tracked wallets, appended by whichever process ticks. Shared across processes.
   mkdirSync(config.SITE_DATA_DIR, { recursive: true });
   const eqFile = path.join(config.SITE_DATA_DIR, "equity.ndjson");
@@ -65,6 +73,7 @@ export async function buildStats(swarm: Swarm, snap: MarketSnapshot): Promise<St
     vault: { address: config.VAULT_ADDRESS, sweptDot: L.state.sweptDot ?? 0, unsweptEarned: L.state.unsweptEarned ?? 0, sweeps: L.sweeps().slice(-50).reverse() },
     wallets,
     onchain,
+    onchainAt,
     now: { dot: p.dot, eth: p.eth, usdc: p.usdc, priceUsd: snap.priceUsd, priceEth: snap.priceEth, ethUsd: snap.ethUsd, usd: p.dot * snap.priceUsd + p.eth * snap.ethUsd + p.usdc, dotEquivalent: L.dotEquivalent(snap.priceEth) },
     dotEarned: { total, pct: (total / JOURNEY.dot) * 100, byAgent: L.state.dotEarnedByAgent },
     openLots: L.state.openLots.map(({ id, agent, dotSold, ethReceived, sellPriceEth, targetBuyPriceEth, ts }) => ({ id, agent, dotSold, ethReceived, sellPriceEth, targetBuyPriceEth, ts })),
@@ -74,6 +83,12 @@ export async function buildStats(swarm: Swarm, snap: MarketSnapshot): Promise<St
     processes: [config.WALLET_ADDRESS],
     market: { liquidityUsd: snap.liquidityUsd, volume24hUsd: snap.volume24hUsd, change: snap.priceChange, txns24h: snap.txns24h, burns24h: swarm.lastIntel?.burns24h ?? 0 },
   };
+}
+
+function readPrevStats(): Stats | null {
+  const f = path.join(config.SITE_DATA_DIR, `stats.${config.WALLET_ADDRESS.toLowerCase()}.json`);
+  if (!existsSync(f)) return null;
+  try { return JSON.parse(readFileSync(f, "utf8")) as Stats; } catch { return null; }
 }
 
 /** Hourly-deduped equity points, most recent 30 days. */
@@ -105,7 +120,10 @@ export async function writeReport(swarm: Swarm, snap: MarketSnapshot) {
 }
 
 export function mergeStats(parts: Stats[]): Stats {
-  const fresh = [...parts].sort((a, b) => Date.parse(b.generatedAt) - Date.parse(a.generatedAt))[0];
+  const byFreshness = [...parts].sort((a, b) => Date.parse(b.generatedAt) - Date.parse(a.generatedAt));
+  const fresh = byFreshness[0];
+  // Wallet balances: take them from whichever process most recently read the chain successfully.
+  const withChain = byFreshness.filter((p) => p.wallets?.length).sort((a, b) => Date.parse(b.onchainAt ?? b.generatedAt) - Date.parse(a.onchainAt ?? a.generatedAt))[0];
   const byAgent: Record<string, number> = {};
   for (const p of parts) for (const [k, v] of Object.entries(p.dotEarned.byAgent)) byAgent[k] = (byAgent[k] ?? 0) + v;
   const total = Object.values(byAgent).reduce((a, b) => a + b, 0);
@@ -114,6 +132,9 @@ export function mergeStats(parts: Stats[]): Stats {
     ...fresh,
     mode: parts.some((p) => p.mode === "live") ? "live" : "paper",
     processes: parts.map((p) => p.wallet),
+    wallets: withChain?.wallets ?? [],
+    onchain: withChain?.onchain ?? null,
+    onchainAt: withChain?.onchainAt,
     dotEarned: { total, pct: fresh.baseline && fresh.baseline.dot > 0 ? (total / fresh.baseline.dot) * 100 : 0, byAgent },
     openLots: byTs(parts.flatMap((p) => p.openLots)),
     wins: byTs(parts.flatMap((p) => p.wins)).slice(0, 100),
