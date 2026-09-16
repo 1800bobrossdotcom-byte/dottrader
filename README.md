@@ -83,6 +83,9 @@ npx tsx src/main.ts --bot w2      # second terminal
 ```
 Watch the risk agent's rejections and the grid anchoring. Nothing is broadcast; fills are simulated from real quotes.
 
+**Verify before going live:** `npm run check` shows, per bot, whether the key in its env file controls that wallet
+(masked, never printed in full), whether the RPC answers, current balances, and whether the baseline exists.
+
 **4. Flip `LIVE=1`** and restart both processes. On the first sell the executor sends one ERC-20 approval of DOT to the
 KyberSwap router, then swaps. Every fill logs its BaseScan hash and appears on the site with a proof link.
 

@@ -70,6 +70,28 @@ async function askHidden(q) {
     stdin.setRawMode(true); stdin.resume(); stdin.on("data", onData);
   });
 }
+// Ask for a key, verify it belongs to the bot wallet, and show a masked confirmation. Enter skips (paper mode).
+async function askForKey(expectedAddr) {
+  const { privateKeyToAccount } = await import("viem/accounts");
+  for (;;) {
+    let key = await askHidden("  Private key (paste, then Enter; typing is hidden; Enter alone = skip for paper mode): ");
+    key = key.trim();
+    if (!key) { console.log("  no key: this bot will run in paper mode until you add one"); return ""; }
+    if (!key.startsWith("0x")) key = "0x" + key;
+    if (!/^0x[0-9a-fA-F]{64}$/.test(key)) {
+      console.log(`  that is ${key.length - 2} hex characters; a key is exactly 64. Try pasting again (or Enter to skip).`);
+      continue;
+    }
+    const derived = privateKeyToAccount(key).address;
+    const masked = `${key.slice(0, 6)}...${key.slice(-4)}`;
+    if (derived.toLowerCase() === expectedAddr.toLowerCase()) {
+      console.log(`  key ${masked} verified: it controls ${derived}`);
+      return key;
+    }
+    console.log(`  key ${masked} controls ${derived}, NOT this bot's wallet ${expectedAddr}. Paste the right one (or Enter to skip).`);
+  }
+}
+
 const bold = (s) => `${String.fromCharCode(27)}[1m${s}${String.fromCharCode(27)}[0m`;
 const say = (s) => console.log(`\n${bold(s)}`);
 
@@ -93,7 +115,7 @@ for (const [name, addr] of BOTS) {
   console.log(`\nBot ${name} = ${addr}`);
   const yn = await ask("  Set up this bot? type y then Enter (or just Enter to skip): ");
   if (!/^y/i.test(yn)) continue;
-  const key = await askHidden("  Private key (typing is hidden; just press Enter to skip for paper mode): ");
+  const key = await askForKey(addr);
   const rpc = (await ask("  Base RPC URL (Enter for public https://mainnet.base.org): ")) || "https://mainnet.base.org";
   const example = readFileSync(".env.example", "utf8")
     .split("\n")
