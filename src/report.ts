@@ -12,7 +12,7 @@ export interface Stats {
   mode: "paper" | "live";
   wallet: string;
   token: { symbol: string; address: string; chain: string; links: typeof DOT.links };
-  baseline: { startedAt: string; dot: number; eth: number; usdc: number; priceUsd: number; usd: number } | null;
+  baseline: { startedAt: string; dot: number; eth: number; usdc: number; priceUsd: number; usd: number; dotEquivalent: number } | null;
   vault: { address: string; sweptDot: number; unsweptEarned: number; sweeps: Sweep[] };
   wallets: { address: string; dot: number; eth: number; usdc: number; role: "vault" | "trading" }[];
   onchain: { dot: number; eth: number; usdc: number; dotEquivalent: number } | null;
@@ -51,7 +51,14 @@ export async function buildStats(swarm: Swarm, snap: MarketSnapshot): Promise<St
     mode: config.LIVE ? "live" : "paper",
     wallet: config.WALLET_ADDRESS,
     token: { symbol: DOT.symbol, address: DOT.address, chain: "Base", links: DOT.links },
-    baseline: b ? { startedAt: b.startedAt, dot: b.dot, eth: b.eth, usdc: b.usdc, priceUsd: b.priceUsd, usd: b.dot * b.priceUsd + b.eth * b.ethUsd + b.usdc } : null,
+    baseline: b
+      ? {
+          startedAt: b.startedAt, dot: b.dot, eth: b.eth, usdc: b.usdc, priceUsd: b.priceUsd,
+          usd: b.dot * b.priceUsd + b.eth * b.ethUsd + b.usdc,
+          // ETH and USDC held at the start count as the DOT they could have bought that day, so start and now compare like for like.
+          dotEquivalent: b.dot + (b.priceUsd > 0 ? (b.eth * b.ethUsd + b.usdc) / b.priceUsd : 0),
+        }
+      : null,
     vault: { address: config.VAULT_ADDRESS, sweptDot: L.state.sweptDot ?? 0, unsweptEarned: L.state.unsweptEarned ?? 0, sweeps: L.sweeps().slice(-50).reverse() },
     wallets,
     onchain,
