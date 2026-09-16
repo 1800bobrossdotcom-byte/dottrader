@@ -239,23 +239,24 @@ async function main() {
   if (!r.ok) { $("earned").textContent = "no data yet"; return; }
   const s = await r.json();
   const live = s.mode === "live";
+  // Journey start is a fixed fact of the project: the vault's holdings before any setup trades.
+  const J = { startedAt: "2026-09-16T20:42:42.776Z", dot: 119138.99352291555, priceUsd: 0.005857, usd: 697.80,
+              setupNote: "9,000 DOT sold for gas ETH at setup, counted against the journey" };
+  const start = (s.baseline && s.baseline.dot > 119000) ? s.baseline : J;
+
   $("mode").innerHTML = `<b></b>${live ? "LIVE · Base" : "PAPER MODE"}`; $("mode").className = "pill " + s.mode;
   $("updated").textContent = "updated " + ago(Date.parse(s.generatedAt));
 
   const e = s.dotEarned.total;
   $("earned").textContent = sign(e, 1); $("earned").className = "v " + cls(e);
-  const vsStart = stackNow - (start.dotEquivalent ?? start.dot);
-  $("earnedSub").textContent = `${sign(s.dotEarned.pct, 3)}% of the starting stack from closed round trips · whole stack vs journey start: ${sign(vsStart, 0)} DOT (includes the gas setup cost)`;
 
   const stackNow = s.onchain ? s.onchain.dotEquivalent : s.now.dotEquivalent;
   const dotHeld = s.onchain ? s.onchain.dot : s.now.dot;
   const ethHeld = s.onchain ? s.onchain.eth : s.now.eth;
   $("stackNow").textContent = fmt(stackNow);
   $("stackNowUsd").textContent = `${fmt(dotHeld)} DOT in wallets + ${ethHeld.toFixed(4)} ETH gas (≈ ${fmt(stackNow - dotHeld)} DOT) · ${usd(stackNow * s.now.priceUsd)}`;
-  // Journey start is a fixed fact of the project: the vault's holdings before any setup trades.
-  const J = { startedAt: "2026-09-16T20:42:42.776Z", dot: 119138.99352291555, priceUsd: 0.005857, usd: 697.80,
-              setupNote: "9,000 DOT sold for gas ETH at setup, counted against the journey" };
-  const start = (s.baseline && s.baseline.dot > 119000) ? s.baseline : J;
+  const vsStart = stackNow - (start.dotEquivalent ?? start.dot);
+  $("earnedSub").textContent = `${sign(s.dotEarned.pct, 3)}% of the starting stack from closed round trips · whole stack vs journey start: ${sign(vsStart, 0)} DOT (includes the gas setup cost)`;
   $("stackStart").textContent = fmt(start.dot);
   $("stackStartUsd").textContent = `${new Date(start.startedAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })} · ${usd(start.usd)} at $${start.priceUsd} · ${start.setupNote || J.setupNote}`;
   $("price").textContent = "$" + s.now.priceUsd.toFixed(6);
