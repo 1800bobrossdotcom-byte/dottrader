@@ -1,7 +1,6 @@
 import { Agent, type Ctx } from "./base.js";
 import type { Signal } from "../core/types.js";
-import { DOT } from "../core/config.js";
-import { REQUIRED_EDGE } from "../core/ledger.js";
+import { config } from "../core/config.js";
 
 interface GridState {
   anchorEth: number | null; // ETH per DOT when the grid was (re)anchored
@@ -10,14 +9,15 @@ interface GridState {
 
 /**
  * Grid agent. Sells thin slices of the trading sleeve as DOT/ETH rises through
- * grid levels and buys each slice back lower, ending each cycle with more DOT.
- * Spacing is set wide enough that two ~1.1% swap fees plus impact still leave edge.
+ * grid levels (GRID_SPACING_PCT apart) and buys each slice back GRID_EDGE_PCT
+ * lower, ending each cycle with more DOT. The buy-back gap is floored above the
+ * round-trip fee cost so every closed trip nets DOT.
  */
 export class GridAgent extends Agent<GridState> {
   readonly name = "grid";
   readonly levels = 6;
-  /** grid spacing as a fraction (7%) */
-  readonly spacing = Math.max(0.05, 2 * (DOT.swapFeePct / 100) + REQUIRED_EDGE);
+  /** grid spacing as a fraction (GRID_SPACING_PCT, default 3.5%) */
+  readonly spacing = config.GRID_SPACING_PCT / 100;
   constructor() { super({ anchorEth: null, filled: {} }); }
 
   async propose(ctx: Ctx): Promise<Signal[]> {

@@ -30,7 +30,7 @@ market ─► intel ─► [ grid | meanrev | accumulate ] ─► risk ─► ex
 |---|---|
 | **market** | Blends DexScreener (USD, volume, liquidity) with the on-chain Uniswap V4 `slot0` price. Builds 5-minute candles. |
 | **intel** | Reads Base directly: DOT burns (transfers to the burn addresses) and every swap in the V4 pool → buy pressure, net flow, burns/24h. |
-| **grid** | Sells thin slices of the *trading sleeve* as DOT/ETH climbs ~7% grid levels; buys each slice back ≥3% lower. Each closed level nets more DOT. Holds slices longer when flow is strongly bid. |
+| **grid** | Sells thin slices of the *trading sleeve* as DOT/ETH climbs `GRID_SPACING_PCT` levels (default 3.5%); buys each slice back `GRID_EDGE_PCT` lower (default 3%, floored at 2.6% because a round trip costs ~2.4% in fees). Each closed level nets more DOT. Holds slices longer when flow is strongly bid. |
 | **meanrev** | On sharp, stretched moves (z-score > 2.2 over 4h with fading buy pressure) sells a small slice and buys it back when the move fades. A time stop (72h) re-enters DOT so the swarm is never stranded in ETH during an uptrend. |
 | **accumulate** | Converts fresh ETH/USDC into DOT on a daily budget (`DCA_USD_PER_DAY`), buying harder into dips and after burns. Silent until a budget is set. |
 | **risk** | Veto power over everything. Core sleeve (default 70% of the stack) is never sold. Halts selling if the DOT-equivalent stack is down 3% on the day. Enforces liquidity, order-size, gas-reserve and cooldown limits. One order per tick. `data/KILL` stops everything. |

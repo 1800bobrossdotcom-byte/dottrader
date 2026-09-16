@@ -52,6 +52,10 @@ const Schema = z.object({
   TRADING_SLEEVE: z.coerce.number().min(0).max(1).default(0.3),
   MAX_SLIPPAGE_PCT: z.coerce.number().positive().max(5).default(1.0),
   GAS_RESERVE_ETH: z.coerce.number().min(0).default(0.002),
+  /** Distance between grid sell levels, in percent. Tighter = more, smaller round trips. */
+  GRID_SPACING_PCT: z.coerce.number().min(1).max(25).default(3.5),
+  /** How far below its sell price a slice is bought back, in percent. Floored at the fee cost (see FEE_FLOOR_PCT). */
+  GRID_EDGE_PCT: z.coerce.number().min(0).max(25).default(3.0),
   KYBER_CLIENT_ID: z.string().default("dottrader"),
   DATA_DIR: z.string().default("data"),
   SITE_DATA_DIR: z.string().default("site/data"),
@@ -59,6 +63,16 @@ const Schema = z.object({
 
 export type Config = z.infer<typeof Schema>;
 export const config: Config = Schema.parse(process.env);
+
+/**
+ * A round trip costs two swap fees (~1.1% each) plus a little price impact: ~2.4% measured. Buying back less
+ * than this below the sell price LOSES DOT, so the buy-back gap is floored here, whatever the env file says.
+ */
+export const FEE_FLOOR_PCT = 2.6;
+if (config.GRID_EDGE_PCT < FEE_FLOOR_PCT) {
+  console.warn(`GRID_EDGE_PCT=${config.GRID_EDGE_PCT} is below the ${FEE_FLOOR_PCT}% fee floor and would lose DOT; using ${FEE_FLOOR_PCT}%`);
+  config.GRID_EDGE_PCT = FEE_FLOOR_PCT;
+}
 
 /** Hard-coded facts about the DOT token and its market on Base. */
 export const DOT = {

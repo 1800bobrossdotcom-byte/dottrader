@@ -46,7 +46,7 @@ export interface OpenLot {
 
 const today = () => new Date().toISOString().slice(0, 10);
 /** Minimum price drop (fraction) between a sell and its buy-back for the round trip to net DOT. */
-export const REQUIRED_EDGE = 0.03;
+export const REQUIRED_EDGE = config.GRID_EDGE_PCT / 100;
 
 /**
  * The ledger is the swarm's single source of truth for "are we earning DOT?".
