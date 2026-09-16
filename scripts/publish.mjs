@@ -28,17 +28,21 @@ function tick() {
     sh("git fetch -q origin");
     const ahead = Number(sh(`git rev-list --count origin/${branch}..HEAD`) || 0);
     if (!ahead) { log("nothing new"); return; }
-    // 3) rebase onto origin in case new code landed; on conflict keep THIS machine's stats files
+    // 3) rebase onto origin in case new code landed. --autostash tolerates local edits (e.g. a rewritten
+    //    package-lock.json). On a conflict keep THIS machine's stats files.
+    const lastLine = (e) => String(e.stderr || e.stdout || e.message).trim().split("\n").filter(Boolean).pop() || "unknown error";
     try {
-      sh(`git rebase -q origin/${branch}`);
-    } catch {
+      sh(`git rebase --autostash -q origin/${branch}`);
+    } catch (e1) {
+      const inProgress = existsSync(".git/rebase-merge") || existsSync(".git/rebase-apply");
+      if (!inProgress) throw new Error(`rebase refused: ${lastLine(e1)}`);
       try {
         const conflicted = sh("git diff --name-only --diff-filter=U").split("\n").filter(Boolean);
         if (conflicted.length) { sh(`git checkout --theirs -- ${conflicted.join(" ")}`); sh(`git add -f ${conflicted.join(" ")}`); }
         sh("git rebase --continue");
       } catch (e2) {
-        sh("git rebase --abort");
-        throw new Error(`rebase failed: ${String(e2.stderr || e2.message).trim().split("\n").pop()}`);
+        try { sh("git rebase --abort"); } catch { /* already aborted */ }
+        throw new Error(`rebase conflict not resolved: ${lastLine(e2)}`);
       }
     }
     sh(`git push -q origin ${branch}`);
