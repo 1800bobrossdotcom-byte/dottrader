@@ -51,28 +51,57 @@ npm run site                    # serve dottrader.app locally
 
 ## Going live
 
-The journey wallet currently holds ~119k DOT but **almost no ETH**, so live mode cannot run until gas is funded.
+The vault is passive: no process ever runs from it or holds its key. It only receives sweeps.
+Each trading wallet runs as its own swarm process with its own `.env` and `DATA_DIR`. Nothing is shared between
+processes except the site's `stats.json`, which is merged from every process's `stats.<wallet>.json`.
 
-1. Create a **dedicated hot wallet** for the swarm. Move only the trading sleeve (30% of the DOT) plus ~0.01 ETH for gas into it.
-   Never put your main wallet's private key on a server.
-2. In `.env`: `LIVE=1`, `PRIVATE_KEY=<hot wallet key>`, `WALLET_ADDRESS=<hot wallet address>`, and ideally a dedicated `BASE_RPC_URL`.
-3. Run `npm run snapshot --force` once from the hot wallet so the journey baseline matches, then `npm run swarm`.
-4. To pause instantly: `touch data/KILL`. Remove the file to resume.
+**1. Prepare one env file per trading wallet.**
 
-The executor refuses to start if the private key does not match `WALLET_ADDRESS`, refuses fills whose quote deviates >5% from
-market, and never spends below `GAS_RESERVE_ETH`.
+```bash
+cp .env.example .env.w1     # 0xcFCFc8e4…86BAc86
+cp .env.example .env.w2     # 0x57C4e8C3…d6d545a
+```
+In each file set `WALLET_ADDRESS` to that wallet, `PRIVATE_KEY` to its key, `DATA_DIR=data/w1` (or `w2`), `LIVE=1`,
+and `TRADING_SLEEVE=0.5`. Keep `VAULT_ADDRESS` as the ledger wallet. A dedicated `BASE_RPC_URL` (Alchemy, QuickNode)
+is strongly recommended over the public endpoint, which rate-limits.
+
+**2. Record each wallet's starting point** (creates `data/w1/baseline.json` with all three wallets' balances):
+
+```bash
+env $(cat .env.w1 | xargs) npm run snapshot
+env $(cat .env.w2 | xargs) npm run snapshot
+```
+
+**3. Rehearse in paper mode first**, with `LIVE=0` in the env files, for at least a day:
+
+```bash
+env $(cat .env.w1 | xargs) npm run swarm
+env $(cat .env.w2 | xargs) npm run swarm      # second terminal / tmux pane
+```
+Watch the risk agent's rejections and the grid anchoring. Nothing is broadcast; fills are simulated from real quotes.
+
+**4. Flip `LIVE=1`** and restart both processes. On the first sell the executor sends one ERC-20 approval of DOT to the
+KyberSwap router, then swaps. Every fill logs its BaseScan hash and appears on the site with a proof link.
+
+**5. Operate.** `touch data/w1/KILL` pauses that wallet instantly; delete the file to resume. Watch the ETH balance:
+each swap costs well under a cent on Base, but the risk agent stops trading below `GAS_RESERVE_ETH`.
+
+Safety built in: the executor refuses to start if the private key does not match `WALLET_ADDRESS`, refuses fills whose
+quote deviates >5% from market, sells at most `TRADING_SLEEVE` of the wallet's starting DOT, halts selling when the day
+is down 3% in DOT terms, and never spends the gas reserve.
 
 ## Wallets and the vault
 
 | Wallet | Role |
 |---|---|
-| `0x8455cF29…De21950` | **Vault / ledger.** Holds the core DOT stack. Every DOT the swarm earns is swept here. |
-| `0xcFCFc8e4…86BAc86` | Trading wallet 1 (ETH → accumulates DOT, then grids it). |
-| `0x57C4e8C3…d6d545a` | Trading wallet 2. |
+| `0x8455cF29…De21950` | **Vault / ledger.** Round-trip profit from both trading wallets is swept here. |
+| `0xcFCFc8e4…86BAc86` | Trading wallet 1: ~51k DOT + gas ETH. |
+| `0x57C4e8C3…d6d545a` | Trading wallet 2: ~50k DOT + gas ETH. |
+| `0x5d58D13A…deff5A2` | Trading wallet 3. |
 
-**Trading wallets do not need DOT to start.** They hold ETH; the accumulator buys DOT with it (`DCA_USD_PER_DAY`), and the grid
-and mean-reversion agents then work that inventory. Only round-trip *profit* is swept to the vault, so the working inventory
-stays in the trading wallet and keeps compounding. Set `SWEEP_INVENTORY_ABOVE_DOT` if you also want surplus inventory moved.
+Trading wallets can start with DOT, ETH, or both. DOT is worked by the grid and mean-reversion agents; spare ETH or USDC
+is converted into DOT by the accumulator if `DCA_USD_PER_DAY` is set. Only round-trip *profit* is swept to the vault, so
+the working inventory stays in the trading wallet and keeps compounding. Set `SWEEP_INVENTORY_ABOVE_DOT` to also move surplus.
 
 Run one swarm process per trading wallet (`WALLET_ADDRESS` + `PRIVATE_KEY` + its own `DATA_DIR`). Each process sweeps
 earned DOT to `VAULT_ADDRESS` once `SWEEP_MIN_DOT` has accumulated, keeping `SWEEP_KEEP_DOT` as working float.

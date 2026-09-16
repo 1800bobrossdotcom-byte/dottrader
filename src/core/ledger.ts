@@ -60,10 +60,19 @@ export class Ledger {
     this.state = store.readJson<LedgerState | null>("state.json", null) ?? this.fresh();
   }
 
+  /** The baseline entry for THIS process's trading wallet (falls back to the tracked total for single-wallet setups). */
+  walletBaseline(): { dot: number; eth: number; usdc: number } {
+    const b = this.baseline;
+    if (!b) return { dot: 0, eth: 0, usdc: 0 };
+    const mine = b.wallets?.find((w) => w.address.toLowerCase() === config.WALLET_ADDRESS.toLowerCase());
+    return mine ?? { dot: b.dot, eth: b.eth, usdc: b.usdc };
+  }
+
   private fresh(): LedgerState {
-    const dot = this.baseline?.dot ?? 0;
+    const wb = this.walletBaseline();
+    const dot = wb.dot;
     return {
-      portfolio: { dot, eth: this.baseline?.eth ?? 0, usdc: this.baseline?.usdc ?? 0 },
+      portfolio: { dot, eth: wb.eth, usdc: wb.usdc },
       coreDot: dot * (1 - config.TRADING_SLEEVE),
       dotEarnedByAgent: {},
       openLots: [],

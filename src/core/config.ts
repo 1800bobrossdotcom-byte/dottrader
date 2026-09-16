@@ -15,15 +15,16 @@ loadDotEnv();
 
 const Schema = z.object({
   BASE_RPC_URL: z.string().url().default("https://mainnet.base.org"),
+  /** The wallet THIS process trades. Defaults to trading wallet 1; the vault is never a process wallet. */
   WALLET_ADDRESS: z
     .string()
     .regex(/^0x[0-9a-fA-F]{40}$/)
-    .default("0x8455cF296e1265b494605207e97884813De21950"),
+    .default("0xcFCFc8e42AEBFC58AB78093217C2C4bB186BAc86"),
   /** Comma-separated list of every wallet that counts toward the journey stack (holding + trading wallets). */
   TRACKED_WALLETS: z
     .string()
     .default(
-      "0x8455cF296e1265b494605207e97884813De21950,0xcFCFc8e42AEBFC58AB78093217C2C4bB186BAc86,0x57C4e8C39d72540244FE8eDD302C7C463d6d545a",
+      "0x8455cF296e1265b494605207e97884813De21950,0xcFCFc8e42AEBFC58AB78093217C2C4bB186BAc86,0x57C4e8C39d72540244FE8eDD302C7C463d6d545a,0x5d58D13A239fD0030CAFcd3a11727783ddeff5A2",
     )
     .transform((v) => v.split(",").map((a) => a.trim()).filter((a) => /^0x[0-9a-fA-F]{40}$/.test(a))),
   /** Where earned DOT is swept. Defaults to the main holding wallet ("the ledger"). */

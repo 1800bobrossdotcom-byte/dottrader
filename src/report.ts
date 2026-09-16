@@ -1,4 +1,4 @@
-import { mkdirSync, writeFileSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { config, DOT } from "./core/config.js";
 import type { MarketSnapshot } from "./core/types.js";
@@ -22,6 +22,8 @@ export interface Stats {
   wins: JournalRow[];
   recentFills: { ts: number; agent: string; side: string; dot: number; usd: number; priceUsd: number; paper: boolean; txHash?: string; reason: string }[];
   equity: { t: number; dotEq: number; priceUsd: number }[];
+  /** Which trading wallets contributed to this (merged) file. */
+  processes: string[];
   market: { liquidityUsd: number; volume24hUsd: number; change: MarketSnapshot["priceChange"]; txns24h: MarketSnapshot["txns24h"]; burns24h: number };
 }
 export interface JournalRow { ts: number; agent: string; lotId: string | null; dotSold: number; dotBought: number; dotEarned: number; sellPriceUsd: number | null; buyPriceUsd: number; holdHours: number; paper: boolean; txHash?: string }
@@ -34,10 +36,6 @@ export async function buildStats(swarm: Swarm, snap: MarketSnapshot): Promise<St
   const journal = store.readLines<JournalRow>("journal.ndjson");
   const fills = L.fills().slice(-50).reverse();
   const snaps = store.readLines<MarketSnapshot>("snapshots.ndjson");
-  // Equity curve: DOT-equivalent over time, sampled hourly from snapshots (paper: portfolio at that time is approximated by current).
-  const byHour = new Map<number, MarketSnapshot>();
-  for (const s of snaps) byHour.set(Math.floor(s.ts / 3.6e6), s);
-  const equity = [...byHour.values()].slice(-24 * 30).map((s) => ({ t: s.ts, dotEq: L.dotEquivalent(s.priceEth), priceUsd: s.priceUsd }));
   const total = L.totalDotEarned();
   let wallets: Stats["wallets"] = [];
   let onchain: Stats["onchain"] = null;
@@ -46,6 +44,12 @@ export async function buildStats(swarm: Swarm, snap: MarketSnapshot): Promise<St
     wallets = tp.wallets.map((w) => ({ ...w, role: w.address.toLowerCase() === config.VAULT_ADDRESS.toLowerCase() ? "vault" : "trading" }));
     onchain = { ...tp.total, dotEquivalent: tp.total.dot + (snap.priceEth > 0 ? tp.total.eth / snap.priceEth : 0) };
   } catch { /* RPC hiccup: leave wallets empty; the page handles it */ }
+  // Equity curve: the on-chain DOT-equivalent of ALL tracked wallets, appended by whichever process ticks. Shared across processes.
+  mkdirSync(config.SITE_DATA_DIR, { recursive: true });
+  const eqFile = path.join(config.SITE_DATA_DIR, "equity.ndjson");
+  if (onchain) appendFileSync(eqFile, JSON.stringify({ t: snap.ts, dotEq: onchain.dotEquivalent, priceUsd: snap.priceUsd }) + "\n");
+  const equity = readEquity(eqFile);
+  void snaps;
   return {
     generatedAt: new Date().toISOString(),
     mode: config.LIVE ? "live" : "paper",
@@ -68,13 +72,67 @@ export async function buildStats(swarm: Swarm, snap: MarketSnapshot): Promise<St
     wins: journal.slice(-100).reverse(),
     recentFills: fills.map(({ ts, agent, side, dot, usd, priceUsd, paper, txHash, reason }) => ({ ts, agent, side, dot, usd, priceUsd, paper, txHash, reason })),
     equity,
+    processes: [config.WALLET_ADDRESS],
     market: { liquidityUsd: snap.liquidityUsd, volume24hUsd: snap.volume24hUsd, change: snap.priceChange, txns24h: snap.txns24h, burns24h: swarm.lastIntel?.burns24h ?? 0 },
   };
 }
 
+/** Hourly-deduped equity points, most recent 30 days. */
+function readEquity(file: string) {
+  if (!existsSync(file)) return [];
+  const byHour = new Map<number, { t: number; dotEq: number; priceUsd: number }>();
+  for (const line of readFileSync(file, "utf8").split("\n")) {
+    if (!line) continue;
+    try { const p = JSON.parse(line); byHour.set(Math.floor(p.t / 3.6e6), p); } catch { /* skip bad line */ }
+  }
+  return [...byHour.values()].sort((a, b) => a.t - b.t).slice(-24 * 30);
+}
+
+/**
+ * Each swarm process writes stats.<wallet>.json, then stats.json is rebuilt as the merge of every
+ * per-wallet file. Two trading wallets therefore show up as one journal on dottrader.app.
+ */
 export async function writeReport(swarm: Swarm, snap: MarketSnapshot) {
   mkdirSync(config.SITE_DATA_DIR, { recursive: true });
-  const stats = await buildStats(swarm, snap);
-  writeFileSync(path.join(config.SITE_DATA_DIR, "stats.json"), JSON.stringify(stats, null, 2));
-  return stats;
+  const mine = await buildStats(swarm, snap);
+  writeFileSync(path.join(config.SITE_DATA_DIR, `stats.${config.WALLET_ADDRESS.toLowerCase()}.json`), JSON.stringify(mine, null, 2));
+  const parts: Stats[] = readdirSync(config.SITE_DATA_DIR)
+    .filter((f) => /^stats\.0x[0-9a-f]{40}\.json$/.test(f))
+    .map((f) => { try { return JSON.parse(readFileSync(path.join(config.SITE_DATA_DIR, f), "utf8")) as Stats; } catch { return null; } })
+    .filter((x): x is Stats => !!x);
+  const merged = mergeStats(parts.length ? parts : [mine]);
+  writeFileSync(path.join(config.SITE_DATA_DIR, "stats.json"), JSON.stringify(merged, null, 2));
+  return merged;
+}
+
+export function mergeStats(parts: Stats[]): Stats {
+  const fresh = [...parts].sort((a, b) => Date.parse(b.generatedAt) - Date.parse(a.generatedAt))[0];
+  const byAgent: Record<string, number> = {};
+  for (const p of parts) for (const [k, v] of Object.entries(p.dotEarned.byAgent)) byAgent[k] = (byAgent[k] ?? 0) + v;
+  const total = Object.values(byAgent).reduce((a, b) => a + b, 0);
+  const byTs = <T extends { ts: number }>(xs: T[]) => xs.sort((a, b) => b.ts - a.ts);
+  return {
+    ...fresh,
+    mode: parts.some((p) => p.mode === "live") ? "live" : "paper",
+    processes: parts.map((p) => p.wallet),
+    dotEarned: { total, pct: fresh.baseline && fresh.baseline.dot > 0 ? (total / fresh.baseline.dot) * 100 : 0, byAgent },
+    openLots: byTs(parts.flatMap((p) => p.openLots)),
+    wins: byTs(parts.flatMap((p) => p.wins)).slice(0, 100),
+    recentFills: byTs(parts.flatMap((p) => p.recentFills)).slice(0, 50),
+    vault: {
+      address: fresh.vault.address,
+      sweptDot: parts.reduce((a, p) => a + p.vault.sweptDot, 0),
+      unsweptEarned: parts.reduce((a, p) => a + p.vault.unsweptEarned, 0),
+      sweeps: byTs(parts.flatMap((p) => p.vault.sweeps)).slice(0, 50),
+    },
+    now: {
+      ...fresh.now,
+      // "now" wallet numbers are per-process; the site uses onchain totals for the stack, so sum the paper portfolios here for completeness.
+      dot: parts.reduce((a, p) => a + p.now.dot, 0),
+      eth: parts.reduce((a, p) => a + p.now.eth, 0),
+      usdc: parts.reduce((a, p) => a + p.now.usdc, 0),
+      usd: parts.reduce((a, p) => a + p.now.usd, 0),
+      dotEquivalent: parts.reduce((a, p) => a + p.now.dotEquivalent, 0),
+    },
+  };
 }

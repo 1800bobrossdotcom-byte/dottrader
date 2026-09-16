@@ -8,3 +8,4 @@ data/candles*.json
 *.log
 .DS_Store
 data/agent-*.json
+site/data/stats.0x*.json

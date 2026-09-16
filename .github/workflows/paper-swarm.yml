@@ -25,6 +25,6 @@ jobs:
         run: |
           git config user.name "dottrader-swarm"
           git config user.email "swarm@dottrader.app"
-          git add -f data/state.json data/agent-*.json data/candles-5m.json data/fills.ndjson data/journal.ndjson site/data/stats.json 2>/dev/null || true
+          git add -f data/state.json data/agent-*.json data/candles-5m.json data/fills.ndjson data/journal.ndjson site/data/stats.json site/data/equity.ndjson 2>/dev/null || true
           git diff --cached --quiet || git commit -m "swarm: paper tick $(date -u +%FT%TZ)"
           git push
