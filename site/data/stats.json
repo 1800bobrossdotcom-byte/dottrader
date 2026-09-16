@@ -1,0 +1,99 @@
+{
+  "generatedAt": "2026-09-16T20:50:07.994Z",
+  "mode": "paper",
+  "wallet": "0x8455cF296e1265b494605207e97884813De21950",
+  "token": {
+    "symbol": "DOT",
+    "address": "0x23A2847d772803f9EFC64B4277b782b06296FE51",
+    "chain": "Base",
+    "links": {
+      "site": "https://usedot.xyz",
+      "docs": "https://git.usedot.xyz",
+      "dexscreener": "https://dexscreener.com/base/0x5f547579519beaa158cddd3543604029165f66e86a00c373d0ee90c38784921b",
+      "basescan": "https://basescan.org/token/0x23A2847d772803f9EFC64B4277b782b06296FE51"
+    }
+  },
+  "baseline": {
+    "startedAt": "2026-09-16T20:49:56.060Z",
+    "dot": 110138.99352291555,
+    "eth": 0.021493577522880763,
+    "usdc": 0,
+    "priceUsd": 0.005863,
+    "usd": 697.5823706976839
+  },
+  "vault": {
+    "address": "0x8455cF296e1265b494605207e97884813De21950",
+    "sweptDot": 0,
+    "unsweptEarned": 0,
+    "sweeps": []
+  },
+  "wallets": [
+    {
+      "address": "0x8455cF296e1265b494605207e97884813De21950",
+      "eth": 0.001493126710195643,
+      "dot": 110138.99352291555,
+      "usdc": 0,
+      "role": "vault"
+    },
+    {
+      "address": "0xcFCFc8e42AEBFC58AB78093217C2C4bB186BAc86",
+      "eth": 0.01250045081268512,
+      "dot": 0,
+      "usdc": 0,
+      "role": "trading"
+    },
+    {
+      "address": "0x57C4e8C39d72540244FE8eDD302C7C463d6d545a",
+      "eth": 0.0075,
+      "dot": 0,
+      "usdc": 0,
+      "role": "trading"
+    }
+  ],
+  "onchain": {
+    "dot": 110138.99352291555,
+    "eth": 0.021493577522880763,
+    "usdc": 0,
+    "dotEquivalent": 118979.13473243984
+  },
+  "now": {
+    "dot": 110138.99352291555,
+    "eth": 0.021493577522880763,
+    "usdc": 0,
+    "priceUsd": 0.005863871452299984,
+    "priceEth": 0.0000024313613338804814,
+    "ethUsd": 2411.7647058823527,
+    "usd": 697.6783515769074,
+    "dotEquivalent": 110138.99352291555
+  },
+  "dotEarned": {
+    "total": 0,
+    "pct": 0,
+    "byAgent": {}
+  },
+  "openLots": [],
+  "wins": [],
+  "recentFills": [],
+  "equity": [
+    {
+      "t": 1789591807583,
+      "dotEq": 110138.99352291555,
+      "priceUsd": 0.005863871452299984
+    }
+  ],
+  "market": {
+    "liquidityUsd": 391129.93,
+    "volume24hUsd": 215665.23,
+    "change": {
+      "m5": 0.08,
+      "h1": 0.56,
+      "h6": 1.61,
+      "h24": 16.76
+    },
+    "txns24h": {
+      "buys": 378,
+      "sells": 182
+    },
+    "burns24h": 0
+  }
+}

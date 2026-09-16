@@ -1,0 +1,10 @@
+node_modules/
+.env
+.env.*
+!.env.example
+data/*.ndjson
+data/state.json
+data/candles*.json
+*.log
+.DS_Store
+data/agent-*.json

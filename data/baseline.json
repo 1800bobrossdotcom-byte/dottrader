@@ -1,0 +1,30 @@
+{
+  "startedAt": "2026-09-16T20:49:56.060Z",
+  "wallet": "0x8455cF296e1265b494605207e97884813De21950",
+  "wallets": [
+    {
+      "address": "0x8455cF296e1265b494605207e97884813De21950",
+      "eth": 0.001493126710195643,
+      "dot": 110138.99352291555,
+      "usdc": 0
+    },
+    {
+      "address": "0xcFCFc8e42AEBFC58AB78093217C2C4bB186BAc86",
+      "eth": 0.01250045081268512,
+      "dot": 0,
+      "usdc": 0
+    },
+    {
+      "address": "0x57C4e8C39d72540244FE8eDD302C7C463d6d545a",
+      "eth": 0.0075,
+      "dot": 0,
+      "usdc": 0
+    }
+  ],
+  "dot": 110138.99352291555,
+  "eth": 0.021493577522880763,
+  "usdc": 0,
+  "priceUsd": 0.005863,
+  "ethUsd": 2411.7647058823527,
+  "note": "Journey start across all tracked wallets. Every number on dottrader.app is measured against this."
+}

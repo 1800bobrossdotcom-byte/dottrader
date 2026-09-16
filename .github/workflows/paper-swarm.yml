@@ -1,0 +1,30 @@
+# Runs one paper-mode tick of the swarm and publishes the updated stats to the site.
+# Zero infrastructure: GitHub Actions is the swarm's scheduler and GitHub Pages is dottrader.app.
+# Enable the schedule below once you're happy with the branch (it only runs on the default branch).
+name: paper-swarm
+on:
+  workflow_dispatch:
+  # schedule:
+  #   - cron: "*/15 * * * *"
+permissions:
+  contents: write
+concurrency: { group: paper-swarm, cancel-in-progress: false }
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npm run swarm:once
+        env:
+          LIVE: "0"
+          BASE_RPC_URL: ${{ secrets.BASE_RPC_URL || 'https://mainnet.base.org' }}
+      - name: Commit updated state and stats
+        run: |
+          git config user.name "dottrader-swarm"
+          git config user.email "swarm@dottrader.app"
+          git add -f data/state.json data/agent-*.json data/candles-5m.json data/fills.ndjson data/journal.ndjson site/data/stats.json 2>/dev/null || true
+          git diff --cached --quiet || git commit -m "swarm: paper tick $(date -u +%FT%TZ)"
+          git push

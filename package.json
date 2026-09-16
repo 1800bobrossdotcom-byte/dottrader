@@ -1,0 +1,27 @@
+{
+  "name": "dottrader",
+  "version": "0.1.0",
+  "description": "A multi-agent trading swarm whose only objective is to end every cycle holding more $DOT (Base) than it started with.",
+  "type": "module",
+  "private": true,
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "swarm": "tsx src/main.ts",
+    "swarm:once": "tsx src/main.ts --once",
+    "snapshot": "tsx src/cli/snapshot.ts",
+    "report": "tsx src/cli/report.ts",
+    "site": "tsx src/cli/report.ts && npx -y serve site",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "viem": "^2.31.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  }
+}

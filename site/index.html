@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>dottrader — earning more $DOT, in public</title>
+<meta name="description" content="A trading swarm with one objective: end every cycle holding more $DOT than it started with. Every trade, win and loss posted here.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='40' fill='%2300e5a0'/></svg>">
+<style>
+  :root { --bg:#0b0d10; --panel:#12151a; --line:#1f242c; --fg:#e8ecf1; --muted:#8b95a5; --up:#00e5a0; --down:#ff5c7a; --accent:#7aa2ff; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:15px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Inter,Roboto,sans-serif; }
+  a { color:var(--accent); text-decoration:none; } a:hover { text-decoration:underline; }
+  .wrap { max-width:1080px; margin:0 auto; padding:24px 16px 64px; }
+  header { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:24px; }
+  .brand { font-weight:800; font-size:22px; letter-spacing:-.02em; } .brand b { color:var(--up); }
+  .badge { font-size:12px; padding:4px 10px; border-radius:999px; border:1px solid var(--line); color:var(--muted); }
+  .badge.live { border-color:var(--up); color:var(--up); } .badge.paper { border-color:#f2c94c; color:#f2c94c; }
+  .hero { background:linear-gradient(180deg,#12151a,#0f1216); border:1px solid var(--line); border-radius:16px; padding:28px; margin-bottom:16px; }
+  .hero .label { color:var(--muted); font-size:13px; text-transform:uppercase; letter-spacing:.08em; }
+  .hero .big { font-size:clamp(36px,7vw,64px); font-weight:800; letter-spacing:-.03em; line-height:1.05; margin:4px 0 8px; font-variant-numeric:tabular-nums; }
+  .hero .sub { color:var(--muted); }
+  .pos { color:var(--up); } .neg { color:var(--down); }
+  .grid { display:grid; gap:12px; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); margin-bottom:16px; }
+  .tile { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:14px 16px; }
+  .tile .k { color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.06em; }
+  .tile .v { font-size:22px; font-weight:700; margin-top:4px; font-variant-numeric:tabular-nums; }
+  .tile .s { color:var(--muted); font-size:12px; }
+  section { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:16px; margin-bottom:16px; }
+  h2 { margin:0 0 10px; font-size:15px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); }
+  canvas { width:100%; height:160px; display:block; }
+  table { width:100%; border-collapse:collapse; font-size:14px; }
+  th,td { text-align:left; padding:8px 6px; border-bottom:1px solid var(--line); white-space:nowrap; }
+  th { color:var(--muted); font-weight:500; font-size:12px; text-transform:uppercase; letter-spacing:.06em; }
+  td.num, th.num { text-align:right; font-variant-numeric:tabular-nums; }
+  .scroll { overflow-x:auto; }
+  .tag { display:inline-block; font-size:11px; padding:2px 8px; border-radius:6px; background:#1b2029; color:var(--muted); }
+  .tag.grid { color:#f2c94c } .tag.meanrev { color:#7aa2ff } .tag.accumulate { color:var(--up) }
+  .empty { color:var(--muted); padding:16px 0; }
+  footer { color:var(--muted); font-size:12px; margin-top:24px; line-height:1.7; }
+  .reason { white-space:normal; color:var(--muted); max-width:420px; font-size:12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">dot<b>trader</b>.app</div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <span id="mode" class="badge">loading</span>
+      <span id="updated" class="badge">—</span>
+    </div>
+  </header>
+
+  <div class="hero">
+    <div class="label">$DOT earned since journey start</div>
+    <div class="big" id="earned">—</div>
+    <div class="sub" id="earnedSub">A swarm of trading agents with one job: end every cycle holding more $DOT than it started with.</div>
+  </div>
+
+  <div class="grid">
+    <div class="tile"><div class="k">Stack now</div><div class="v" id="stackNow">—</div><div class="s" id="stackNowUsd"></div></div>
+    <div class="tile"><div class="k">Journey start</div><div class="v" id="stackStart">—</div><div class="s" id="stackStartUsd"></div></div>
+    <div class="tile"><div class="k">$DOT price</div><div class="v" id="price">—</div><div class="s" id="priceChg"></div></div>
+    <div class="tile"><div class="k">Sent to vault</div><div class="v" id="swept">—</div><div class="s" id="sweptSub"></div></div>
+    <div class="tile"><div class="k">Round trips won</div><div class="v" id="winCount">—</div><div class="s" id="winRate"></div></div>
+  </div>
+
+  <section>
+    <h2>DOT-equivalent stack over time</h2>
+    <canvas id="equity" height="160"></canvas>
+  </section>
+
+  <div class="grid" style="grid-template-columns:1fr 1fr">
+    <section style="margin:0">
+      <h2>Agent leaderboard (DOT earned)</h2>
+      <table><thead><tr><th>Agent</th><th class="num">DOT</th></tr></thead><tbody id="agents"></tbody></table>
+    </section>
+    <section style="margin:0">
+      <h2>Market</h2>
+      <table><tbody id="market"></tbody></table>
+    </section>
+  </div>
+
+  <section>
+    <h2>Wallets (live on-chain balances)</h2>
+    <div class="scroll"><table>
+      <thead><tr><th>Role</th><th>Address</th><th class="num">DOT</th><th class="num">ETH</th><th class="num">USDC</th></tr></thead>
+      <tbody id="wallets"></tbody></table></div>
+  </section>
+
+  <section>
+    <h2>Wins &amp; losses — closed round trips</h2>
+    <div class="scroll"><table>
+      <thead><tr><th>When</th><th>Agent</th><th class="num">Sold</th><th class="num">Bought back</th><th class="num">DOT earned</th><th class="num">Hold</th><th>Tx</th></tr></thead>
+      <tbody id="wins"></tbody></table></div>
+    <div id="winsEmpty" class="empty" hidden>No round trips closed yet. The swarm only sells into strength and buys back lower; patience is the strategy.</div>
+  </section>
+
+  <section>
+    <h2>Open positions (DOT parked in ETH, waiting to buy back)</h2>
+    <div class="scroll"><table>
+      <thead><tr><th>Agent</th><th class="num">DOT sold</th><th class="num">Sold @ (ETH)</th><th class="num">Buy-back target</th><th class="num">Now</th><th>Opened</th></tr></thead>
+      <tbody id="lots"></tbody></table></div>
+    <div id="lotsEmpty" class="empty" hidden>Fully in $DOT right now.</div>
+  </section>
+
+  <section>
+    <h2>Recent fills</h2>
+    <div class="scroll"><table>
+      <thead><tr><th>When</th><th>Agent</th><th>Side</th><th class="num">DOT</th><th class="num">USD</th><th class="num">Price</th><th>Why</th></tr></thead>
+      <tbody id="fills"></tbody></table></div>
+  </section>
+
+  <footer>
+    <div>Token: <a id="lnkToken" href="#" target="_blank" rel="noopener">$DOT on Base</a> · <a id="lnkChart" href="#" target="_blank" rel="noopener">DexScreener</a> · <a href="https://usedot.xyz" target="_blank" rel="noopener">usedot.xyz</a> · Wallet: <a id="lnkWallet" href="#" target="_blank" rel="noopener"><code id="wallet"></code></a></div>
+    <div>Paper mode uses real KyberSwap quotes (fees + price impact included) but sends no transactions. Live fills link to BaseScan. Nothing here is financial advice; this is one wallet's public journal.</div>
+  </footer>
+</div>
+<script>
+const $ = (id) => document.getElementById(id);
+const fmt = (n, d = 0) => (n ?? 0).toLocaleString(undefined, { maximumFractionDigits: d, minimumFractionDigits: d });
+const usd = (n) => "$" + fmt(n, 2);
+const ago = (t) => { const s = (Date.now() - t) / 1000; if (s < 90) return "just now"; if (s < 5400) return Math.round(s / 60) + "m ago"; if (s < 172800) return Math.round(s / 3600) + "h ago"; return Math.round(s / 86400) + "d ago"; };
+const sign = (n, d = 1) => (n >= 0 ? "+" : "") + fmt(n, d);
+const cls = (n) => (n >= 0 ? "pos" : "neg");
+
+async function main() {
+  const r = await fetch("data/stats.json?" + Date.now());
+  if (!r.ok) { $("earned").textContent = "no data yet"; return; }
+  const s = await r.json();
+  $("mode").textContent = s.mode === "live" ? "LIVE on Base" : "PAPER mode";
+  $("mode").className = "badge " + s.mode;
+  $("updated").textContent = "updated " + ago(Date.parse(s.generatedAt));
+  const e = s.dotEarned.total;
+  $("earned").textContent = sign(e, 1) + " DOT";
+  $("earned").className = "big " + cls(e);
+  $("earnedSub").textContent = `${sign(s.dotEarned.pct, 3)}% of the starting stack · ≈ ${usd(e * s.now.priceUsd)} at today's price`;
+  $("stackNow").textContent = fmt(s.now.dotEquivalent) + " DOT";
+  $("stackNowUsd").textContent = `${fmt(s.now.dot)} in wallet · ${usd(s.now.usd)} total`;
+  if (s.baseline) { $("stackStart").textContent = fmt(s.baseline.dot) + " DOT"; $("stackStartUsd").textContent = `${new Date(s.baseline.startedAt).toLocaleDateString()} · ${usd(s.baseline.usd)} at $${s.baseline.priceUsd}`; }
+  $("price").textContent = "$" + s.now.priceUsd.toFixed(6);
+  const c = s.market.change; $("priceChg").innerHTML = `<span class="${cls(c.h1)}">${sign(c.h1)}% 1h</span> · <span class="${cls(c.h24)}">${sign(c.h24)}% 24h</span>`;
+  const wins = s.wins.filter((w) => w.lotId); const won = wins.filter((w) => w.dotEarned > 0).length;
+  $("winCount").textContent = `${won} / ${wins.length}`;
+  $("winRate").textContent = wins.length ? `${Math.round((won / wins.length) * 100)}% win rate · ${sign(s.wins.reduce((a, w) => a + w.dotEarned, 0), 0)} DOT net` : "waiting for the first one";
+
+  $("swept").textContent = fmt(s.vault.sweptDot) + " DOT";
+  $("sweptSub").textContent = `${s.vault.sweeps.length} sweeps · ${fmt(s.vault.unsweptEarned)} DOT waiting · vault ${s.vault.address.slice(0, 6)}…${s.vault.address.slice(-4)}`;
+  $("wallets").innerHTML = (s.wallets || []).map((w) => `<tr><td><span class="tag ${w.role === "vault" ? "accumulate" : ""}">${w.role}</span></td><td><a href="https://basescan.org/address/${w.address}" target="_blank" rel="noopener">${w.address.slice(0, 8)}…${w.address.slice(-6)}</a></td><td class="num">${fmt(w.dot)}</td><td class="num">${w.eth.toFixed(5)}</td><td class="num">${fmt(w.usdc, 2)}</td></tr>`).join("") + (s.onchain ? `<tr><td colspan="2" style="color:var(--muted)">Total on-chain</td><td class="num"><b>${fmt(s.onchain.dot)}</b></td><td class="num">${s.onchain.eth.toFixed(5)}</td><td class="num">${fmt(s.onchain.usdc, 2)}</td></tr>` : "");
+  $("agents").innerHTML = Object.entries(s.dotEarned.byAgent).sort((a, b) => b[1] - a[1]).map(([k, v]) => `<tr><td><span class="tag ${k}">${k}</span></td><td class="num ${cls(v)}">${sign(v, 1)}</td></tr>`).join("") || `<tr><td colspan="2" class="empty">No fills yet.</td></tr>`;
+  $("market").innerHTML = [
+    ["Liquidity", usd(s.market.liquidityUsd)], ["24h volume", usd(s.market.volume24hUsd)],
+    ["24h txns", `${s.market.txns24h.buys} buys / ${s.market.txns24h.sells} sells`], ["Burned (24h, observed)", fmt(s.market.burns24h) + " DOT"],
+    ["ETH", usd(s.now.ethUsd)], ["Open positions", s.openLots.length],
+  ].map(([k, v]) => `<tr><td style="color:var(--muted)">${k}</td><td class="num">${v}</td></tr>`).join("");
+
+  const tx = (h) => h ? `<a href="https://basescan.org/tx/${h}" target="_blank" rel="noopener">${h.slice(0, 8)}…</a>` : `<span class="tag">paper</span>`;
+  $("wins").innerHTML = wins.map((w) => `<tr><td>${ago(w.ts)}</td><td><span class="tag ${w.agent}">${w.agent}</span></td><td class="num">${fmt(w.dotSold)}</td><td class="num">${fmt(w.dotBought)}</td><td class="num ${cls(w.dotEarned)}">${sign(w.dotEarned, 1)}</td><td class="num">${w.holdHours.toFixed(1)}h</td><td>${tx(w.txHash)}</td></tr>`).join("");
+  $("winsEmpty").hidden = wins.length > 0;
+  $("lots").innerHTML = s.openLots.map((l) => `<tr><td><span class="tag ${l.agent}">${l.agent}</span></td><td class="num">${fmt(l.dotSold)}</td><td class="num">${l.sellPriceEth.toExponential(3)}</td><td class="num">${l.targetBuyPriceEth.toExponential(3)}</td><td class="num ${s.now.priceEth <= l.targetBuyPriceEth ? "pos" : ""}">${s.now.priceEth.toExponential(3)}</td><td>${ago(l.ts)}</td></tr>`).join("");
+  $("lotsEmpty").hidden = s.openLots.length > 0;
+  $("fills").innerHTML = s.recentFills.map((f) => `<tr><td>${ago(f.ts)}</td><td><span class="tag ${f.agent}">${f.agent}</span></td><td class="${f.side === "BUY_DOT" ? "pos" : "neg"}">${f.side === "BUY_DOT" ? "BUY" : "SELL"}</td><td class="num">${fmt(f.dot)}</td><td class="num">${usd(f.usd)}</td><td class="num">$${f.priceUsd.toFixed(6)}</td><td class="reason">${f.reason} ${f.txHash ? tx(f.txHash) : ""}</td></tr>`).join("") || `<tr><td colspan="7" class="empty">No fills yet.</td></tr>`;
+
+  $("lnkToken").href = s.token.links.basescan; $("lnkChart").href = s.token.links.dexscreener;
+  $("wallet").textContent = s.wallet.slice(0, 6) + "…" + s.wallet.slice(-4); $("lnkWallet").href = "https://basescan.org/address/" + s.wallet;
+  drawEquity(s.equity, s.baseline ? s.baseline.dot : null);
+}
+
+function drawEquity(pts, start) {
+  const cv = $("equity"); const dpr = devicePixelRatio || 1;
+  const W = cv.clientWidth, H = 160; cv.width = W * dpr; cv.height = H * dpr;
+  const g = cv.getContext("2d"); g.scale(dpr, dpr);
+  if (!pts || pts.length < 2) { g.fillStyle = "#8b95a5"; g.font = "13px system-ui"; g.fillText("Collecting history… check back in a few hours.", 8, 24); return; }
+  const ys = pts.map((p) => p.dotEq).concat(start ? [start] : []);
+  const lo = Math.min(...ys) * 0.999, hi = Math.max(...ys) * 1.001;
+  const x = (i) => 8 + (i / (pts.length - 1)) * (W - 16), y = (v) => H - 8 - ((v - lo) / (hi - lo || 1)) * (H - 16);
+  if (start) { g.strokeStyle = "#2a3140"; g.setLineDash([4, 4]); g.beginPath(); g.moveTo(8, y(start)); g.lineTo(W - 8, y(start)); g.stroke(); g.setLineDash([]); }
+  const last = pts[pts.length - 1].dotEq; const up = !start || last >= start;
+  g.strokeStyle = up ? "#00e5a0" : "#ff5c7a"; g.lineWidth = 2; g.beginPath();
+  pts.forEach((p, i) => (i ? g.lineTo(x(i), y(p.dotEq)) : g.moveTo(x(i), y(p.dotEq)))); g.stroke();
+  g.fillStyle = "#8b95a5"; g.font = "11px system-ui"; g.fillText(fmt(hi) + " DOT", 8, 12); g.fillText(fmt(lo) + " DOT", 8, H - 2);
+}
+main().catch((e) => { $("earned").textContent = "failed to load"; console.error(e); });
+</script>
+</body>
+</html>
