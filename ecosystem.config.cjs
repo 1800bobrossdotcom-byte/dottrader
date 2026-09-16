@@ -22,8 +22,8 @@ const bots = ["w1", "w2", "w3"]
 
 const publisher = {
   name: "dot-publish",
-  script: "node",
-  args: "scripts/publish.mjs",
+  script: path.join(__dirname, "scripts", "publish.mjs"),
+  interpreter: "node",
   cwd: __dirname,
   autorestart: true,
   restart_delay: 60000,
@@ -35,8 +35,10 @@ const publisher = {
 module.exports = {
   apps: [...bots.map((b) => ({
     name: b.name,
-    script: "npx",
-    args: `tsx src/main.ts --bot ${b.name.replace("dot-bot-", "")}`,
+    // Launch tsx's JS entry directly: on Windows, pm2 cannot run "npx" (it is a .cmd shim, not JavaScript).
+    script: path.join(__dirname, "node_modules", "tsx", "dist", "cli.mjs"),
+    args: `src/main.ts --bot ${b.name.replace("dot-bot-", "")}`,
+    interpreter: "node",
     cwd: __dirname,
     env: b.env,
     autorestart: true,
