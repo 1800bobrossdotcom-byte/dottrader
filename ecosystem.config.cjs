@@ -24,7 +24,7 @@ module.exports = {
   apps: bots.map((b) => ({
     name: b.name,
     script: "npx",
-    args: "tsx src/main.ts",
+    args: `tsx src/main.ts --bot ${b.name.replace("dot-bot-", "")}`,
     cwd: __dirname,
     env: b.env,
     autorestart: true,

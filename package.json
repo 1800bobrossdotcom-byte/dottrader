@@ -6,6 +6,7 @@
   "private": true,
   "engines": { "node": ">=22" },
   "scripts": {
+    "setup": "node scripts/setup.mjs",
     "swarm": "tsx src/main.ts",
     "swarm:once": "tsx src/main.ts --once",
     "snapshot": "tsx src/cli/snapshot.ts",

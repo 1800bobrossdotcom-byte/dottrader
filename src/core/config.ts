@@ -2,14 +2,25 @@ import { z } from "zod";
 import { readFileSync, existsSync } from "node:fs";
 import path from "node:path";
 
-// Minimal .env loader so we don't pull in dotenv.
-function loadDotEnv() {
-  const p = path.resolve(process.cwd(), ".env");
-  if (!existsSync(p)) return;
+// Minimal .env loader so we don't pull in dotenv. `--bot w1` (or BOT=w1) loads .env.w1 first, then .env.
+function loadEnvFile(p: string) {
+  if (!existsSync(p)) return false;
   for (const line of readFileSync(p, "utf8").split("\n")) {
     const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/);
     if (m && process.env[m[1]] === undefined) process.env[m[1]] = m[2];
   }
+  return true;
+}
+function loadDotEnv() {
+  const i = process.argv.findIndex((a) => a === "--bot" || a.startsWith("--bot="));
+  const bot = i >= 0 ? (process.argv[i].includes("=") ? process.argv[i].split("=")[1] : process.argv[i + 1]) : process.env.BOT;
+  if (bot) {
+    if (!loadEnvFile(path.resolve(process.cwd(), `.env.${bot}`))) {
+      console.error(`no .env.${bot} file found; run: npm run setup`);
+      process.exit(1);
+    }
+  }
+  loadEnvFile(path.resolve(process.cwd(), ".env"));
 }
 loadDotEnv();
 

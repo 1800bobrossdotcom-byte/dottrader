@@ -55,7 +55,8 @@ The vault is passive: no process ever runs from it or holds its key. It only rec
 Each trading wallet runs as its own swarm process with its own `.env` and `DATA_DIR`. Nothing is shared between
 processes except the site's `stats.json`, which is merged from every process's `stats.<wallet>.json`.
 
-**Fast path:** `bash scripts/setup.sh` does steps 1 and 2 interactively (asks for each bot's key, writes `.env.wN`, records the baseline).
+**Fast path (Windows, Mac, Linux):** `npm run setup` does steps 1 and 2 interactively: asks for each bot's key, writes `.env.wN`, records the baseline.
+Any command can target a bot's env file with `--bot w1`, e.g. `npm run snapshot -- --bot w1` or `npx tsx src/main.ts --bot w2`.
 
 **1. Prepare one env file per trading wallet.**
 
@@ -70,15 +71,15 @@ is strongly recommended over the public endpoint, which rate-limits.
 **2. Record each wallet's starting point** (creates `data/w1/baseline.json` with all three wallets' balances):
 
 ```bash
-env $(cat .env.w1 | xargs) npm run snapshot
-env $(cat .env.w2 | xargs) npm run snapshot
+npm run snapshot -- --bot w1
+npm run snapshot -- --bot w2
 ```
 
 **3. Rehearse in paper mode first**, with `LIVE=0` in the env files, for at least a day:
 
 ```bash
-env $(cat .env.w1 | xargs) npm run swarm
-env $(cat .env.w2 | xargs) npm run swarm      # second terminal / tmux pane
+npx tsx src/main.ts --bot w1
+npx tsx src/main.ts --bot w2      # second terminal
 ```
 Watch the risk agent's rejections and the grid anchoring. Nothing is broadcast; fills are simulated from real quotes.
 
@@ -93,7 +94,8 @@ npx pm2 save && npx pm2 startup      # re-launch on reboot (follow the printed c
 npx pm2 logs                         # watch all bots
 ```
 
-**5. Operate.** `touch data/w1/KILL` pauses that wallet instantly; delete the file to resume. Watch the ETH balance:
+**5. Operate.** Creating a file named `KILL` in the bot's data folder pauses it instantly (`touch data/w1/KILL` on Mac/Linux,
+`New-Item data\\w1\\KILL` in PowerShell); delete the file to resume. Watch the ETH balance:
 each swap costs well under a cent on Base, but the risk agent stops trading below `GAS_RESERVE_ETH`.
 
 Safety built in: the executor refuses to start if the private key does not match `WALLET_ADDRESS`, refuses fills whose
