@@ -55,6 +55,8 @@ The vault is passive: no process ever runs from it or holds its key. It only rec
 Each trading wallet runs as its own swarm process with its own `.env` and `DATA_DIR`. Nothing is shared between
 processes except the site's `stats.json`, which is merged from every process's `stats.<wallet>.json`.
 
+**Fast path:** `bash scripts/setup.sh` does steps 1 and 2 interactively (asks for each bot's key, writes `.env.wN`, records the baseline).
+
 **1. Prepare one env file per trading wallet.**
 
 ```bash
