@@ -1,6 +1,6 @@
 import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { config, DOT } from "./core/config.js";
+import { config, DOT, JOURNEY } from "./core/config.js";
 import type { MarketSnapshot } from "./core/types.js";
 import type { Swarm } from "./swarm.js";
 import { Store } from "./data/store.js";
@@ -12,7 +12,7 @@ export interface Stats {
   mode: "paper" | "live";
   wallet: string;
   token: { symbol: string; address: string; chain: string; links: typeof DOT.links };
-  baseline: { startedAt: string; dot: number; eth: number; usdc: number; priceUsd: number; usd: number; dotEquivalent: number } | null;
+  baseline: { startedAt: string; dot: number; eth: number; usdc: number; priceUsd: number; usd: number; dotEquivalent: number; setupNote?: string } | null;
   vault: { address: string; sweptDot: number; unsweptEarned: number; sweeps: Sweep[] };
   wallets: { address: string; dot: number; eth: number; usdc: number; role: "vault" | "trading" }[];
   onchain: { dot: number; eth: number; usdc: number; dotEquivalent: number } | null;
@@ -31,7 +31,7 @@ export interface JournalRow { ts: number; agent: string; lotId: string | null; d
 export async function buildStats(swarm: Swarm, snap: MarketSnapshot): Promise<Stats> {
   const store = new Store();
   const L = swarm.ledger;
-  const b = L.baseline;
+  void L.baseline;
   const p = L.state.portfolio;
   const journal = store.readLines<JournalRow>("journal.ndjson");
   const fills = L.fills().slice(-50).reverse();
@@ -55,19 +55,18 @@ export async function buildStats(swarm: Swarm, snap: MarketSnapshot): Promise<St
     mode: config.LIVE ? "live" : "paper",
     wallet: config.WALLET_ADDRESS,
     token: { symbol: DOT.symbol, address: DOT.address, chain: "Base", links: DOT.links },
-    baseline: b
-      ? {
-          startedAt: b.startedAt, dot: b.dot, eth: b.eth, usdc: b.usdc, priceUsd: b.priceUsd,
-          usd: b.dot * b.priceUsd + b.eth * b.ethUsd + b.usdc,
-          // ETH and USDC held at the start count as the DOT they could have bought that day, so start and now compare like for like.
-          dotEquivalent: b.dot + (b.priceUsd > 0 ? (b.eth * b.ethUsd + b.usdc) / b.priceUsd : 0),
-        }
-      : null,
+    baseline: {
+      startedAt: JOURNEY.startedAt, dot: JOURNEY.dot, eth: JOURNEY.eth, usdc: JOURNEY.usdc, priceUsd: JOURNEY.priceUsd,
+      usd: JOURNEY.dot * JOURNEY.priceUsd + JOURNEY.eth * JOURNEY.ethUsd + JOURNEY.usdc,
+      // ETH and USDC held at the start count as the DOT they could have bought that day, so start and now compare like for like.
+      dotEquivalent: JOURNEY.dot + (JOURNEY.eth * JOURNEY.ethUsd + JOURNEY.usdc) / JOURNEY.priceUsd,
+      setupNote: JOURNEY.setupNote,
+    },
     vault: { address: config.VAULT_ADDRESS, sweptDot: L.state.sweptDot ?? 0, unsweptEarned: L.state.unsweptEarned ?? 0, sweeps: L.sweeps().slice(-50).reverse() },
     wallets,
     onchain,
     now: { dot: p.dot, eth: p.eth, usdc: p.usdc, priceUsd: snap.priceUsd, priceEth: snap.priceEth, ethUsd: snap.ethUsd, usd: p.dot * snap.priceUsd + p.eth * snap.ethUsd + p.usdc, dotEquivalent: L.dotEquivalent(snap.priceEth) },
-    dotEarned: { total, pct: b && b.dot > 0 ? (total / b.dot) * 100 : 0, byAgent: L.state.dotEarnedByAgent },
+    dotEarned: { total, pct: (total / JOURNEY.dot) * 100, byAgent: L.state.dotEarnedByAgent },
     openLots: L.state.openLots.map(({ id, agent, dotSold, ethReceived, sellPriceEth, targetBuyPriceEth, ts }) => ({ id, agent, dotSold, ethReceived, sellPriceEth, targetBuyPriceEth, ts })),
     wins: journal.slice(-100).reverse(),
     recentFills: fills.map(({ ts, agent, side, dot, usd, priceUsd, paper, txHash, reason }) => ({ ts, agent, side, dot, usd, priceUsd, paper, txHash, reason })),

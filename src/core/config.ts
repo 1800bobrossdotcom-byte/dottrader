@@ -87,6 +87,22 @@ export const DOT = {
   },
 };
 
+/**
+ * The journey's true starting point: the vault's holdings before any setup trades.
+ * Recorded from chain at 20:42 UTC on 2026-09-16, before 9,000 DOT was sold for gas ETH and the rest was
+ * split into the trading wallets. Per-bot baselines (data/wN/baseline.json) still drive each ledger; this
+ * constant is what the public site measures the whole journey against.
+ */
+export const JOURNEY = {
+  startedAt: "2026-09-16T20:42:42.776Z",
+  dot: 119138.99352291555,
+  eth: 0.000041543072992721,
+  usdc: 0,
+  priceUsd: 0.005857,
+  ethUsd: 2409.296585767174,
+  setupNote: "9,000 DOT was sold for gas ETH to fund the trading wallets; that cost is counted against the journey, not hidden.",
+};
+
 export const TOKENS = {
   ETH: "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" as const, // KyberSwap native-ETH placeholder
   WETH: "0x4200000000000000000000000000000000000006" as const,

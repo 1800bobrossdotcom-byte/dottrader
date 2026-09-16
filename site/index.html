@@ -244,12 +244,20 @@ async function main() {
 
   const e = s.dotEarned.total;
   $("earned").textContent = sign(e, 1); $("earned").className = "v " + cls(e);
-  $("earnedSub").textContent = `${sign(s.dotEarned.pct, 3)}% of the starting stack · ≈ ${usd(e * s.now.priceUsd)} at today's price · counts closed round trips and fresh buys only`;
+  const vsStart = stackNow - (start.dotEquivalent ?? start.dot);
+  $("earnedSub").textContent = `${sign(s.dotEarned.pct, 3)}% of the starting stack from closed round trips · whole stack vs journey start: ${sign(vsStart, 0)} DOT (includes the gas setup cost)`;
 
   const stackNow = s.onchain ? s.onchain.dotEquivalent : s.now.dotEquivalent;
+  const dotHeld = s.onchain ? s.onchain.dot : s.now.dot;
+  const ethHeld = s.onchain ? s.onchain.eth : s.now.eth;
   $("stackNow").textContent = fmt(stackNow);
-  $("stackNowUsd").textContent = `DOT-equivalent · ${usd(stackNow * s.now.priceUsd)}`;
-  if (s.baseline) { $("stackStart").textContent = fmt(s.baseline.dotEquivalent ?? s.baseline.dot); $("stackStartUsd").textContent = `${new Date(s.baseline.startedAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })} · ${fmt(s.baseline.dot)} DOT + ${s.baseline.eth.toFixed(4)} ETH · ${usd(s.baseline.usd)}`; }
+  $("stackNowUsd").textContent = `${fmt(dotHeld)} DOT in wallets + ${ethHeld.toFixed(4)} ETH gas (≈ ${fmt(stackNow - dotHeld)} DOT) · ${usd(stackNow * s.now.priceUsd)}`;
+  // Journey start is a fixed fact of the project: the vault's holdings before any setup trades.
+  const J = { startedAt: "2026-09-16T20:42:42.776Z", dot: 119138.99352291555, priceUsd: 0.005857, usd: 697.80,
+              setupNote: "9,000 DOT sold for gas ETH at setup, counted against the journey" };
+  const start = (s.baseline && s.baseline.dot > 119000) ? s.baseline : J;
+  $("stackStart").textContent = fmt(start.dot);
+  $("stackStartUsd").textContent = `${new Date(start.startedAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })} · ${usd(start.usd)} at $${start.priceUsd} · ${start.setupNote || J.setupNote}`;
   $("price").textContent = "$" + s.now.priceUsd.toFixed(6);
   const c = s.market.change; $("priceChg").innerHTML = `<span class="${cls(c.h1)}">${sign(c.h1)}% 1h</span> · <span class="${cls(c.h24)}">${sign(c.h24)}% 24h</span>`;
   $("swept").textContent = fmt(s.vault.sweptDot);
@@ -281,7 +289,7 @@ async function main() {
 
   const pts = s.equity || [];
   $("termMeta").textContent = pts.length ? `${pts.length} samples · last ${new Date(pts[pts.length - 1].t).toLocaleString()}` : "collecting";
-  drawEquity(pts, s.baseline ? (s.baseline.dotEquivalent ?? s.baseline.dot) : null);
+  drawEquity(pts, start.dotEquivalent ?? start.dot);
   const logLines = [
     `<b>$</b> dottrader --mode ${s.mode}`,
     `<span class="y">[market ]</span> DOT $${s.now.priceUsd.toFixed(6)} · liq ${usd(s.market.liquidityUsd)} · 24h <span class="${cls(c.h24)}">${sign(c.h24)}%</span>`,
