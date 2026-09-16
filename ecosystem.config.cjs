@@ -20,8 +20,20 @@ const bots = ["w1", "w2", "w3"]
   .map((w) => ({ name: `dot-bot-${w}`, env: envFile(`.env.${w}`) }))
   .filter((b) => b.env);
 
+const publisher = {
+  name: "dot-publish",
+  script: "node",
+  args: "scripts/publish.mjs",
+  cwd: __dirname,
+  autorestart: true,
+  restart_delay: 60000,
+  out_file: "logs/dot-publish.log",
+  error_file: "logs/dot-publish.err.log",
+  time: true,
+};
+
 module.exports = {
-  apps: bots.map((b) => ({
+  apps: [...bots.map((b) => ({
     name: b.name,
     script: "npx",
     args: `tsx src/main.ts --bot ${b.name.replace("dot-bot-", "")}`,
@@ -33,5 +45,5 @@ module.exports = {
     out_file: `logs/${b.name}.log`,
     error_file: `logs/${b.name}.err.log`,
     time: true,
-  })),
+  })), publisher],
 };

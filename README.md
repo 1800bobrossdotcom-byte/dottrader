@@ -124,7 +124,11 @@ earned DOT to `VAULT_ADDRESS` once `SWEEP_MIN_DOT` has accumulated, keeping `SWE
 
 ## Publishing dottrader.app
 
-`site/` is a static page that reads `site/data/stats.json`. Two workflows are included:
+`site/` is a static page that reads `site/data/stats.json`. Fastest route: import the repo into Vercel with root
+directory `site` and no build step, then add the dottrader.app domain there. The `dot-publish` pm2 process (started
+with the bots) commits `site/data` to GitHub every 15 minutes, and Vercel redeploys on each push.
+
+Alternatives: two workflows are included:
 
 - `.github/workflows/pages.yml` publishes `site/` to GitHub Pages (a `CNAME` for dottrader.app is included; point the domain's DNS at GitHub Pages).
 - `.github/workflows/paper-swarm.yml` runs a paper tick on a schedule and commits the updated stats, so the site stays live with zero servers. Uncomment the `schedule` block to enable it.
