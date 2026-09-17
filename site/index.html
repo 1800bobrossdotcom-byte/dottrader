@@ -255,7 +255,7 @@ async function main() {
   const ethHeld = s.onchain ? s.onchain.eth : s.now.eth;
   $("stackNow").textContent = fmt(stackNow);
   $("stackNowUsd").textContent = `${fmt(dotHeld)} DOT in wallets + ${ethHeld.toFixed(4)} ETH gas (≈ ${fmt(stackNow - dotHeld)} DOT) · ${usd(stackNow * s.now.priceUsd)}`;
-  const vsStart = stackNow - (start.dotEquivalent ?? start.dot);
+  const vsStart = stackNow - (start.dot);
   $("earnedSub").textContent = `${sign(s.dotEarned.pct, 3)}% of the starting stack from closed round trips · whole stack vs journey start: ${sign(vsStart, 0)} DOT (includes the gas setup cost)`;
   $("stackStart").textContent = fmt(start.dot);
   $("stackStartUsd").textContent = `${new Date(start.startedAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })} · ${usd(start.usd)} at $${start.priceUsd} · ${start.setupNote || J.setupNote}`;
@@ -292,7 +292,7 @@ async function main() {
 
   const pts = s.equity || [];
   $("termMeta").textContent = pts.length ? `${pts.length} samples · last ${new Date(pts[pts.length - 1].t).toLocaleString()}` : "collecting";
-  drawEquity(pts, start.dotEquivalent ?? start.dot);
+  drawEquity(pts, start.dot);
   const logLines = [
     `<b>$</b> dottrader --mode ${s.mode}`,
     `<span class="y">[market ]</span> DOT $${s.now.priceUsd.toFixed(6)} · liq ${usd(s.market.liquidityUsd)} · 24h <span class="${cls(c.h24)}">${sign(c.h24)}%</span>`,
