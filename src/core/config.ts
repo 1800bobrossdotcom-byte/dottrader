@@ -102,20 +102,34 @@ export const DOT = {
 };
 
 /**
- * The journey's true starting point: the vault's holdings before any setup trades.
- * Recorded from chain at 20:42 UTC on 2026-09-16, before 9,000 DOT was sold for gas ETH and the rest was
- * split into the trading wallets. Per-bot baselines (data/wN/baseline.json) still drive each ledger; this
- * constant is what the public site measures the whole journey against.
+ * The journey is the two trading bots, and only the two trading bots.
+ *
+ * Recorded from chain when the bots were funded on 2026-09-16: w1 got 51,138.99 DOT + 0.01250045 ETH and
+ * w2 got 50,000 DOT + 0.0075 ETH. The gas ETH is counted because the grid trades DOT against ETH, so ETH is
+ * working capital, not an expense — and because counting it at the end but not the start would inflate the gain.
+ *
+ * Deliberately EXCLUDED: the vault's retained 9,000 DOT and its gas ETH (see VAULT_BASELINE). The vault is
+ * passive. It is not traded, so it is not part of the journey; only what the bots sweep INTO it counts.
  */
 export const JOURNEY = {
-  startedAt: "2026-09-16T20:42:42.776Z",
-  dot: 119138.99352291555,
-  eth: 0.000041543072992721,
+  startedAt: "2026-09-16T21:52:00.000Z",
+  dot: 101_138.99,
+  eth: 0.02000045081268512,
   usdc: 0,
-  priceUsd: 0.005857,
-  ethUsd: 2409.296585767174,
-  setupNote: "9,000 DOT was sold for gas ETH to fund the trading wallets; that cost is counted against the journey, not hidden.",
+  priceUsd: 0.005863,
+  ethUsd: 2409.782161939992,
+  note: "The journey is the two trading bots. The vault's original 9,000 DOT is excluded; only DOT swept into it counts.",
 };
+
+/** DOT-equivalent the bots were funded with (DOT + gas ETH valued in DOT at the funding price). */
+export const JOURNEY_START_DOT_EQ =
+  JOURNEY.dot + (JOURNEY.eth * JOURNEY.ethUsd + JOURNEY.usdc) / JOURNEY.priceUsd;
+
+/**
+ * The vault's holdings at the moment the bots were funded. Subtracted from the vault's live balance so that
+ * only swept profit counts toward the journey. Sweeps still go to the vault as before.
+ */
+export const VAULT_BASELINE = { dot: 9_000, eth: 0.001492486074377686 };
 
 export const TOKENS = {
   ETH: "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" as const, // KyberSwap native-ETH placeholder

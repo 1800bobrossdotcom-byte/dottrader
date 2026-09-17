@@ -1,6 +1,6 @@
 import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { config, DOT, JOURNEY } from "./core/config.js";
+import { config, DOT, JOURNEY, JOURNEY_START_DOT_EQ, VAULT_BASELINE } from "./core/config.js";
 import type { MarketSnapshot } from "./core/types.js";
 import type { Swarm } from "./swarm.js";
 import { Store } from "./data/store.js";
@@ -12,7 +12,10 @@ export interface Stats {
   mode: "paper" | "live";
   wallet: string;
   token: { symbol: string; address: string; chain: string; links: typeof DOT.links };
-  baseline: { startedAt: string; dot: number; eth: number; usdc: number; priceUsd: number; usd: number; dotEquivalent: number; setupNote?: string } | null;
+  /** The journey start: the two trading bots at funding. Excludes the vault's original holdings. */
+  baseline: { startedAt: string; dot: number; eth: number; usdc: number; priceUsd: number; usd: number; dotEquivalent: number; note?: string } | null;
+  /** Journey stack now: the trading wallets' DOT-equivalent plus whatever has been swept into the vault. */
+  journeyStackNow: number | null;
   vault: { address: string; sweptDot: number; unsweptEarned: number; sweeps: Sweep[] };
   wallets: { address: string; dot: number; eth: number; usdc: number; role: "vault" | "trading" }[];
   onchain: { dot: number; eth: number; usdc: number; dotEquivalent: number } | null;
@@ -52,10 +55,22 @@ export async function buildStats(swarm: Swarm, snap: MarketSnapshot): Promise<St
     const prev = readPrevStats();
     if (prev?.wallets?.length) { wallets = prev.wallets; onchain = prev.onchain; onchainAt = prev.onchainAt; }
   }
-  // Equity curve: the on-chain DOT-equivalent of ALL tracked wallets, appended by whichever process ticks. Shared across processes.
+  // Journey stack: every trading wallet's DOT-equivalent, plus only what has been swept into the vault.
+  let journeyStackNow: number | null = null;
+  if (wallets.length && snap.priceEth > 0) {
+    const asDot = (dot: number, eth: number) => dot + eth / snap.priceEth;
+    journeyStackNow = wallets.reduce((sum, w) => {
+      if (w.role === "vault") {
+        // Only sweeps count. The vault's original stack is not part of the journey.
+        return sum + Math.max(0, asDot(w.dot, w.eth) - asDot(VAULT_BASELINE.dot, VAULT_BASELINE.eth));
+      }
+      return sum + asDot(w.dot, w.eth);
+    }, 0);
+  }
+  // Equity curve: the journey stack over time, appended by whichever process ticks. Shared across processes.
   mkdirSync(config.SITE_DATA_DIR, { recursive: true });
   const eqFile = path.join(config.SITE_DATA_DIR, "equity.ndjson");
-  if (onchain) appendFileSync(eqFile, JSON.stringify({ t: snap.ts, dotEq: onchain.dotEquivalent, priceUsd: snap.priceUsd }) + "\n");
+  if (journeyStackNow !== null) appendFileSync(eqFile, JSON.stringify({ t: snap.ts, dotEq: journeyStackNow, priceUsd: snap.priceUsd, basis: "bots" }) + "\n");
   const equity = readEquity(eqFile);
   void snaps;
   return {
@@ -66,10 +81,11 @@ export async function buildStats(swarm: Swarm, snap: MarketSnapshot): Promise<St
     baseline: {
       startedAt: JOURNEY.startedAt, dot: JOURNEY.dot, eth: JOURNEY.eth, usdc: JOURNEY.usdc, priceUsd: JOURNEY.priceUsd,
       usd: JOURNEY.dot * JOURNEY.priceUsd + JOURNEY.eth * JOURNEY.ethUsd + JOURNEY.usdc,
-      // ETH and USDC held at the start count as the DOT they could have bought that day, so start and now compare like for like.
-      dotEquivalent: JOURNEY.dot + (JOURNEY.eth * JOURNEY.ethUsd + JOURNEY.usdc) / JOURNEY.priceUsd,
-      setupNote: JOURNEY.setupNote,
+      // Gas ETH counts as working capital, valued in DOT at the funding price, so start and now compare like for like.
+      dotEquivalent: JOURNEY_START_DOT_EQ,
+      note: JOURNEY.note,
     },
+    journeyStackNow,
     vault: { address: config.VAULT_ADDRESS, sweptDot: L.state.sweptDot ?? 0, unsweptEarned: L.state.unsweptEarned ?? 0, sweeps: L.sweeps().slice(-50).reverse() },
     wallets,
     onchain,
@@ -97,7 +113,8 @@ function readEquity(file: string) {
   const byHour = new Map<number, { t: number; dotEq: number; priceUsd: number }>();
   for (const line of readFileSync(file, "utf8").split("\n")) {
     if (!line) continue;
-    try { const p = JSON.parse(line); byHour.set(Math.floor(p.t / 3.6e6), p); } catch { /* skip bad line */ }
+    // Points written before the journey was redefined to the bots only used a different basis; ignore them.
+    try { const p = JSON.parse(line); if (p.basis === "bots") byHour.set(Math.floor(p.t / 3.6e6), p); } catch { /* skip bad line */ }
   }
   return [...byHour.values()].sort((a, b) => a.t - b.t).slice(-24 * 30);
 }
@@ -135,6 +152,7 @@ export function mergeStats(parts: Stats[]): Stats {
     wallets: withChain?.wallets ?? [],
     onchain: withChain?.onchain ?? null,
     onchainAt: withChain?.onchainAt,
+    journeyStackNow: withChain?.journeyStackNow ?? null,
     dotEarned: { total, pct: fresh.baseline && fresh.baseline.dot > 0 ? (total / fresh.baseline.dot) * 100 : 0, byAgent },
     openLots: byTs(parts.flatMap((p) => p.openLots)),
     wins: byTs(parts.flatMap((p) => p.wins)).slice(0, 100),

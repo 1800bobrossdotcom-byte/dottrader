@@ -130,7 +130,7 @@
     <div>
       <div class="eyebrow">DOT trading swarm · Base · open journal</div>
       <h1>More $DOT.<br><em>Counted in public.</em></h1>
-      <p class="lede">A swarm of small trading agents with one instruction: end every cycle holding more $DOT than it started with. Every fill, every win, every loss is posted here, measured against the day we began.</p>
+      <p class="lede">Two trading bots with one instruction: end every cycle holding more $DOT than they started with. Every fill, every win, every loss is posted here, measured against the DOT they were funded with.</p>
     </div>
     <div class="hero-num">
       <div class="k">$DOT earned since journey start</div>
@@ -140,7 +140,7 @@
   </div>
 
   <div class="stats">
-    <div class="stat"><div class="k">Stack now</div><div class="v" id="stackNow">—</div><div class="s" id="stackNowUsd"></div></div>
+    <div class="stat"><div class="k">Bots’ stack now</div><div class="v" id="stackNow">—</div><div class="s" id="stackNowUsd"></div></div>
     <div class="stat"><div class="k">Journey start</div><div class="v" id="stackStart">—</div><div class="s" id="stackStartUsd"></div></div>
     <div class="stat"><div class="k">$DOT price</div><div class="v" id="price">—</div><div class="s" id="priceChg"></div></div>
     <div class="stat"><div class="k">Sent to vault</div><div class="v" id="swept">—</div><div class="s" id="sweptSub"></div></div>
@@ -209,7 +209,7 @@
     <div class="how">
       <div><span class="n">01 — ACCUMULATE</span><h3>ETH becomes inventory.</h3><p>Trading wallets start with ETH only. A daily budget converts it into $DOT, buying harder into dips and after burns.</p></div>
       <div><span class="n">02 — GRID & MEAN-REVERSION</span><h3>Sell strength, buy it back lower.</h3><p>Thin slices are sold as DOT/ETH climbs 3.5% levels and repurchased at least 3% cheaper. A round trip costs ~2.4% in pool fees, so the buy-back gap can never go below that.</p></div>
-      <div><span class="n">03 — RISK & VAULT</span><h3>Nothing leaves the core.</h3><p>The core stack is never sold, selling halts if the day is down 3% in DOT, and round-trip profit is swept to the vault wallet.</p></div>
+      <div><span class="n">03 — RISK & VAULT</span><h3>Nothing leaves the core.</h3><p>The core half of each bot is never sold, selling halts if the day is down 3% in DOT, and round-trip profit is swept to the vault. The vault's own stack sits outside the journey; only what the bots send it counts.</p></div>
     </div>
   </section>
 
@@ -239,10 +239,10 @@ async function main() {
   if (!r.ok) { $("earned").textContent = "no data yet"; return; }
   const s = await r.json();
   const live = s.mode === "live";
-  // Journey start is a fixed fact of the project: the vault's holdings before any setup trades.
-  const J = { startedAt: "2026-09-16T20:42:42.776Z", dot: 119138.99352291555, priceUsd: 0.005857, usd: 697.80,
-              setupNote: "9,000 DOT sold for gas ETH at setup, counted against the journey" };
-  const start = (s.baseline && s.baseline.dot > 119000) ? s.baseline : J;
+  // The journey is the two trading bots at funding. The vault's original 9,000 DOT is not part of it.
+  const J = { startedAt: "2026-09-16T21:52:00.000Z", dot: 101138.99, dotEquivalent: 109359.9, priceUsd: 0.005863, usd: 641.15,
+              note: "the two trading bots at funding; the vault's original 9,000 DOT is excluded" };
+  const start = s.baseline || J;
 
   $("mode").innerHTML = `<b></b>${live ? "LIVE · Base" : "PAPER MODE"}`; $("mode").className = "pill " + s.mode;
   $("updated").textContent = "updated " + ago(Date.parse(s.generatedAt));
@@ -250,15 +250,17 @@ async function main() {
   const e = s.dotEarned.total;
   $("earned").textContent = sign(e, 1); $("earned").className = "v " + cls(e);
 
-  const stackNow = s.onchain ? s.onchain.dotEquivalent : s.now.dotEquivalent;
-  const dotHeld = s.onchain ? s.onchain.dot : s.now.dot;
-  const ethHeld = s.onchain ? s.onchain.eth : s.now.eth;
+  // Journey stack: the bots' wallets in full, plus only what has been swept into the vault.
+  const trading = (s.wallets || []).filter((w) => w.role !== "vault");
+  const stackNow = s.journeyStackNow ?? (s.onchain ? s.onchain.dotEquivalent : s.now.dotEquivalent);
+  const dotHeld = trading.length ? trading.reduce((a, w) => a + w.dot, 0) : s.now.dot;
+  const ethHeld = trading.length ? trading.reduce((a, w) => a + w.eth, 0) : s.now.eth;
   $("stackNow").textContent = fmt(stackNow);
-  $("stackNowUsd").textContent = `${fmt(dotHeld)} DOT in wallets + ${ethHeld.toFixed(4)} ETH gas (≈ ${fmt(stackNow - dotHeld)} DOT) · ${usd(stackNow * s.now.priceUsd)}`;
+  $("stackNowUsd").textContent = `${fmt(dotHeld)} DOT in the bots + ${ethHeld.toFixed(4)} ETH (≈ ${fmt(stackNow - dotHeld)} DOT) · ${usd(stackNow * s.now.priceUsd)}`;
   const vsStart = stackNow - (start.dot);
-  $("earnedSub").textContent = `${sign(s.dotEarned.pct, 3)}% of the starting stack from closed round trips · whole stack vs journey start: ${sign(vsStart, 0)} DOT (includes the gas setup cost)`;
-  $("stackStart").textContent = fmt(start.dot);
-  $("stackStartUsd").textContent = `${new Date(start.startedAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })} · ${usd(start.usd)} at $${start.priceUsd} · ${start.setupNote || J.setupNote}`;
+  $("earnedSub").textContent = `${sign(s.dotEarned.pct, 3)}% of the bots' starting DOT from closed round trips · whole stack vs journey start: ${sign(vsStart, 0)} DOT`;
+  $("stackStart").textContent = fmt(start.dotEquivalent ?? start.dot);
+  $("stackStartUsd").textContent = `${new Date(start.startedAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })} · ${fmt(start.dot)} DOT + ${(start.eth ?? 0).toFixed(4)} ETH · ${usd(start.usd)} · ${start.note || J.note}`;
   $("price").textContent = "$" + s.now.priceUsd.toFixed(6);
   const c = s.market.change; $("priceChg").innerHTML = `<span class="${cls(c.h1)}">${sign(c.h1)}% 1h</span> · <span class="${cls(c.h24)}">${sign(c.h24)}% 24h</span>`;
   $("swept").textContent = fmt(s.vault.sweptDot);
