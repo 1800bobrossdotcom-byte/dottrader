@@ -10,3 +10,4 @@ data/candles*.json
 data/agent-*.json
 site/data/stats.0x*.json
 logs/*.log
+data/w*/
