@@ -83,6 +83,9 @@ npx tsx src/main.ts --bot w2      # second terminal
 ```
 Watch the risk agent's rejections and the grid anchoring. Nothing is broadcast; fills are simulated from real quotes.
 
+**Dedicated RPC (recommended):** `npm run rpc -- https://base-mainnet.g.alchemy.com/v2/YOUR_KEY` verifies the URL is Base
+mainnet and writes it into every `.env.w*` file. The public endpoint rate-limits once two or three bots share it.
+
 **Verify before going live:** `npm run check` shows, per bot, whether the key in its env file controls that wallet
 (masked, never printed in full), whether the RPC answers, current balances, and whether the baseline exists.
 

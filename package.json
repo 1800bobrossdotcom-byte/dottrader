@@ -8,6 +8,7 @@
   "scripts": {
     "setup": "node scripts/setup.mjs",
     "check": "node scripts/check.mjs",
+    "rpc": "node scripts/rpc.mjs",
     "swarm": "tsx src/main.ts",
     "swarm:once": "tsx src/main.ts --once",
     "snapshot": "tsx src/cli/snapshot.ts",
