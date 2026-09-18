@@ -23,6 +23,8 @@ export interface Stats {
   onchain: { dot: number; eth: number; usdc: number; dotEquivalent: number } | null;
   /** When the wallets/onchain figures were last read successfully (they are reused when the RPC hiccups). */
   onchainAt?: string;
+  /** The Base block those figures were read at, so they can be checked against a block explorer. */
+  onchainBlock?: number | null;
   now: { dot: number; eth: number; usdc: number; priceUsd: number; priceEth: number; ethUsd: number; usd: number; dotEquivalent: number };
   dotEarned: { total: number; pct: number; byAgent: Record<string, number> };
   openLots: { id: string; agent: string; dotSold: number; ethReceived: number; sellPriceEth: number; targetBuyPriceEth: number; ts: number }[];
@@ -47,15 +49,17 @@ export async function buildStats(swarm: Swarm, snap: MarketSnapshot): Promise<St
   let wallets: Stats["wallets"] = [];
   let onchain: Stats["onchain"] = null;
   let onchainAt: string | undefined;
+  let onchainBlock: number | null | undefined;
   try {
     const tp = await getTrackedPortfolios();
+    onchainBlock = tp.block;
     wallets = tp.wallets.map((w) => ({ ...w, role: w.address.toLowerCase() === config.VAULT_ADDRESS.toLowerCase() ? "vault" : "trading" }));
     onchain = { ...tp.total, dotEquivalent: tp.total.dot + (snap.priceEth > 0 ? tp.total.eth / snap.priceEth : 0) };
     onchainAt = new Date().toISOString();
   } catch {
     // RPC hiccup (public endpoints rate-limit): reuse the last successful read from this process's previous stats file.
     const prev = readPrevStats();
-    if (prev?.wallets?.length) { wallets = prev.wallets; onchain = prev.onchain; onchainAt = prev.onchainAt; }
+    if (prev?.wallets?.length) { wallets = prev.wallets; onchain = prev.onchain; onchainAt = prev.onchainAt; onchainBlock = prev.onchainBlock; }
   }
   // Journey stack: every trading wallet's DOT-equivalent, plus only what has been swept into the vault.
   let journeyStackNow: number | null = null;
@@ -92,6 +96,7 @@ export async function buildStats(swarm: Swarm, snap: MarketSnapshot): Promise<St
     wallets,
     onchain,
     onchainAt,
+    onchainBlock,
     now: { dot: p.dot, eth: p.eth, usdc: p.usdc, priceUsd: snap.priceUsd, priceEth: snap.priceEth, ethUsd: snap.ethUsd, usd: p.dot * snap.priceUsd + p.eth * snap.ethUsd + p.usdc, dotEquivalent: L.dotEquivalent(snap.priceEth) },
     dotEarned: { total, pct: (total / JOURNEY.dot) * 100, byAgent: L.state.dotEarnedByAgent },
     openLots: L.state.openLots.map(({ id, agent, dotSold, ethReceived, sellPriceEth, targetBuyPriceEth, ts }) => ({ id, agent, dotSold, ethReceived, sellPriceEth, targetBuyPriceEth, ts })),
@@ -159,6 +164,7 @@ export function mergeStats(parts: Stats[]): Stats {
     wallets: withChain?.wallets ?? [],
     onchain: withChain?.onchain ?? null,
     onchainAt: withChain?.onchainAt,
+    onchainBlock: withChain?.onchainBlock,
     journeyStackNow: withChain?.journeyStackNow ?? null,
     manual: {
       dot: parts.reduce((a, p) => a + (p.manual?.dot ?? 0), 0),

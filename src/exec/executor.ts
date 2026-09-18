@@ -2,7 +2,7 @@ import { createWalletClient, http, maxUint256, type Address, type Hex } from "vi
 import { privateKeyToAccount } from "viem/accounts";
 import { base } from "viem/chains";
 import { config, DOT } from "../core/config.js";
-import { erc20, publicClient } from "../core/chain.js";
+import { erc20, noteWriteBlock, publicClient } from "../core/chain.js";
 import { log } from "../core/log.js";
 import type { Fill, MarketSnapshot, Signal } from "../core/types.js";
 import { build, buyDotQuote, sellDotQuote, type Quote } from "./kyber.js";
@@ -51,6 +51,7 @@ export class Executor {
     const hash = await this.wallet!.sendTransaction({ to: tx.to, data: tx.data, value: tx.value, gas: (tx.gas * 13n) / 10n });
     log("exec", `⛓  sent ${s.side} ${hash}`);
     const rc = await publicClient.waitForTransactionReceipt({ hash, timeout: 120_000 });
+    noteWriteBlock(rc.blockNumber);
     if (rc.status !== "success") { log("exec", `tx reverted ${hash}`); return null; }
     fill.txHash = hash;
     log("exec", `✅ LIVE ${s.side} ${dot.toFixed(0)} DOT ↔ ${eth.toFixed(5)} ETH — ${hash}`);
@@ -62,6 +63,7 @@ export class Executor {
     if (!config.LIVE) { log("exec", `📝 PAPER sweep ${dot.toFixed(0)} DOT → vault ${to}`); return {}; }
     const hash = await this.wallet!.writeContract({ address: DOT.address, abi: erc20, functionName: "transfer", args: [to, BigInt(Math.floor(dot * 1e18))] });
     const rc = await publicClient.waitForTransactionReceipt({ hash, timeout: 120_000 });
+    noteWriteBlock(rc.blockNumber);
     if (rc.status !== "success") throw new Error(`sweep reverted ${hash}`);
     log("exec", `🏦 LIVE sweep ${dot.toFixed(0)} DOT → vault ${to} (${hash})`);
     return { txHash: hash };
@@ -71,7 +73,7 @@ export class Executor {
     const cur = await publicClient.readContract({ address: DOT.address, abi: erc20, functionName: "allowance", args: [owner, spender] });
     if (cur >= amount) return;
     const hash = await this.wallet!.writeContract({ address: DOT.address, abi: erc20, functionName: "approve", args: [spender, maxUint256] });
-    await publicClient.waitForTransactionReceipt({ hash });
+    noteWriteBlock((await publicClient.waitForTransactionReceipt({ hash })).blockNumber);
     log("exec", `approved KyberSwap router ${spender} for DOT (${hash})`);
   }
 }

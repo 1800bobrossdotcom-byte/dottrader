@@ -27,11 +27,30 @@ export { erc20 };
 const multicall3 = parseAbi(["function getEthBalance(address) view returns (uint256)"]);
 const MULTICALL3 = "0xcA11bde05977b3631167028862bE2a173976CA11" as const;
 
+// Read-after-write: an RPC can still serve a block that predates a swap we just confirmed, so a balance
+// read taken seconds after a fill can report the pre-trade stack. Every write records its block here, and
+// every balance read waits for the node to catch up and is then pinned to one block so wallets can't tear.
+let minBlock = 0n;
+export function noteWriteBlock(b: bigint) { if (b > minBlock) minBlock = b; }
+
+async function readBlock(timeoutMs = 20_000): Promise<bigint | undefined> {
+  if (minBlock === 0n) return undefined;
+  const until = Date.now() + timeoutMs;
+  for (;;) {
+    const n = await publicClient.getBlockNumber({ cacheTime: 0 });
+    if (n >= minBlock) return n;
+    if (Date.now() >= until) return undefined; // node is lagging badly; a stale read beats no read at all
+    await new Promise((r) => setTimeout(r, 1_000));
+  }
+}
+
 /** Balances for every tracked wallet, plus the sum. One multicall so public RPCs don't rate-limit us. */
 export async function getTrackedPortfolios() {
   const wallets = config.TRACKED_WALLETS as Address[];
+  const blockNumber = await readBlock();
   const res = await publicClient.multicall({
     allowFailure: false,
+    blockNumber,
     contracts: wallets.flatMap((w) => [
       { address: MULTICALL3, abi: multicall3, functionName: "getEthBalance", args: [w] } as const,
       { address: DOT.address, abi: erc20, functionName: "balanceOf", args: [w] } as const,
@@ -42,12 +61,14 @@ export async function getTrackedPortfolios() {
     eth: Number(res[i * 3]) / 1e18, dot: Number(res[i * 3 + 1]) / 1e18, usdc: Number(res[i * 3 + 2]) / 1e6,
   }));
   const total = each.reduce((a, p) => ({ dot: a.dot + p.dot, eth: a.eth + p.eth, usdc: a.usdc + p.usdc }), { dot: 0, eth: 0, usdc: 0 });
-  return { wallets: wallets.map((address, i) => ({ address, ...each[i] })), total };
+  return { wallets: wallets.map((address, i) => ({ address, ...each[i] })), total, block: blockNumber ? Number(blockNumber) : null };
 }
 
 export async function getPortfolio(addr: Address = config.WALLET_ADDRESS as Address): Promise<Portfolio> {
+  const blockNumber = await readBlock();
   const [eth, dot, usdc] = await publicClient.multicall({
     allowFailure: false,
+    blockNumber,
     contracts: [
       { address: MULTICALL3, abi: multicall3, functionName: "getEthBalance", args: [addr] },
       { address: DOT.address, abi: erc20, functionName: "balanceOf", args: [addr] },

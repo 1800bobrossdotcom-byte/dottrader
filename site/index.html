@@ -287,7 +287,7 @@ async function main() {
   const agentsAll = ["grid", "meanrev", "accumulate"];
   $("agents").innerHTML = agentsAll.map((k) => { const v = s.dotEarned.byAgent[k] ?? 0; return `<tr><td><span class="tag ${k}">${k}</span></td><td style="color:var(--ink-2)">${ROLE[k]}</td><td class="num ${v ? cls(v) : ""}">${v ? sign(v, 1) : "—"}</td></tr>`; }).join("");
 
-  if (s.onchainAt) $("walletsSub").textContent = `Balances read from Base ${ago(Date.parse(s.onchainAt))}.`;
+  if (s.onchainAt) $("walletsSub").textContent = `Balances read from Base ${ago(Date.parse(s.onchainAt))}${s.onchainBlock ? ` at block ${s.onchainBlock.toLocaleString()}` : ""}.`;
   else if (!(s.wallets || []).length) $("walletsSub").textContent = "Balance read failed on the last tick (RPC rate limit); retrying every minute.";
   $("wallets").innerHTML = (s.wallets || []).map((w) => `<tr><td><span class="tag ${w.role}">${w.role}</span></td><td class="mono"><a class="lnk" href="https://basescan.org/address/${w.address}" target="_blank" rel="noopener">${short(w.address)}</a></td><td class="num">${fmt(w.dot)}</td><td class="num">${w.eth.toFixed(4)}</td></tr>`).join("") + (s.onchain ? `<tr><td colspan="2" style="color:var(--dim);font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase">total on-chain</td><td class="num"><b>${fmt(s.onchain.dot)}</b></td><td class="num">${s.onchain.eth.toFixed(4)}</td></tr>` : "");
 
