@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-09-18T20:50:55.694Z",
+  "generatedAt": "2026-09-18T21:05:24.915Z",
   "mode": "live",
-  "wallet": "0x57C4e8C39d72540244FE8eDD302C7C463d6d545a",
+  "wallet": "0xcFCFc8e42AEBFC58AB78093217C2C4bB186BAc86",
   "token": {
     "symbol": "DOT",
     "address": "0x23A2847d772803f9EFC64B4277b782b06296FE51",
@@ -23,7 +23,7 @@
     "dotEquivalent": 109359.47944212295,
     "note": "The journey is the two trading bots. The vault's original 9,000 DOT is excluded; only DOT swept into it counts."
   },
-  "journeyStackNow": 101622.22276947621,
+  "journeyStackNow": 101651.5004128518,
   "vault": {
     "address": "0x8455cF296e1265b494605207e97884813De21950",
     "sweptDot": 0,
@@ -64,19 +64,19 @@
     "dot": 89601.10038960412,
     "eth": 0.03813662615727264,
     "usdc": 0,
-    "dotEquivalent": 104190.61001149694
+    "dotEquivalent": 104221.07450985607
   },
-  "onchainAt": "2026-09-18T20:50:55.691Z",
-  "onchainBlock": 51487653,
+  "onchainAt": "2026-09-18T21:05:24.912Z",
+  "onchainBlock": 51488088,
   "now": {
     "dot": 87601.10038960412,
     "eth": 0.03665087561984671,
     "usdc": 0,
-    "priceUsd": 0.006892573198681458,
-    "priceEth": 0.000002613975873462213,
-    "ethUsd": 2636.8159203980103,
-    "usd": 700.4386090513283,
-    "dotEquivalent": 100091.98676362433
+    "priceUsd": 0.006872069876354972,
+    "priceEth": 0.000002608528978477797,
+    "ethUsd": 2634.4617725370863,
+    "usd": 698.5562138734439,
+    "dotEquivalent": 100118.0691061641
   },
   "dotEarned": {
     "total": 905.7397393445353,
@@ -761,9 +761,15 @@
       "basis": "bots"
     },
     {
-      "t": 1789764655069,
-      "dotEq": 101622.22276947621,
-      "priceUsd": 0.006892573198681458,
+      "t": 1789765160182,
+      "dotEq": 101540.46767615562,
+      "priceUsd": 0.006921808127477408,
+      "basis": "bots"
+    },
+    {
+      "t": 1789765524345,
+      "dotEq": 101651.5004128518,
+      "priceUsd": 0.006872069876354972,
       "basis": "bots"
     }
   ],
@@ -776,17 +782,17 @@
     "releasedLots": 36
   },
   "market": {
-    "liquidityUsd": 438084.67,
-    "volume24hUsd": 435168.72,
+    "liquidityUsd": 439245.83,
+    "volume24hUsd": 435344.23,
     "change": {
-      "m5": 0.06,
-      "h1": -5.21,
-      "h6": 9.73,
-      "h24": 17.25
+      "m5": 0.07,
+      "h1": -8.18,
+      "h6": 10.3,
+      "h24": 17.85
     },
     "txns24h": {
-      "buys": 525,
-      "sells": 240
+      "buys": 530,
+      "sells": 241
     },
     "burns24h": 0
   }
