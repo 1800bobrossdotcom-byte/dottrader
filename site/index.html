@@ -221,6 +221,7 @@
       <a href="https://git.usedot.xyz" target="_blank" rel="noopener">Dot docs ↗</a>
       <a id="lnkWallet" href="#" target="_blank" rel="noopener">vault wallet ↗</a>
     </div>
+    <div id="build"></div>
     <div>Paper mode uses real KyberSwap quotes, fees and price impact included, but broadcasts nothing. Live fills link to their BaseScan transaction. This is one wallet's public journal, not financial advice. $DOT is the token of <a href="https://usedot.xyz" target="_blank" rel="noopener">Dot</a>, private AI on Base.</div>
   </footer>
 </div>
@@ -247,6 +248,7 @@ async function main() {
 
   $("mode").innerHTML = `<b></b>${live ? "LIVE · Base" : "PAPER MODE"}`; $("mode").className = "pill " + s.mode;
   $("updated").textContent = "updated " + ago(Date.parse(s.generatedAt));
+  if (s.codeVersion) $("build").textContent = `Bots running build ${s.codeVersion}.`;
 
   const e = s.dotEarned.total;
   $("earned").textContent = sign(e, 1); $("earned").className = "v " + cls(e);

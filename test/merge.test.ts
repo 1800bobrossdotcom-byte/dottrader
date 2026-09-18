@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { mergeStats, type Stats } from "../src/report.js";
 
 const base = (over: Partial<Stats>): Stats => ({
-  generatedAt: "2026-09-16T23:00:00Z", mode: "live", wallet: "0xa",
+  generatedAt: "2026-09-16T23:00:00Z", codeVersion: "abc1234", mode: "live", wallet: "0xa",
   token: { symbol: "DOT", address: "0x", chain: "Base", links: { site: "", docs: "", dexscreener: "", basescan: "" } },
   baseline: null, journeyStackNow: null, manual: { dot: 0, releasedLots: 0 }, vault: { address: "0xv", sweptDot: 0, unsweptEarned: 0, sweeps: [] }, wallets: [], onchain: null,
   now: { dot: 1, eth: 0, usdc: 0, priceUsd: 1, priceEth: 1, ethUsd: 1, usd: 1, dotEquivalent: 1 },
@@ -21,5 +21,16 @@ describe("mergeStats", () => {
     expect(m.onchain?.dot).toBe(9000);
     expect(m.processes).toEqual(["0xb", "0xa"]);
     expect(m.journeyStackNow).toBe(12345);
+  });
+});
+
+describe("build stamp", () => {
+  it("lists every commit in the swarm so an un-restarted process is visible", () => {
+    const fresh = base({ generatedAt: "2026-09-16T23:10:00Z", wallet: "0xb", codeVersion: "new0001" });
+    const stale = base({ generatedAt: "2026-09-16T23:09:00Z", codeVersion: "old9999" });
+    // The freshest process would otherwise hide the other's version entirely.
+    expect(mergeStats([fresh, stale]).codeVersion).toBe("new0001, old9999");
+    // Once both are restarted the stamp collapses to one commit.
+    expect(mergeStats([fresh, base({ codeVersion: "new0001" })]).codeVersion).toBe("new0001");
   });
 });

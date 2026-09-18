@@ -4,11 +4,14 @@ import { config, DOT, JOURNEY, JOURNEY_START_DOT_EQ, VAULT_BASELINE } from "./co
 import type { MarketSnapshot } from "./core/types.js";
 import type { Swarm } from "./swarm.js";
 import { Store } from "./data/store.js";
+import { codeVersion } from "./core/version.js";
 import { getTrackedPortfolios } from "./core/chain.js";
 import type { Sweep } from "./core/ledger.js";
 
 export interface Stats {
   generatedAt: string;
+  /** The commit this bot process is running. Distinct values across processes mean a half-finished restart. */
+  codeVersion: string;
   mode: "paper" | "live";
   wallet: string;
   token: { symbol: string; address: string; chain: string; links: typeof DOT.links };
@@ -81,6 +84,7 @@ export async function buildStats(swarm: Swarm, snap: MarketSnapshot): Promise<St
   void snaps;
   return {
     generatedAt: new Date().toISOString(),
+    codeVersion: codeVersion(),
     mode: config.LIVE ? "live" : "paper",
     wallet: config.WALLET_ADDRESS,
     token: { symbol: DOT.symbol, address: DOT.address, chain: "Base", links: DOT.links },
@@ -160,6 +164,8 @@ export function mergeStats(parts: Stats[]): Stats {
   return {
     ...fresh,
     mode: parts.some((p) => p.mode === "live") ? "live" : "paper",
+    // Every commit in the swarm, so one un-restarted process is visible rather than hidden behind the freshest.
+    codeVersion: [...new Set(parts.map((p) => p.codeVersion ?? "pre-stamp"))].join(", "),
     processes: parts.map((p) => p.wallet),
     wallets: withChain?.wallets ?? [],
     onchain: withChain?.onchain ?? null,
