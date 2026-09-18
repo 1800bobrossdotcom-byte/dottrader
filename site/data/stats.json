@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-09-18T18:50:19.995Z",
+  "generatedAt": "2026-09-18T19:05:30.400Z",
   "mode": "live",
-  "wallet": "0x57C4e8C39d72540244FE8eDD302C7C463d6d545a",
+  "wallet": "0xcFCFc8e42AEBFC58AB78093217C2C4bB186BAc86",
   "token": {
     "symbol": "DOT",
     "address": "0x23A2847d772803f9EFC64B4277b782b06296FE51",
@@ -23,11 +23,11 @@
     "dotEquivalent": 109359.47944212295,
     "note": "The journey is the two trading bots. The vault's original 9,000 DOT is excluded; only DOT swept into it counts."
   },
-  "journeyStackNow": 99457.24789829337,
+  "journeyStackNow": 101149.63590273511,
   "vault": {
     "address": "0x8455cF296e1265b494605207e97884813De21950",
     "sweptDot": 0,
-    "unsweptEarned": 495.8078549687325,
+    "unsweptEarned": 615.252823125697,
     "sweeps": []
   },
   "wallets": [
@@ -40,8 +40,8 @@
     },
     {
       "address": "0xcFCFc8e42AEBFC58AB78093217C2C4bB186BAc86",
-      "eth": 0.04240670221930074,
-      "dot": 36490.147220220846,
+      "eth": 0.03354918305357651,
+      "dot": 39754.19888607509,
       "usdc": 0,
       "role": "trading"
     },
@@ -61,36 +61,36 @@
     }
   ],
   "onchain": {
-    "dot": 84058.212001704,
-    "eth": 0.05281618320096722,
+    "dot": 87322.26366755826,
+    "eth": 0.043958664035242984,
     "usdc": 0,
-    "dotEquivalent": 101960.85999725023
+    "dotEquivalent": 103703.29527921428
   },
-  "onchainAt": "2026-09-18T18:50:19.992Z",
-  "onchainBlock": 51484035,
+  "onchainAt": "2026-09-18T19:05:30.397Z",
+  "onchainBlock": 51484491,
   "now": {
-    "dot": 82058.212001704,
-    "eth": 0.05133043266354129,
+    "dot": 85322.26366755826,
+    "eth": 0.04247291349781705,
     "usdc": 0,
-    "priceUsd": 0.007712492340536376,
-    "priceEth": 0.0000029501883304696975,
-    "ethUsd": 2614.237288135593,
-    "usd": 767.063262626415,
-    "dotEquivalent": 98101.4022532246
+    "priceUsd": 0.007020334514348334,
+    "priceEth": 0.000002683510115685508,
+    "ethUsd": 2616.1013790532984,
+    "usd": 710.1042800417388,
+    "dotEquivalent": 99659.05087508069
   },
   "dotEarned": {
-    "total": 495.8078549687325,
-    "pct": 0.49022424978609386,
+    "total": 615.252823125697,
+    "pct": 0.6083240727692624,
     "byAgent": {
-      "grid": 495.8078549687325
+      "grid": 615.252823125697
     }
   },
   "openLots": [
     {
       "id": "grid:1:1789755835",
       "agent": "grid",
-      "dotSold": 2183.639603350068,
-      "ethReceived": 0.006072424850255819,
+      "dotSold": 2183.192357509981,
+      "ethReceived": 0.006071181116285547,
       "sellPriceEth": 0.0000027808731994692277,
       "targetBuyPriceEth": 0.000002697447003485151,
       "ts": 1789755835526
@@ -103,15 +103,6 @@
       "sellPriceEth": 0.0000027878252086558337,
       "targetBuyPriceEth": 0.0000027041904523961585,
       "ts": 1789755226436
-    },
-    {
-      "id": "grid:1:1789754618",
-      "agent": "grid",
-      "dotSold": 3144.6490367076185,
-      "ethReceived": 0.008856275431753968,
-      "sellPriceEth": 0.0000028163001111966066,
-      "targetBuyPriceEth": 0.0000027318111078607083,
-      "ts": 1789754618451
     },
     {
       "id": "grid:1:1789699647",
@@ -151,6 +142,19 @@
     }
   ],
   "wins": [
+    {
+      "ts": 1789757963473,
+      "agent": "grid",
+      "lotId": "grid:1:1789754618",
+      "dotSold": 3144.6490367076185,
+      "dotBought": 3264.094004864583,
+      "dotEarned": 119.44496815696448,
+      "sellPriceUsd": 0.007360390780643031,
+      "buyPriceUsd": 0.007091047544478117,
+      "holdHours": 0.9291727777777777,
+      "paper": false,
+      "txHash": "0xa07e19ca326f1867f18abbf0cf2da85e846f136ab8772df0e4d405c0ec20a787"
+    },
     {
       "ts": 1789695307140,
       "agent": "grid",
@@ -218,6 +222,17 @@
     }
   ],
   "recentFills": [
+    {
+      "ts": 1789757963473,
+      "agent": "grid",
+      "side": "BUY_DOT",
+      "dot": 3264.094004864583,
+      "usd": 23.145845778140743,
+      "priceUsd": 0.007091047544478117,
+      "paper": false,
+      "txHash": "0xa07e19ca326f1867f18abbf0cf2da85e846f136ab8772df0e4d405c0ec20a787",
+      "reason": "grid buy-back: price 2.6833e-6 <= target 2.7318e-6 (sold at 2.8163e-6)"
+    },
     {
       "ts": 1789755835526,
       "agent": "grid",
@@ -614,9 +629,15 @@
       "basis": "bots"
     },
     {
-      "t": 1789757419518,
-      "dotEq": 99457.24789829337,
-      "priceUsd": 0.007712492340536376,
+      "t": 1789757962850,
+      "dotEq": 101150.82445966505,
+      "priceUsd": 0.007003387647956565,
+      "basis": "bots"
+    },
+    {
+      "t": 1789758329815,
+      "dotEq": 101149.63590273511,
+      "priceUsd": 0.007020334514348334,
       "basis": "bots"
     }
   ],
@@ -625,21 +646,21 @@
     "0xcFCFc8e42AEBFC58AB78093217C2C4bB186BAc86"
   ],
   "manual": {
-    "dot": 36955.141327131154,
-    "releasedLots": 28
+    "dot": 36955.098988120815,
+    "releasedLots": 29
   },
   "market": {
-    "liquidityUsd": 471508.62,
-    "volume24hUsd": 338600.2,
+    "liquidityUsd": 441187.82,
+    "volume24hUsd": 382982.57,
     "change": {
-      "m5": 0,
-      "h1": -2.24,
-      "h6": 32.52,
-      "h24": 35.28
+      "m5": 0.05,
+      "h1": -6.04,
+      "h6": 20.48,
+      "h24": 23.03
     },
     "txns24h": {
-      "buys": 490,
-      "sells": 203
+      "buys": 499,
+      "sells": 216
     },
     "burns24h": 0
   }
