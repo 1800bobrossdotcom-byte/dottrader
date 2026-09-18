@@ -33,7 +33,14 @@ export interface LedgerState {
 export interface Sweep { ts: number; dot: number; to: string; txHash?: string; paper: boolean }
 
 /** A lot the bot could no longer honour because its ETH was spent outside the bot (e.g. a manual swap). */
-export interface Reconciliation { ts: number; lotId: string; ethRemoved: number; dotReleased: number; reason: string }
+export interface Reconciliation { ts: number; lotId: string; ethRemoved: number; dotReleased: number; reason: string; dropped: boolean }
+
+/**
+ * Swap gas and price impact mean a wallet always holds a little less ETH than its open lots' gross
+ * proceeds. That is normal, not ETH spent elsewhere, so a shortfall must clear this margin before
+ * anything is unwound.
+ */
+const RECONCILE_TOLERANCE_PCT = 0.03;
 
 export interface OpenLot {
   id: string;
@@ -207,12 +214,17 @@ export class Ledger {
     const claimed = this.state.openLots.reduce((a, l) => a + l.ethReceived, 0);
     if (claimed <= 0) return [];
     const spendable = Math.max(0, actualEth - config.GAS_RESERVE_ETH);
+    // The tolerance decides whether the gap is real; once it is, close the whole gap. Subtracting the
+    // tolerance from the deficit instead would leave a gap that shrinks with `claimed`, so every tick
+    // would nibble another slice and never settle.
+    if (claimed - spendable <= claimed * RECONCILE_TOLERANCE_PCT) return [];
     let deficit = claimed - spendable;
-    if (deficit <= 1e-9) return [];
 
     const out: Reconciliation[] = [];
-    // Newest lots first: the oldest open slice is the one most likely still intended to close.
-    for (const lot of [...this.state.openLots].sort((a, b) => b.ts - a.ts)) {
+    // Oldest lots first. The missing ETH cannot belong to a slice whose proceeds just arrived, so
+    // charging the shortfall to the newest lot would shrink it every tick, free its grid level and
+    // let the grid re-sell the same slice forever while the genuinely stranded old lots sat intact.
+    for (const lot of [...this.state.openLots].sort((a, b) => a.ts - b.ts)) {
       if (deficit <= 1e-12) break;
       const take = Math.min(lot.ethReceived, deficit);
       const share = lot.ethReceived > 0 ? take / lot.ethReceived : 1;
@@ -220,6 +232,9 @@ export class Ledger {
       const rec: Reconciliation = {
         ts: Date.now(), lotId: lot.id, ethRemoved: take, dotReleased,
         reason: "lot ETH spent outside the bot; lot released so the grid is not stranded",
+        // Only a fully unwound lot frees its grid level. A lot that merely shrank is still open and
+        // still intends to buy back, so its level must stay closed to new sells.
+        dropped: lot.ethReceived - take <= 1e-9,
       };
       out.push(rec);
       this.store.append("reconciled.ndjson", rec);

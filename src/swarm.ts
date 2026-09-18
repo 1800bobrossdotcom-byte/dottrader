@@ -44,8 +44,9 @@ export class Swarm {
       // The chain is the truth: release any lot whose ETH was spent outside the bot (e.g. a manual swap),
       // otherwise the grid waits forever to buy back with ETH that is gone.
       for (const r of this.ledger.reconcileWithChain(onchain.eth)) {
-        log("ledger", `⚖ released lot ${r.lotId}: ${r.ethRemoved.toFixed(6)} ETH spent outside the bot (${r.dotReleased.toFixed(0)} DOT unwound)`);
-        this.grid.onLotDropped(r.lotId);
+        log("ledger", `⚖ ${r.dropped ? "released" : "shrank"} lot ${r.lotId}: ${r.ethRemoved.toFixed(6)} ETH spent outside the bot (${r.dotReleased.toFixed(0)} DOT unwound)`);
+        // A shrunk lot is still open, so its grid level stays closed; only a fully released lot frees one.
+        if (r.dropped) this.grid.onLotDropped(r.lotId);
       }
     }
 

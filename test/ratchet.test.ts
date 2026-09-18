@@ -114,18 +114,40 @@ describe("ledger reconciliation with the chain", () => {
     expect(L.state.openLots).toHaveLength(2);
     const earnedBefore = L.totalDotEarned();
 
-    // A manual swap leaves only 0.012 ETH on chain; 0.002 is the gas reserve, so 0.01 is spendable.
-    const recs = L.reconcileWithChain(0.012);
-    expect(recs).toHaveLength(1);
-    expect(recs[0].lotId).toBe("grid:2:2"); // newest released first
+    // A manual swap leaves only 0.0104 ETH on chain; 0.002 is the gas reserve, so 0.0084 is
+    // spendable against 0.02 claimed. That gap clears the 3% tolerance, so it is closed in full.
+    const recs = L.reconcileWithChain(0.0104);
+    expect(recs).toHaveLength(2);
+    // Oldest first: the missing ETH cannot belong to a slice whose proceeds just arrived.
+    expect(recs[0].lotId).toBe("grid:1:1");
+    expect(recs[0].dropped).toBe(true);
+    expect(recs[1].lotId).toBe("grid:2:2");
+    expect(recs[1].dropped).toBe(false); // only shrank, so its grid level must stay closed
     expect(L.state.openLots).toHaveLength(1);
-    expect(L.state.openLots[0].id).toBe("grid:1:1");
+    expect(L.state.openLots[0].id).toBe("grid:2:2");
     // Released DOT is never counted as the bot earning anything.
     expect(L.totalDotEarned()).toBeCloseTo(earnedBefore, 9);
-    expect(L.reconciliations()).toHaveLength(1);
+    expect(L.reconciliations()).toHaveLength(2);
 
     // Idempotent: with the books now matching the chain, nothing further is released.
-    expect(L.reconcileWithChain(0.012)).toHaveLength(0);
+    expect(L.reconcileWithChain(0.0104)).toHaveLength(0);
+  });
+
+  it("ignores the ordinary gas drift that made the grid dump its stack", async () => {
+    const { Ledger } = await import("../src/core/ledger.js");
+    const { Store } = await import("../src/data/store.js");
+    const L = new Ledger(new Store(dir));
+    // Three sells park 0.03 ETH gross. The wallet holds slightly less because each swap burned gas —
+    // no ETH left for anything else. Reconciling here used to shrink the newest lot every tick, free
+    // its grid level and let the grid re-sell the same slice indefinitely.
+    for (const i of [1, 2, 3]) {
+      L.recordFill({ ts: i, agent: "grid", side: "SELL_DOT", dot: 4000, eth: 0.01, usd: 1, priceUsd: 1, feesUsd: 0, paper: true, tag: `grid:${i}:${i}`, reason: "" });
+    }
+    // 0.0299 gross-minus-gas, plus the 0.002 reserve still sitting in the wallet.
+    expect(L.reconcileWithChain(0.0319)).toHaveLength(0);
+    expect(L.state.openLots).toHaveLength(3);
+    // A real external spend still gets caught.
+    expect(L.reconcileWithChain(0.020).length).toBeGreaterThan(0);
   });
 
   it("attributes hand-traded DOT separately from the bot's own fills", async () => {
