@@ -4,7 +4,7 @@ import { mergeStats, type Stats } from "../src/report.js";
 const base = (over: Partial<Stats>): Stats => ({
   generatedAt: "2026-09-16T23:00:00Z", mode: "live", wallet: "0xa",
   token: { symbol: "DOT", address: "0x", chain: "Base", links: { site: "", docs: "", dexscreener: "", basescan: "" } },
-  baseline: null, journeyStackNow: null, vault: { address: "0xv", sweptDot: 0, unsweptEarned: 0, sweeps: [] }, wallets: [], onchain: null,
+  baseline: null, journeyStackNow: null, manual: { dot: 0, releasedLots: 0 }, vault: { address: "0xv", sweptDot: 0, unsweptEarned: 0, sweeps: [] }, wallets: [], onchain: null,
   now: { dot: 1, eth: 0, usdc: 0, priceUsd: 1, priceEth: 1, ethUsd: 1, usd: 1, dotEquivalent: 1 },
   dotEarned: { total: 0, pct: 0, byAgent: {} }, openLots: [], wins: [], recentFills: [], equity: [], processes: ["0xa"],
   market: { liquidityUsd: 0, volume24hUsd: 0, change: { m5: 0, h1: 0, h6: 0, h24: 0 }, txns24h: { buys: 0, sells: 0 }, burns24h: 0 },

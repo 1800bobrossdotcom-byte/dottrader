@@ -30,7 +30,7 @@ market ─► intel ─► [ grid | meanrev | accumulate ] ─► risk ─► ex
 |---|---|
 | **market** | Blends DexScreener (USD, volume, liquidity) with the on-chain Uniswap V4 `slot0` price. Builds 5-minute candles. |
 | **intel** | Reads Base directly: DOT burns (transfers to the burn addresses) and every swap in the V4 pool → buy pressure, net flow, burns/24h. |
-| **grid** | Sells thin slices of the *trading sleeve* as DOT/ETH climbs `GRID_SPACING_PCT` levels (default 3.5%); buys each slice back `GRID_EDGE_PCT` lower (default 3%, floored at 2.6% because a round trip costs ~2.4% in fees). Each closed level nets more DOT. Holds slices longer when flow is strongly bid. |
+| **grid** | Sells thin slices of the *trading sleeve* as DOT/ETH climbs `GRID_SPACING_PCT` levels (default 3.5%); buys each slice back `GRID_EDGE_PCT` lower (default 3%, floored at 2.6% because a round trip costs ~2.4% in fees). **Ratchet:** it never sells below its last buy-back price, nor below the cheapest slice it already has open — without that, a falling market makes it re-anchor lower and sell into each bounce, netting DOT per trip while selling the stack ever cheaper. Buy-backs are never blocked. |
 | **meanrev** | On sharp, stretched moves (z-score > 2.2 over 4h with fading buy pressure) sells a small slice and buys it back when the move fades. A time stop (72h) re-enters DOT so the swarm is never stranded in ETH during an uptrend. |
 | **accumulate** | Converts fresh ETH/USDC into DOT on a daily budget (`DCA_USD_PER_DAY`), buying harder into dips and after burns. Silent until a budget is set. |
 | **risk** | Veto power over everything. Core sleeve (default 70% of the stack) is never sold. Halts selling if the DOT-equivalent stack is down 3% on the day. Enforces liquidity, order-size, gas-reserve and cooldown limits. One order per tick. `data/KILL` stops everything. |
@@ -107,6 +107,17 @@ each swap costs well under a cent on Base, but the risk agent stops trading belo
 Safety built in: the executor refuses to start if the private key does not match `WALLET_ADDRESS`, refuses fills whose
 quote deviates >5% from market, sells at most `TRADING_SLEEVE` of the wallet's starting DOT, halts selling when the day
 is down 3% in DOT terms, and never spends the gas reserve.
+
+## Trading by hand alongside the bots
+
+The bots trust the chain over their own books. Each live tick re-reads the real balances, and if the open
+slices claim more ETH than the wallet can actually spend — because a manual swap used it — those slices are
+released (newest first) and logged to `reconciled.ndjson`. Without that the grid would wait forever to buy
+back with ETH that is gone.
+
+Hand-traded DOT is reported separately and never counted as bot earnings: `dotEarned` only ever means round
+trips the bot itself completed. The site shows manual movement on its own line, and it still appears in the
+stack and wallet balances because those come straight from chain.
 
 ## Wallets and the vault
 

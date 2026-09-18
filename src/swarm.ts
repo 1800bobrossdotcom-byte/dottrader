@@ -38,7 +38,16 @@ export class Swarm {
     const snap = await this.market.tick();
     log("market", `DOT $${snap.priceUsd.toFixed(6)} (${snap.priceEth.toExponential(3)} ETH) h1 ${snap.priceChange.h1}% h24 ${snap.priceChange.h24}% liq $${snap.liquidityUsd.toFixed(0)} [${snap.source}]`);
 
-    if (config.LIVE) this.ledger.syncPortfolio(await getPortfolio());
+    if (config.LIVE) {
+      const onchain = await getPortfolio();
+      this.ledger.syncPortfolio(onchain);
+      // The chain is the truth: release any lot whose ETH was spent outside the bot (e.g. a manual swap),
+      // otherwise the grid waits forever to buy back with ETH that is gone.
+      for (const r of this.ledger.reconcileWithChain(onchain.eth)) {
+        log("ledger", `⚖ released lot ${r.lotId}: ${r.ethRemoved.toFixed(6)} ETH spent outside the bot (${r.dotReleased.toFixed(0)} DOT unwound)`);
+        this.grid.onLotDropped(r.lotId);
+      }
+    }
 
     try { this.lastIntel = await this.intel.tick(); } catch (e) { log("intel", `skipped: ${(e as Error).message}`); }
 
@@ -63,7 +72,7 @@ export class Swarm {
       if (!fill) continue;
       noteFill(s.agent);
       this.ledger.recordFill(fill);
-      if (s.agent === "grid") { if (fill.side === "SELL_DOT") this.grid.onFill(fill.tag); else this.grid.onLotClosed(fill.tag); }
+      if (s.agent === "grid") { if (fill.side === "SELL_DOT") this.grid.onFill(fill.tag); else this.grid.onLotClosed(fill.tag, fill.dot > 0 ? fill.eth / fill.dot : 0); }
       if (s.agent === "meanrev") this.meanrev.onFill(fill.side);
       if (s.agent === "accumulate") this.accumulate.onFill(fill.usd);
       const earned = this.ledger.totalDotEarned();

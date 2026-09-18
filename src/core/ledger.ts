@@ -32,6 +32,9 @@ export interface LedgerState {
 
 export interface Sweep { ts: number; dot: number; to: string; txHash?: string; paper: boolean }
 
+/** A lot the bot could no longer honour because its ETH was spent outside the bot (e.g. a manual swap). */
+export interface Reconciliation { ts: number; lotId: string; ethRemoved: number; dotReleased: number; reason: string }
+
 export interface OpenLot {
   id: string;
   agent: string;
@@ -177,6 +180,57 @@ export class Ledger {
   sweeps(): Sweep[] { return this.store.readLines<Sweep>("sweeps.ndjson"); }
 
   fills(): Fill[] { return this.store.readLines<Fill>("fills.ndjson"); }
+
+  reconciliations(): Reconciliation[] { return this.store.readLines<Reconciliation>("reconciled.ndjson"); }
+
+  /** Net DOT the bot itself moved: everything it bought minus everything it sold. */
+  botDotDelta() {
+    return this.fills().reduce((a, f) => a + (f.side === "BUY_DOT" ? f.dot : -f.dot), 0);
+  }
+
+  /**
+   * DOT that arrived or left outside the bot — manual swaps, transfers in, sweeps out.
+   * Actual balance minus (what we started with + what the bot itself did + what we swept away).
+   */
+  manualDotDelta(actualDot: number) {
+    const start = this.walletBaseline().dot;
+    return actualDot - (start + this.botDotDelta() - (this.state.sweptDot ?? 0));
+  }
+
+  /**
+   * The chain is the truth. If the open lots claim more ETH than the wallet can actually spend —
+   * because a manual swap used it — shrink or drop them, newest first, so the grid is not left
+   * waiting forever to spend ETH that is gone. The released DOT is NOT counted as bot profit:
+   * it is logged as a reconciliation so `dotEarned` keeps meaning "round trips the bot completed".
+   */
+  reconcileWithChain(actualEth: number): Reconciliation[] {
+    const claimed = this.state.openLots.reduce((a, l) => a + l.ethReceived, 0);
+    if (claimed <= 0) return [];
+    const spendable = Math.max(0, actualEth - config.GAS_RESERVE_ETH);
+    let deficit = claimed - spendable;
+    if (deficit <= 1e-9) return [];
+
+    const out: Reconciliation[] = [];
+    // Newest lots first: the oldest open slice is the one most likely still intended to close.
+    for (const lot of [...this.state.openLots].sort((a, b) => b.ts - a.ts)) {
+      if (deficit <= 1e-12) break;
+      const take = Math.min(lot.ethReceived, deficit);
+      const share = lot.ethReceived > 0 ? take / lot.ethReceived : 1;
+      const dotReleased = lot.dotSold * share;
+      const rec: Reconciliation = {
+        ts: Date.now(), lotId: lot.id, ethRemoved: take, dotReleased,
+        reason: "lot ETH spent outside the bot; lot released so the grid is not stranded",
+      };
+      out.push(rec);
+      this.store.append("reconciled.ndjson", rec);
+      lot.ethReceived -= take;
+      lot.dotSold -= dotReleased;
+      deficit -= take;
+    }
+    this.state.openLots = this.state.openLots.filter((l) => l.ethReceived > 1e-9);
+    this.save();
+    return out;
+  }
 
   totalDotEarned() {
     return Object.values(this.state.dotEarnedByAgent).reduce((a, b) => a + b, 0);

@@ -16,6 +16,8 @@ export interface Stats {
   baseline: { startedAt: string; dot: number; eth: number; usdc: number; priceUsd: number; usd: number; dotEquivalent: number; note?: string } | null;
   /** Journey stack now: the trading wallets' DOT-equivalent plus whatever has been swept into the vault. */
   journeyStackNow: number | null;
+  /** DOT moved by hand rather than by the bot: manual swaps and transfers. Kept out of dotEarned. */
+  manual: { dot: number; releasedLots: number };
   vault: { address: string; sweptDot: number; unsweptEarned: number; sweeps: Sweep[] };
   wallets: { address: string; dot: number; eth: number; usdc: number; role: "vault" | "trading" }[];
   onchain: { dot: number; eth: number; usdc: number; dotEquivalent: number } | null;
@@ -97,6 +99,11 @@ export async function buildStats(swarm: Swarm, snap: MarketSnapshot): Promise<St
     recentFills: fills.map(({ ts, agent, side, dot, usd, priceUsd, paper, txHash, reason }) => ({ ts, agent, side, dot, usd, priceUsd, paper, txHash, reason })),
     equity,
     processes: [config.WALLET_ADDRESS],
+    manual: {
+      // Only meaningful once the chain has been read; the bot's own fills are excluded by construction.
+      dot: onchain && wallets.length ? L.manualDotDelta(wallets.find((w) => w.address.toLowerCase() === config.WALLET_ADDRESS.toLowerCase())?.dot ?? 0) : 0,
+      releasedLots: L.reconciliations().length,
+    },
     market: { liquidityUsd: snap.liquidityUsd, volume24hUsd: snap.volume24hUsd, change: snap.priceChange, txns24h: snap.txns24h, burns24h: swarm.lastIntel?.burns24h ?? 0 },
   };
 }
@@ -153,6 +160,10 @@ export function mergeStats(parts: Stats[]): Stats {
     onchain: withChain?.onchain ?? null,
     onchainAt: withChain?.onchainAt,
     journeyStackNow: withChain?.journeyStackNow ?? null,
+    manual: {
+      dot: parts.reduce((a, p) => a + (p.manual?.dot ?? 0), 0),
+      releasedLots: parts.reduce((a, p) => a + (p.manual?.releasedLots ?? 0), 0),
+    },
     dotEarned: { total, pct: fresh.baseline && fresh.baseline.dot > 0 ? (total / fresh.baseline.dot) * 100 : 0, byAgent },
     openLots: byTs(parts.flatMap((p) => p.openLots)),
     wins: byTs(parts.flatMap((p) => p.wins)).slice(0, 100),
