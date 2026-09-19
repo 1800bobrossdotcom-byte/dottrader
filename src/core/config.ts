@@ -64,6 +64,10 @@ const Schema = z.object({
   AGENT_COOLDOWN_SECONDS: z.coerce.number().min(0).default(180),
   /** Orders the swarm may execute in a single tick, across all agents. */
   MAX_FILLS_PER_TICK: z.coerce.number().int().min(1).max(10).default(2),
+  /** Blocks per eth_getLogs call. Alchemy's free tier caps this at 10; paid plans allow far more. */
+  LOGS_MAX_BLOCK_RANGE: z.coerce.number().int().min(1).max(10_000).default(10),
+  /** Ceiling on blocks a single intel tick will scan, so catching up after an outage stays bounded. */
+  LOGS_BLOCKS_PER_TICK: z.coerce.number().int().min(10).max(100_000).default(600),
   KYBER_CLIENT_ID: z.string().default("dottrader"),
   DATA_DIR: z.string().default("data"),
   SITE_DATA_DIR: z.string().default("site/data"),

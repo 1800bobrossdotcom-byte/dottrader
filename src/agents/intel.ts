@@ -1,4 +1,5 @@
 import { latestBlock, scanBurns, scanSwaps } from "../core/chain.js";
+import { config } from "../core/config.js";
 import { log } from "../core/log.js";
 import type { IntelReport } from "../core/types.js";
 import { Store } from "../data/store.js";
@@ -11,7 +12,7 @@ interface IntelState {
 }
 
 const BLOCKS_PER_HOUR = 1800; // Base: 2s blocks
-const LOOKBACK_START_BLOCKS = 6 * BLOCKS_PER_HOUR; // first run scans ~6h back (cheap on public RPC)
+const LOOKBACK_START_BLOCKS = BLOCKS_PER_HOUR; // a cold start scans an hour back, then catches up tick by tick
 
 /**
  * On-chain intelligence agent. Watches the DOT contract for burns (the protocol's
@@ -31,19 +32,30 @@ export class IntelAgent {
   async tick(): Promise<IntelReport> {
     const head = Number(await latestBlock());
     const from = this.state.lastBlock ? this.state.lastBlock + 1 : head - LOOKBACK_START_BLOCKS;
-    if (head >= from) {
+    // Bound the work per tick. After an outage the gap can be thousands of blocks; scanning it in
+    // slices keeps each tick quick and lets the agent walk forward instead of retrying a range the
+    // provider will always refuse.
+    const target = Math.min(head, from + config.LOGS_BLOCKS_PER_TICK - 1);
+    if (target >= from) {
       try {
-        const [burns, swaps] = await Promise.all([scanBurns(BigInt(from), BigInt(head)), scanSwaps(BigInt(from), BigInt(head))]);
+        const [burns, swaps] = await Promise.all([scanBurns(BigInt(from), BigInt(target)), scanSwaps(BigInt(from), BigInt(target))]);
         const now = Date.now();
         for (const b of burns.events) {
           this.state.burnEvents.push({ block: b.block, dot: b.dot, ts: now - (head - b.block) * 2000 });
           this.state.burnsTotal += b.dot;
           log("burn", `🔥 ${b.dot.toLocaleString()} DOT burned (block ${b.block})`);
         }
-        for (const s of swaps) this.state.swaps.push({ ...s, ts: now - (head - s.block) * 2000 });
-        this.state.lastBlock = head;
+        for (const s of swaps.swaps) this.state.swaps.push({ ...s, ts: now - (head - s.block) * 2000 });
+        // Bank whichever scan got least far: both must cover a block before it can be considered read.
+        const scanned = Number(burns.scannedTo < swaps.scannedTo ? burns.scannedTo : swaps.scannedTo);
+        if (scanned >= from) this.state.lastBlock = scanned;
+        if (!burns.complete || !swaps.complete) {
+          log("intel", `scan stopped at block ${scanned} of ${target} (RPC range limit); resuming next tick`);
+        } else if (target < head) {
+          log("intel", `catching up: block ${scanned}, ${head - scanned} behind`);
+        }
       } catch (e) {
-        log("intel", `scan failed (${from}-${head}): ${(e as Error).message}`);
+        log("intel", `scan failed (${from}-${target}): ${(e as Error).message}`);
       }
     }
     const cutoff24 = Date.now() - 24 * 3.6e6;

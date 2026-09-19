@@ -91,27 +91,45 @@ export async function getPoolState() {
   return { dotPerEth: p, ethPerDot: 1 / p, tick, lpFee };
 }
 
-/** Sum DOT transferred to burn addresses between two blocks (chunked for public RPC's 2000-block cap). */
+/**
+ * Walk a block range in chunks the RPC will accept, collecting logs. Returns how far it actually got:
+ * a provider that refuses a chunk (rate limit, range cap) ends the walk rather than throwing, so the
+ * caller can bank the blocks it did scan. Without that, a failed scan would be retried from the same
+ * start forever and the scanner could never catch up after an outage.
+ */
+async function walkLogs<T>(
+  fromBlock: bigint,
+  toBlock: bigint,
+  fetch: (from: bigint, to: bigint) => Promise<T[]>,
+): Promise<{ logs: T[]; scannedTo: bigint; complete: boolean }> {
+  const step = BigInt(config.LOGS_MAX_BLOCK_RANGE);
+  const logs: T[] = [];
+  let scannedTo = fromBlock - 1n;
+  for (let start = fromBlock; start <= toBlock; start += step) {
+    const end = start + step - 1n > toBlock ? toBlock : start + step - 1n;
+    try {
+      logs.push(...(await fetch(start, end)));
+    } catch {
+      return { logs, scannedTo, complete: false };
+    }
+    scannedTo = end;
+  }
+  return { logs, scannedTo, complete: true };
+}
+
+/** Sum DOT transferred to burn addresses between two blocks. */
 export async function scanBurns(fromBlock: bigint, toBlock: bigint) {
+  const { logs, scannedTo, complete } = await walkLogs(fromBlock, toBlock, (from, to) =>
+    publicClient.getLogs({ address: DOT.address, event: transferEvent, args: { to: [...DOT.burnAddresses] as Address[] }, fromBlock: from, toBlock: to }),
+  );
   let total = 0;
   const events: { block: number; from: string; dot: number }[] = [];
-  const step = 1_900n;
-  for (let start = fromBlock; start <= toBlock; start += step + 1n) {
-    const end = start + step > toBlock ? toBlock : start + step;
-    const logs = await publicClient.getLogs({
-      address: DOT.address,
-      event: transferEvent,
-      args: { to: [...DOT.burnAddresses] as Address[] },
-      fromBlock: start,
-      toBlock: end,
-    });
-    for (const l of logs) {
-      const dot = Number(l.args.value ?? 0n) / 1e18;
-      total += dot;
-      events.push({ block: Number(l.blockNumber), from: l.args.from ?? "", dot });
-    }
+  for (const l of logs) {
+    const dot = Number(l.args.value ?? 0n) / 1e18;
+    total += dot;
+    events.push({ block: Number(l.blockNumber), from: l.args.from ?? "", dot });
   }
-  return { total, events };
+  return { total, events, scannedTo, complete };
 }
 
 /** Count buy/sell swaps in the main pool over a block range by reading PoolManager Swap events. */
@@ -119,26 +137,17 @@ export async function scanSwaps(fromBlock: bigint, toBlock: bigint) {
   const swapEvent = parseAbi([
     "event Swap(bytes32 indexed id, address indexed sender, int128 amount0, int128 amount1, uint160 sqrtPriceX96, uint128 liquidity, int24 tick, uint24 fee)",
   ])[0];
-  const out: { block: number; ethDelta: number; dotDelta: number; isBuy: boolean }[] = [];
-  const step = 1_900n;
-  for (let start = fromBlock; start <= toBlock; start += step + 1n) {
-    const end = start + step > toBlock ? toBlock : start + step;
-    const logs = await publicClient.getLogs({
-      address: DOT.poolManager,
-      event: swapEvent,
-      args: { id: DOT.poolId as Hex },
-      fromBlock: start,
-      toBlock: end,
-    });
-    for (const l of logs) {
-      // V4 emits the swapper's BalanceDelta: positive = swapper receives, negative = swapper pays.
-      // token0 = ETH, token1 = DOT, so dotDelta > 0 means someone bought DOT.
-      const ethDelta = Number(l.args.amount0 ?? 0n) / 1e18;
-      const dotDelta = Number(l.args.amount1 ?? 0n) / 1e18;
-      out.push({ block: Number(l.blockNumber), ethDelta, dotDelta, isBuy: dotDelta > 0 });
-    }
-  }
-  return out;
+  const { logs, scannedTo, complete } = await walkLogs(fromBlock, toBlock, (from, to) =>
+    publicClient.getLogs({ address: DOT.poolManager, event: swapEvent, args: { id: DOT.poolId as Hex }, fromBlock: from, toBlock: to }),
+  );
+  const swaps = logs.map((l) => {
+    // V4 emits the swapper's BalanceDelta: positive = swapper receives, negative = swapper pays.
+    // token0 = ETH, token1 = DOT, so dotDelta > 0 means someone bought DOT.
+    const ethDelta = Number(l.args.amount0 ?? 0n) / 1e18;
+    const dotDelta = Number(l.args.amount1 ?? 0n) / 1e18;
+    return { block: Number(l.blockNumber), ethDelta, dotDelta, isBuy: dotDelta > 0 };
+  });
+  return { swaps, scannedTo, complete };
 }
 
 export async function latestBlock() {
