@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-09-19T13:05:54.975Z",
+  "generatedAt": "2026-09-19T13:20:04.661Z",
   "mode": "live",
-  "wallet": "0xcFCFc8e42AEBFC58AB78093217C2C4bB186BAc86",
+  "wallet": "0x57C4e8C39d72540244FE8eDD302C7C463d6d545a",
   "token": {
     "symbol": "DOT",
     "address": "0x23A2847d772803f9EFC64B4277b782b06296FE51",
@@ -23,7 +23,7 @@
     "dotEquivalent": 109359.47944212295,
     "note": "The journey is the two trading bots. The vault's original 9,000 DOT is excluded; only DOT swept into it counts."
   },
-  "journeyStackNow": 95981.16304433253,
+  "journeyStackNow": 95980.00241803232,
   "vault": {
     "address": "0x8455cF296e1265b494605207e97884813De21950",
     "sweptDot": 0,
@@ -64,19 +64,19 @@
     "dot": 70578.47123920827,
     "eth": 0.09050297364356683,
     "usdc": 0,
-    "dotEquivalent": 98438.53031165153
+    "dotEquivalent": 98437.35031380625
   },
-  "onchainAt": "2026-09-19T13:05:54.971Z",
-  "onchainBlock": 51516903,
+  "onchainAt": "2026-09-19T13:20:04.657Z",
+  "onchainBlock": 51517328,
   "now": {
     "dot": 68578.47123920827,
     "eth": 0.0890172231061409,
     "usdc": 0,
-    "priceUsd": 0.008583280505251804,
-    "priceEth": 0.0000032484846284150386,
-    "ethUsd": 2642.2413793103447,
-    "usd": 823.8332456298142,
-    "dotEquivalent": 94749.81967733262
+    "priceUsd": 0.008576642719892022,
+    "priceEth": 0.0000032486222220652233,
+    "ethUsd": 2640.0862068965516,
+    "usd": 823.1861889938356,
+    "dotEquivalent": 94748.71120391967
   },
   "dotEarned": {
     "total": 1049.6476899098705,
@@ -1128,9 +1128,9 @@
       "basis": "bots"
     },
     {
-      "t": 1789823154491,
-      "dotEq": 95981.16304433253,
-      "priceUsd": 0.008583280505251804,
+      "t": 1789824004066,
+      "dotEq": 95980.00241803232,
+      "priceUsd": 0.008576642719892022,
       "basis": "bots"
     }
   ],
@@ -1143,17 +1143,17 @@
     "releasedLots": 50
   },
   "market": {
-    "liquidityUsd": 486083.28,
-    "volume24hUsd": 624616.43,
+    "liquidityUsd": 485685.35,
+    "volume24hUsd": 620045.45,
     "change": {
-      "m5": 0,
-      "h1": 2.46,
-      "h6": 0.26,
-      "h24": 44.54
+      "m5": -0.06,
+      "h1": 3.07,
+      "h6": -2.96,
+      "h24": 45.03
     },
     "txns24h": {
-      "buys": 662,
-      "sells": 401
+      "buys": 660,
+      "sells": 402
     },
     "burns24h": 0
   }
