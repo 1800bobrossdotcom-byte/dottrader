@@ -22,7 +22,7 @@ interface GridState {
  */
 export class GridAgent extends Agent<GridState> {
   readonly name = "grid";
-  readonly levels = 6;
+  readonly levels = config.GRID_LEVELS;
   /** grid spacing as a fraction (GRID_SPACING_PCT, default 3.5%) */
   readonly spacing = config.GRID_SPACING_PCT / 100;
   constructor() { super({ anchorEth: null, filled: {}, lastBuyBackEth: 0 }); }
@@ -43,8 +43,8 @@ export class GridAgent extends Agent<GridState> {
     }
 
     const out: Signal[] = [];
-    // 1) Buy-backs first: any open lot whose target is met.
-    for (const lot of lots) {
+    // 1) Buy-backs first: any open short lot whose target is met.
+    for (const lot of lots.filter((l) => (l.side ?? "short") === "short")) {
       if (p <= lot.targetBuyPriceEth) {
         out.push({
           agent: this.name, side: "BUY_DOT", conviction: 0.9,
@@ -54,6 +54,40 @@ export class GridAgent extends Agent<GridState> {
         });
       }
     }
+    // 1b) Long lots: DOT bought on a dip, sold back once it has cleared the fee floor.
+    for (const lot of lots.filter((l) => (l.side ?? "short") === "long")) {
+      if (lot.targetSellPriceEth && p >= lot.targetSellPriceEth && (lot.dotHeld ?? 0) > 0) {
+        out.push({
+          agent: this.name, side: "SELL_DOT", conviction: 0.9,
+          size: { dot: lot.dotHeld! },
+          tag: lot.id,
+          reason: `grid long close: price ${fmt(p)} >= target ${fmt(lot.targetSellPriceEth)} (bought at ${fmt((lot.ethSpent ?? 0) / Math.max(lot.dotHeld ?? 1, 1e-12))})`,
+        });
+      }
+    }
+
+    // 1c) Buy rungs: idle ETH works the downside instead of waiting on a far-away buy-back.
+    // Without this the grid only ever profits from a rise followed by a fall, so half of every swing
+    // passes it by and parked ETH sits dead through the dip it was meant to buy.
+    if (config.GRID_TWO_SIDED) {
+      const idleEth = ctx.ledger.unreservedEth;
+      const openLongs = lots.filter((l) => (l.side ?? "short") === "long").length;
+      const ethSlice = idleEth / this.levels;
+      for (let k = 1; k <= this.levels; k++) {
+        const level = st.anchorEth * (1 - this.spacing) ** k;
+        const key = `L${k}`;
+        if (p <= level && !st.filled[key] && ethSlice > 0 && openLongs < this.levels) {
+          out.push({
+            agent: this.name, side: "BUY_DOT", conviction: 0.6,
+            size: { usd: ethSlice * ctx.snap.ethUsd },
+            tag: `gridlong:${k}:${Math.floor(Date.now() / 1000)}`,
+            reason: `grid buy rung ${k}: ${fmt(p)} <= ${fmt(level)} (-${(this.spacing * 100 * k).toFixed(0)}% from anchor)`,
+          });
+          break;
+        }
+      }
+    }
+
     // 2) Sells: first unfilled level at/below current price.
     // Ratchet floor: the last buy-back price, and the cheapest open lot (never ladder down under it).
     const openSellPrices = lots.map((l) => l.sellPriceEth).filter((x) => x > 0);
@@ -84,6 +118,7 @@ export class GridAgent extends Agent<GridState> {
 
   /** Executor calls this so the level is marked filled only after a real fill. */
   onFill(tag: string | undefined) {
+    if (tag?.startsWith("gridlong:")) { this.state.filled[`L${tag.split(":")[1]}`] = Date.now(); this.save(); return; }
     if (!tag?.startsWith("grid:")) return;
     this.state.filled[tag.split(":")[1]] = Date.now(); this.save();
   }
@@ -92,7 +127,8 @@ export class GridAgent extends Agent<GridState> {
       // Raise the ratchet to the buy-back price: we will not sell cheaper than we just repurchased.
       this.state.lastBuyBackEth = Math.max(this.state.lastBuyBackEth, buyBackPriceEth);
     }
-    if (tag?.startsWith("grid:")) delete this.state.filled[tag.split(":")[1]];
+    if (tag?.startsWith("gridlong:")) delete this.state.filled[`L${tag.split(":")[1]}`];
+    else if (tag?.startsWith("grid:")) delete this.state.filled[tag.split(":")[1]];
     this.save();
   }
 

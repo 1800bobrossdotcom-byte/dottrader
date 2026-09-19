@@ -56,6 +56,14 @@ const Schema = z.object({
   GRID_SPACING_PCT: z.coerce.number().min(1).max(25).default(3.5),
   /** How far below its sell price a slice is bought back, in percent. Floored at the fee cost (see FEE_FLOOR_PCT). */
   GRID_EDGE_PCT: z.coerce.number().min(0).max(25).default(3.0),
+  /** Rungs on each side of the anchor. More rungs = smaller slices and more trades across a big move. */
+  GRID_LEVELS: z.coerce.number().int().min(1).max(24).default(8),
+  /** Let idle ETH buy dips below the anchor and sell them back higher. Doubles the opportunities per swing. */
+  GRID_TWO_SIDED: z.coerce.number().int().min(0).max(1).default(1),
+  /** Minimum gap between one agent's fills. The grid's own rungs enforce the price distance. */
+  AGENT_COOLDOWN_SECONDS: z.coerce.number().min(0).default(180),
+  /** Orders the swarm may execute in a single tick, across all agents. */
+  MAX_FILLS_PER_TICK: z.coerce.number().int().min(1).max(10).default(2),
   KYBER_CLIENT_ID: z.string().default("dottrader"),
   DATA_DIR: z.string().default("data"),
   SITE_DATA_DIR: z.string().default("site/data"),

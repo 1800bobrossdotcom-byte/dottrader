@@ -17,7 +17,7 @@ const snap: MarketSnapshot = {
 };
 
 describe("Risk agent", () => {
-  it("rejects sells that would breach the core sleeve, approves sane ones, one per tick", async () => {
+  it("rejects sells that would breach the core sleeve and caps fills per tick by conviction", async () => {
     const { Ledger } = await import("../src/core/ledger.js");
     const { Store } = await import("../src/data/store.js");
     const { MarketData } = await import("../src/data/market.js");
@@ -30,8 +30,10 @@ describe("Risk agent", () => {
       { agent: "c", side: "SELL_DOT", conviction: 0.4, size: { dot: 5_000 }, reason: "also fine but second" },
     ], ctx);
     expect(v.rejected.map((r) => r.signal.agent)).toContain("a");
-    expect(v.approved).toHaveLength(1);
-    expect(v.approved[0].agent).toBe("b");
+    // MAX_FILLS_PER_TICK (default 2) lets the swarm work a fast market without becoming unauditable.
+    expect(v.approved).toHaveLength(2);
+    // Highest conviction first, so the cap drops the weakest signal rather than an arbitrary one.
+    expect(v.approved.map((s) => s.agent)).toEqual(["b", "c"]);
   });
   it("halts everything when the KILL file exists", async () => {
     writeFileSync(path.join(dir, "KILL"), "");

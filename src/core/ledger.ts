@@ -47,12 +47,25 @@ export interface OpenLot {
   agent: string;
   tag?: string;
   ts: number;
+  /**
+   * "short": DOT was sold and the proceeds are parked in ETH, waiting to buy back cheaper. This is the
+   * original one-directional grid and the only shape older lots on disk have, so a missing side means short.
+   * "long": idle ETH bought DOT on a dip, waiting to sell it back higher.
+   */
+  side?: "short" | "long";
   dotSold: number;
   ethReceived: number;
   sellPriceEth: number;
   /** Price (ETH per DOT) at/below which buying back is a win. */
   targetBuyPriceEth: number;
+  /** Long lots only: DOT held, the ETH it cost, and the price at/above which selling it back is a win. */
+  dotHeld?: number;
+  ethSpent?: number;
+  targetSellPriceEth?: number;
 }
+
+/** A lot is short unless it says otherwise; lots written before two-sided trading have no side field. */
+export const isShort = (l: OpenLot) => (l.side ?? "short") === "short";
 
 const today = () => new Date().toISOString().slice(0, 10);
 /** Minimum price drop (fraction) between a sell and its buy-back for the round trip to net DOT. */
@@ -110,6 +123,15 @@ export class Ledger {
     return Math.max(0, this.state.portfolio.dot - this.state.coreDot);
   }
 
+  /**
+   * ETH that is free to open a new long lot: the wallet's balance, less the gas reserve, less every
+   * short lot's parked proceeds. Those are already promised to a buy-back and must not be spent twice.
+   */
+  get unreservedEth() {
+    const reserved = this.state.openLots.filter(isShort).reduce((a, l) => a + l.ethReceived, 0);
+    return Math.max(0, this.state.portfolio.eth - config.GAS_RESERVE_ETH - reserved);
+  }
+
   /** Total DOT in wallet + DOT-equivalent of ETH held in open lots at the current price. */
   dotEquivalent(priceEth: number) {
     const lotsEth = this.state.openLots.reduce((a, l) => a + l.ethReceived, 0);
@@ -125,7 +147,26 @@ export class Ledger {
     }
     if (f.side === "SELL_DOT") {
       const priceEth = f.eth / f.dot;
+      // Closing a long lot: idle ETH bought this DOT on a dip and is now selling it back higher.
+      const li = f.tag ? this.state.openLots.findIndex((l) => l.id === f.tag && !isShort(l)) : -1;
+      if (li >= 0) {
+        const lot = this.state.openLots[li];
+        this.state.openLots.splice(li, 1);
+        // The cycle ends in ETH, not DOT, so score the ETH gained at the price it was realised at.
+        const earned = priceEth > 0 ? (f.eth - (lot.ethSpent ?? 0)) / priceEth : 0;
+        this.store.append("journal.ndjson", {
+          ts: f.ts, agent: f.agent, lotId: lot.id, dotSold: f.dot, dotBought: lot.dotHeld ?? 0,
+          dotEarned: earned, sellPriceUsd: f.priceUsd,
+          buyPriceUsd: f.priceUsd * ((lot.ethSpent ?? 0) / Math.max(lot.dotHeld ?? 1, 1e-12)) / Math.max(priceEth, 1e-12),
+          holdHours: (f.ts - lot.ts) / 3.6e6, paper: f.paper, txHash: f.txHash,
+        });
+        this.state.dotEarnedByAgent[f.agent] = (this.state.dotEarnedByAgent[f.agent] ?? 0) + earned;
+        this.state.unsweptEarned = (this.state.unsweptEarned ?? 0) + earned;
+        this.save();
+        return;
+      }
       this.state.openLots.push({
+        side: "short",
         id: f.tag ?? `${f.agent}-${f.ts}`,
         agent: f.agent,
         tag: f.tag,
@@ -137,8 +178,21 @@ export class Ledger {
         targetBuyPriceEth: priceEth * (1 - REQUIRED_EDGE),
       });
     } else {
-      // A buy tagged with a lot id closes that lot: DOT earned = DOT bought back - DOT originally sold.
-      const idx = f.tag ? this.state.openLots.findIndex((l) => l.id === f.tag) : -1;
+      // Opening a long lot: spend idle ETH on a dip, to be sold back above the fee floor.
+      if (f.tag?.startsWith("gridlong:")) {
+        const priceEth = f.dot > 0 ? f.eth / f.dot : 0;
+        this.state.openLots.push({
+          side: "long", id: f.tag, agent: f.agent, tag: f.tag, ts: f.ts,
+          dotSold: 0, ethReceived: 0, sellPriceEth: 0, targetBuyPriceEth: 0,
+          dotHeld: f.dot, ethSpent: f.eth,
+          // Must sell back dearer than two swap fees plus a margin for the cycle to net anything.
+          targetSellPriceEth: priceEth * (1 + REQUIRED_EDGE),
+        });
+        this.save();
+        return;
+      }
+      // A buy tagged with a short lot id closes it: DOT earned = DOT bought back - DOT originally sold.
+      const idx = f.tag ? this.state.openLots.findIndex((l) => l.id === f.tag && isShort(l)) : -1;
       let earned: number;
       if (idx >= 0) {
         const lot = this.state.openLots[idx];
@@ -211,7 +265,9 @@ export class Ledger {
    * it is logged as a reconciliation so `dotEarned` keeps meaning "round trips the bot completed".
    */
   reconcileWithChain(actualEth: number): Reconciliation[] {
-    const claimed = this.state.openLots.reduce((a, l) => a + l.ethReceived, 0);
+    // Only short lots park ETH; a long lot holds DOT and claims nothing against the ETH balance.
+    const shorts = this.state.openLots.filter(isShort);
+    const claimed = shorts.reduce((a, l) => a + l.ethReceived, 0);
     if (claimed <= 0) return [];
     const spendable = Math.max(0, actualEth - config.GAS_RESERVE_ETH);
     // The tolerance decides whether the gap is real; once it is, close the whole gap. Subtracting the
@@ -224,7 +280,7 @@ export class Ledger {
     // Oldest lots first. The missing ETH cannot belong to a slice whose proceeds just arrived, so
     // charging the shortfall to the newest lot would shrink it every tick, free its grid level and
     // let the grid re-sell the same slice forever while the genuinely stranded old lots sat intact.
-    for (const lot of [...this.state.openLots].sort((a, b) => a.ts - b.ts)) {
+    for (const lot of [...shorts].sort((a, b) => a.ts - b.ts)) {
       if (deficit <= 1e-12) break;
       const take = Math.min(lot.ethReceived, deficit);
       const share = lot.ethReceived > 0 ? take / lot.ethReceived : 1;
@@ -242,7 +298,7 @@ export class Ledger {
       lot.dotSold -= dotReleased;
       deficit -= take;
     }
-    this.state.openLots = this.state.openLots.filter((l) => l.ethReceived > 1e-9);
+    this.state.openLots = this.state.openLots.filter((l) => !isShort(l) || l.ethReceived > 1e-9);
     this.save();
     return out;
   }

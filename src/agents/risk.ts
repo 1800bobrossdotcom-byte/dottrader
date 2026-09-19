@@ -11,7 +11,7 @@ const MAX_ORDER_PCT_OF_LIQ = 0.5; // keep price impact small
 const MAX_OPEN_LOTS_FRACTION = 0.6; // of the sleeve may sit in ETH at once
 const DAILY_DOT_DRAWDOWN_HALT = 0.03; // stop selling if DOT-equivalent is down 3% on the day
 const lastFillByAgent = new Map<string, number>();
-const COOLDOWN_MS = 10 * 60_000;
+const COOLDOWN_MS = config.AGENT_COOLDOWN_SECONDS * 1_000;
 
 /**
  * Risk agent. Has veto power over every signal. Nothing reaches the executor
@@ -42,7 +42,10 @@ export function riskCheck(signals: Signal[], ctx: Ctx): RiskVerdict {
 
     if (s.side === "SELL_DOT") {
       const dot = s.size.dot ?? 0;
-      if (st.portfolio.dot - dot < st.coreDot) { rejected.push({ signal: s, why: `would breach core sleeve (${st.coreDot.toFixed(0)} DOT)` }); continue; }
+      // DOT a long lot bought with trading ETH was never part of the protected core, so selling it
+      // back must not be blocked by the sleeve — otherwise a long lot can never be closed.
+      const isLongClose = !!s.tag && st.openLots.some((l) => l.id === s.tag && (l.side ?? "short") === "long");
+      if (!isLongClose && st.portfolio.dot - dot < st.coreDot) { rejected.push({ signal: s, why: `would breach core sleeve (${st.coreDot.toFixed(0)} DOT)` }); continue; }
       if (dayDd > DAILY_DOT_DRAWDOWN_HALT) { rejected.push({ signal: s, why: `daily DOT drawdown ${(dayDd * 100).toFixed(1)}% - selling halted` }); continue; }
       if (sleeveEthValue > 0 && (lotsEth + dot * ctx.snap.priceEth) / sleeveEthValue > MAX_OPEN_LOTS_FRACTION) { rejected.push({ signal: s, why: "too much of the sleeve already parked in ETH" }); continue; }
     } else {
@@ -54,7 +57,8 @@ export function riskCheck(signals: Signal[], ctx: Ctx): RiskVerdict {
     }
     if (config.LIVE && st.portfolio.eth < config.GAS_RESERVE_ETH) { rejected.push({ signal: s, why: `live mode needs >= ${config.GAS_RESERVE_ETH} ETH for gas` }); continue; }
     approved.push(s);
-    break; // one order per tick keeps the swarm deliberate and easy to audit
+    // A small per-tick cap keeps the swarm deliberate and each tick easy to audit.
+    if (approved.length >= config.MAX_FILLS_PER_TICK) break;
   }
   for (const r of rejected) log("risk", `✗ ${r.signal.agent} ${r.signal.side}: ${r.why}`);
   return { approved, rejected };
