@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-09-20T04:01:07.345Z",
+  "generatedAt": "2026-09-20T04:15:19.709Z",
   "codeVersion": "bf8a496",
   "mode": "live",
-  "wallet": "0xcFCFc8e42AEBFC58AB78093217C2C4bB186BAc86",
+  "wallet": "0x57C4e8C39d72540244FE8eDD302C7C463d6d545a",
   "token": {
     "symbol": "DOT",
     "address": "0x23A2847d772803f9EFC64B4277b782b06296FE51",
@@ -67,8 +67,8 @@
     "usdc": 0,
     "dotEquivalent": 103848.23793516168
   },
-  "onchainAt": "2026-09-20T04:01:07.341Z",
-  "onchainBlock": 51543759,
+  "onchainAt": "2026-09-20T04:15:19.702Z",
+  "onchainBlock": 51544186,
   "now": {
     "dot": 80193.63610771758,
     "eth": 0.05589709423389601,
@@ -1246,7 +1246,7 @@
       "basis": "bots"
     },
     {
-      "t": 1789876866699,
+      "t": 1789877719009,
       "dotEq": 101287.55927883009,
       "priceUsd": 0.006855365991175074,
       "basis": "bots"
@@ -1262,16 +1262,16 @@
   },
   "market": {
     "liquidityUsd": 426346.48,
-    "volume24hUsd": 329589.86,
+    "volume24hUsd": 327824.78,
     "change": {
-      "m5": -0.46,
-      "h1": -0.34,
-      "h6": -9.47,
-      "h24": -16.86
+      "m5": 0,
+      "h1": -0.74,
+      "h6": -9.32,
+      "h24": -16.7
     },
     "txns24h": {
-      "buys": 409,
-      "sells": 289
+      "buys": 405,
+      "sells": 285
     },
     "burns24h": 0
   }
