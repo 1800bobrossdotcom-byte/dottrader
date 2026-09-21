@@ -19,7 +19,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "close-lots": "tsx src/cli/close-lots.ts",
-    "repair-ledger": "tsx src/cli/repair-ledger.ts"
+    "repair-ledger": "tsx src/cli/repair-ledger.ts",
+    "swing:paper": "tsx src/cli/swing-paper.ts"
   },
   "dependencies": {
     "viem": "^2.31.0",
