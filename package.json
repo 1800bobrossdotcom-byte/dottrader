@@ -18,7 +18,8 @@
     "site": "tsx src/cli/report.ts && npx -y serve site",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "close-lots": "tsx src/cli/close-lots.ts"
+    "close-lots": "tsx src/cli/close-lots.ts",
+    "repair-ledger": "tsx src/cli/repair-ledger.ts"
   },
   "dependencies": {
     "viem": "^2.31.0",

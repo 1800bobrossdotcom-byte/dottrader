@@ -161,6 +161,23 @@ still had those lots open, decided their ETH had been spent elsewhere, and relea
 DOT was genuinely repurchased, but six realised losses never reached `dotEarned`, so the site showed
 a loss about 8,000 DOT smaller than the real one.
 
+## When the totals drift from the journal
+
+`journal.ndjson` is append-only: one row per completed round trip, written as it closes.
+`state.json` keeps running totals of the same thing, and those can drift — a second process closing
+lots beside a live bot means the bot's next save lands on top, and closes it never saw disappear
+from the totals while their journal rows survive.
+
+`repair-ledger` recomputes the totals from the rows:
+
+```bash
+npx tsx src/cli/repair-ledger.ts --bot w1          # dry run
+npx tsx src/cli/repair-ledger.ts --bot w1 --yes    # write it
+```
+
+It parks a live bot the same way `close-lots` does. Only closed-lot profit feeds `unsweptEarned`;
+a fresh-capital buy is inventory the wallet paid for, not something the bot won.
+
 ## Wallets and the vault
 
 | Wallet | Role |
