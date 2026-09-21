@@ -26,7 +26,7 @@ const bots = ["w1", "w2", "w3"]
 const swingPaper = {
   name: "swing-paper",
   script: path.join(__dirname, "node_modules", "tsx", "dist", "cli.mjs"),
-  args: "src/cli/swing-paper.ts --threshold 0.5 --every 20",
+  args: "src/cli/swing-paper.ts --threshold 1.2 --every 20",
   interpreter: "node",
   cwd: __dirname,
   autorestart: true,

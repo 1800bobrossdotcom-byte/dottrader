@@ -41,7 +41,7 @@ async function main() {
   const m = MARKETS[key];
   if (!m) { console.error(`unknown market ${key}; have: ${Object.keys(MARKETS).join(", ")}`); process.exit(1); }
 
-  const thresholdPct = flag("threshold", 0.5);
+  const thresholdPct = flag("threshold", 1.2);
   const everySec = flag("every", 20);
   const floor = feeFloorPct(m.feePct);
   const store = new Store();

@@ -178,6 +178,41 @@ npx tsx src/cli/repair-ledger.ts --bot w1 --yes    # write it
 It parks a live bot the same way `close-lots` does. Only closed-lot profit feeds `unsweptEarned`;
 a fresh-capital buy is inventory the wallet paid for, not something the bot won.
 
+## The swing engine
+
+The DOT grid could not work. 1.1% a side means a round trip pays 2.19%, and a re-arming swing
+trader loses at *every* threshold on that pool. The same strategy measured across Base venues over
+the same 3.5 days tracks the fee almost exactly:
+
+| pair | round trip | trades | result |
+|---|---|---|---|
+| cbBTC/WETH | 0.020% | 228 | +32.4% |
+| WETH/USDC | 0.100% | 130 | +12.3% |
+| VVV/WETH | 0.599% | 40 | +9.3% |
+| DOT/ETH | 2.188% | 48 | **-9.6%** (its best of any threshold) |
+
+Fee is not the whole story. cbBTC/WETH is a ratio of two correlated majors, so it oscillates around
+a level — there is something to revert to. DOT rose 92% in four days, and selling into that is how
+the grid lost 9,725 DOT. A market needs both: a cheap venue **and** a pair that wobbles.
+
+Gas decides the threshold. Each swap costs ~0.0000015 ETH on Base, which is nothing per trade and
+everything at 300 trades. Including it, 1.2% beats 0.5% at every position size — 65 trades instead
+of 228, and gas drops from 5.7% of the stack to 1.6%.
+
+```bash
+npx tsx src/cli/swing-paper.ts                                    # no keys, cannot trade
+SWING_BUDGET_ETH=0.004 npx tsx src/cli/swing-live.ts --bot w1 --dry   # decides and prices, never sends
+SWING_BUDGET_ETH=0.004 npx tsx src/cli/swing-live.ts --bot w1         # real money
+```
+
+It keeps its own book, reads balances from chain every tick rather than trusting that book, and
+never reads or spends DOT — the worst case is bounded by `SWING_BUDGET_ETH`. `--stop-loss` (default
+25%) halts it if the budget drops that far.
+
+**The returns above are a backtest, not a result.** They come from 5-minute candles triggered off
+their highs and lows, so every fill is assumed to have caught the extreme of its bar. Real fills are
+worse, and one oscillating sample is not an edge.
+
 ## Wallets and the vault
 
 | Wallet | Role |
