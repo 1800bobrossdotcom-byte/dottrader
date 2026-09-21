@@ -183,6 +183,11 @@ export class Ledger {
         targetBuyPriceEth: priceEth * (1 - REQUIRED_EDGE),
       });
     } else {
+      // A one-way dip buy: idle ETH became DOT and the DOT is simply kept. There is no lot and
+      // nothing is earned — converting ETH the wallet already held is not a round trip, and scoring
+      // it as profit would inflate dotEarned by the whole purchase. The stack figures come from
+      // chain, so the DOT still shows up where it should.
+      if (closeLotIndex === undefined && f.tag?.startsWith("gridhold:")) { this.save(); return; }
       // Opening a long lot: spend idle ETH on a dip, to be sold back above the fee floor.
       if (closeLotIndex === undefined && f.tag?.startsWith("gridlong:")) {
         const priceEth = f.dot > 0 ? f.eth / f.dot : 0;

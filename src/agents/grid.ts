@@ -70,18 +70,20 @@ export class GridAgent extends Agent<GridState> {
     // Without this the grid only ever profits from a rise followed by a fall, so half of every swing
     // passes it by and parked ETH sits dead through the dip it was meant to buy.
     if (config.GRID_TWO_SIDED) {
+      const hold = !!config.GRID_LONG_HOLD;
       const idleEth = ctx.ledger.unreservedEth;
       const openLongs = lots.filter((l) => (l.side ?? "short") === "long").length;
       const ethSlice = idleEth / this.levels;
       for (let k = 1; k <= this.levels; k++) {
         const level = st.anchorEth * (1 - this.spacing) ** k;
         const key = `L${k}`;
-        if (p <= level && !st.filled[key] && ethSlice > 0 && openLongs < this.levels) {
+        if (p <= level && !st.filled[key] && ethSlice > 0 && (hold || openLongs < this.levels)) {
           out.push({
             agent: this.name, side: "BUY_DOT", conviction: 0.6,
             size: { usd: ethSlice * ctx.snap.ethUsd },
-            tag: `gridlong:${k}:${Math.floor(Date.now() / 1000)}`,
-            reason: `grid buy rung ${k}: ${fmt(p)} <= ${fmt(level)} (-${(this.spacing * 100 * k).toFixed(0)}% from anchor)`,
+            // "gridhold" keeps the DOT; "gridlong" opens a lot to sell back higher.
+            tag: `${hold ? "gridhold" : "gridlong"}:${k}:${Math.floor(Date.now() / 1000)}`,
+            reason: `grid buy rung ${k}${hold ? " (keep)" : ""}: ${fmt(p)} <= ${fmt(level)} (-${(this.spacing * 100 * k).toFixed(0)}% from anchor)`,
           });
           break;
         }
@@ -121,7 +123,7 @@ export class GridAgent extends Agent<GridState> {
 
   /** Executor calls this so the level is marked filled only after a real fill. */
   onFill(tag: string | undefined) {
-    if (tag?.startsWith("gridlong:")) { this.state.filled[`L${tag.split(":")[1]}`] = Date.now(); this.save(); return; }
+    if (tag?.startsWith("gridlong:") || tag?.startsWith("gridhold:")) { this.state.filled[`L${tag.split(":")[1]}`] = Date.now(); this.save(); return; }
     if (!tag?.startsWith("grid:")) return;
     this.state.filled[tag.split(":")[1]] = Date.now(); this.save();
   }

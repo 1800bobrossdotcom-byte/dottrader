@@ -108,3 +108,25 @@ describe("GRID_ALLOW_NEW_SHORTS=0", () => {
     expect(buys.filter((s) => s.side === "BUY_DOT" && s.tag === "grid:1:100")).toHaveLength(1);
   });
 });
+
+describe("one-way dip buying (GRID_LONG_HOLD)", () => {
+  it("books a kept dip buy as a conversion, not as earnings", async () => {
+    const L = await freshLedger();
+    // Idle ETH bought DOT on a dip and the DOT is kept. No lot opens, and nothing is "earned" —
+    // converting ETH the wallet already held is not a round trip.
+    L.recordFill(buy(2_000, 0.005, "gridhold:2:100"));
+
+    expect(L.state.openLots).toHaveLength(0);
+    expect(L.totalDotEarned()).toBe(0);
+    expect(L.state.unsweptEarned).toBe(0);
+  });
+
+  it("still opens a lot for a gridlong buy, which does intend to sell back", async () => {
+    const L = await freshLedger();
+    L.recordFill(buy(2_000, 0.005, "gridlong:2:100"));
+
+    expect(L.state.openLots).toHaveLength(1);
+    expect(L.state.openLots[0].side).toBe("long");
+    expect(L.totalDotEarned()).toBe(0);
+  });
+});

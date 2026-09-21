@@ -61,6 +61,15 @@ const Schema = z.object({
   /** Let idle ETH buy dips below the anchor and sell them back higher. Doubles the opportunities per swing. */
   GRID_TWO_SIDED: z.coerce.number().int().min(0).max(1).default(1),
   /**
+   * Buy rungs keep the DOT they buy instead of selling it back higher.
+   *
+   * A round trip must clear two swap fees (~2.2%) before it nets anything, so on this pool the
+   * sell-back leg is where a dip-buying strategy bleeds: it pays the toll twice and leaves the
+   * position in ETH while DOT runs. Holding pays once and stays in DOT. Backtested on 17-21 Sep,
+   * buying dips one-way beat the best round-tripping setting by ~4,300 DOT on the same ETH.
+   */
+  GRID_LONG_HOLD: z.coerce.number().int().min(0).max(1).default(0),
+  /**
    * Whether the grid may open NEW short lots (sell DOT expecting to buy it back lower).
    * Set to 0 in a strong uptrend: the grid has no trend filter, so it reads every leg up as a level
    * to sell and ends up short DOT all the way. Buy-backs, buy rungs and long closes keep working,

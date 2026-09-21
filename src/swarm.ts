@@ -74,10 +74,13 @@ export class Swarm {
       noteFill(s.agent);
       this.ledger.recordFill(fill);
       if (s.agent === "grid") {
+        // A one-way dip buy only marks its rung filled; it opens no lot and closes none.
+        const keep = fill.tag?.startsWith("gridhold:");
         const long = fill.tag?.startsWith("gridlong:");
         // A buy opens a long rung or closes a short lot; a sell opens a short rung or closes a long lot.
         // Only a genuine buy-back raises the ratchet, so a long open must not be mistaken for one.
-        if (long) fill.side === "BUY_DOT" ? this.grid.onFill(fill.tag) : this.grid.onLotClosed(fill.tag);
+        if (keep) this.grid.onFill(fill.tag);
+        else if (long) fill.side === "BUY_DOT" ? this.grid.onFill(fill.tag) : this.grid.onLotClosed(fill.tag);
         else if (fill.side === "SELL_DOT") this.grid.onFill(fill.tag);
         else this.grid.onLotClosed(fill.tag, fill.dot > 0 ? fill.eth / fill.dot : 0);
       }
