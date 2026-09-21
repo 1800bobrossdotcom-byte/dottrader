@@ -20,6 +20,22 @@ const bots = ["w1", "w2", "w3"]
   .map((w) => ({ name: `dot-bot-${w}`, env: envFile(`.env.${w}`) }))
   .filter((b) => b.env);
 
+// Paper only: no keys, reads the pool and records what it would have done. Start it on its own with
+//   npx pm2 start ecosystem.config.cjs --only swing-paper
+// so it does not also bring the trading bots back up.
+const swingPaper = {
+  name: "swing-paper",
+  script: path.join(__dirname, "node_modules", "tsx", "dist", "cli.mjs"),
+  args: "src/cli/swing-paper.ts --threshold 0.5 --every 20",
+  interpreter: "node",
+  cwd: __dirname,
+  autorestart: true,
+  restart_delay: 10000,
+  out_file: "logs/swing-paper.log",
+  error_file: "logs/swing-paper.err.log",
+  time: true,
+};
+
 const publisher = {
   name: "dot-publish",
   script: path.join(__dirname, "scripts", "publish.mjs"),
@@ -47,5 +63,5 @@ module.exports = {
     out_file: `logs/${b.name}.log`,
     error_file: `logs/${b.name}.err.log`,
     time: true,
-  })), publisher],
+  })), publisher, swingPaper],
 };
