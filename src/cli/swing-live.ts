@@ -15,7 +15,7 @@
 import type { Address } from "viem";
 import { config, TOKENS } from "../core/config.js";
 import { log } from "../core/log.js";
-import { MARKETS, priceFromSqrtX96, type Market } from "../core/markets.js";
+import { MARKETS, quotePerBase, type Market } from "../core/markets.js";
 import { freshSwing, step, feeFloorPct, type SwingState, type SwingTrade } from "../agents/swing.js";
 import { Swapper } from "../exec/swap.js";
 import { publicClient } from "../core/chain.js";
@@ -37,7 +37,7 @@ interface Book { market: string; thresholdPct: number; startedAt: string; startE
 
 async function price(m: Market) {
   const [sqrt] = await reader.readContract({ address: m.pool as Address, abi: poolAbi, functionName: "slot0" });
-  return priceFromSqrtX96(sqrt, m);
+  return quotePerBase(sqrt, m);
 }
 
 async function main() {

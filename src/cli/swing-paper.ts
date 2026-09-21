@@ -14,7 +14,7 @@ import { createPublicClient, http, parseAbi, type Address } from "viem";
 import { base } from "viem/chains";
 import { config } from "../core/config.js";
 import { log } from "../core/log.js";
-import { MARKETS, priceFromSqrtX96, type Market } from "../core/markets.js";
+import { MARKETS, quotePerBase, type Market } from "../core/markets.js";
 import { freshSwing, step, feeFloorPct, type SwingState, type SwingTrade } from "../agents/swing.js";
 import { Store } from "../data/store.js";
 
@@ -33,7 +33,7 @@ interface Persisted { market: string; thresholdPct: number; startedAt: string; s
 
 async function price(m: Market) {
   const [sqrtPriceX96] = await client.readContract({ address: m.pool as Address, abi: poolAbi, functionName: "slot0" });
-  return priceFromSqrtX96(sqrtPriceX96, m);
+  return quotePerBase(sqrtPriceX96, m);
 }
 
 async function main() {

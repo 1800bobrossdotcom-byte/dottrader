@@ -67,3 +67,34 @@ describe("swing trader", () => {
     expect(s.trades).toBe(0);
   });
 });
+
+describe("price orientation", () => {
+  it("prices the base in quote units, so a falling number means the base got cheaper", async () => {
+    const { MARKETS, quotePerBase, token1PerToken0 } = await import("../src/core/markets.js");
+    const m = MARKETS["cbbtc-weth"];
+    // Real sqrtPriceX96 read from the pool at 09:00 UTC on 21 Sep 2026.
+    const sqrt = BigInt("0x1e1b197a96f38cfe1070");
+
+    // The pool's own orientation is cbBTC per WETH — upside down for a WETH-quoted engine.
+    expect(token1PerToken0(sqrt, m)).toBeCloseTo(0.0322005, 6);
+    // What the engine must see: WETH per cbBTC, matching the series the backtest ran on.
+    expect(quotePerBase(sqrt, m)).toBeCloseTo(31.0554, 3);
+  });
+
+  it("reads a cbBTC rally as a rally, not a dip", async () => {
+    const { MARKETS, quotePerBase } = await import("../src/core/markets.js");
+    const { freshSwing, step } = await import("../src/agents/swing.js");
+    const m = MARKETS["cbbtc-weth"];
+    const at0600 = quotePerBase(BigInt("0x1e553b586b72a97edca7"), m);
+    const at0900 = quotePerBase(BigInt("0x1e1b197a96f38cfe1070"), m);
+
+    // cbBTC gained ~1.5% against ETH over that window.
+    expect(at0900).toBeGreaterThan(at0600);
+
+    // Holding ETH and waiting for a dip, a 1.5% rally must NOT trigger a buy.
+    const s = freshSwing(1);
+    step(s, at0600, 1.2, m.feePct);
+    expect(step(s, at0900, 1.2, m.feePct)).toBeNull();
+    expect(s.holding).toBe("quote");
+  });
+});

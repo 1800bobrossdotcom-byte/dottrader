@@ -45,8 +45,22 @@ export const MARKETS: Record<string, Market> = {
   },
 };
 
-/** Price of token1 in units of token0 (e.g. cbBTC per WETH), from a v3 pool's sqrtPriceX96. */
-export function priceFromSqrtX96(sqrtPriceX96: bigint, m: Market): number {
+/** Token1 per token0, the raw orientation a v3 pool prices in (for cbBTC/WETH: cbBTC per WETH). */
+export function token1PerToken0(sqrtPriceX96: bigint, m: Market): number {
   const raw = (Number(sqrtPriceX96) / 2 ** 96) ** 2;
   return raw * 10 ** (m.token0.decimals - m.token1.decimals);
+}
+
+/**
+ * How much of the quote token one unit of the base token costs — the only orientation the swing
+ * logic may use, because it is the one where a falling number means the base got CHEAPER.
+ *
+ * A pool prices token1 in token0. When the quote is token0 that is upside down for us: cbBTC per
+ * WETH *falling* means you get fewer cbBTC for your ETH, i.e. cbBTC became dearer. Feeding that
+ * series to "buy the dip" buys every rally and sells every low — which is what this did before the
+ * reciprocal was applied, and the backtest that justified the strategy ran on WETH per cbBTC.
+ */
+export function quotePerBase(sqrtPriceX96: bigint, m: Market): number {
+  const t1PerT0 = token1PerToken0(sqrtPriceX96, m);
+  return m.quote === "token0" ? 1 / t1PerT0 : t1PerT0;
 }
