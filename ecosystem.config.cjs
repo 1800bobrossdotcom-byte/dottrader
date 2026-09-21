@@ -57,6 +57,23 @@ const swingLive = ["w1", "w2"]
     time: true,
   }));
 
+// Keeps the site's balances and mark current while the bots are stopped. They are what normally
+// refresh stats.json once a tick, so without this the page freezes at whatever was true when
+// trading stopped and the publisher has nothing to push.
+const reporter = envFile(".env.w1") && {
+  name: "dot-report",
+  script: path.join(__dirname, "node_modules", "tsx", "dist", "cli.mjs"),
+  args: "src/cli/report.ts --bot w1 --every 10",
+  interpreter: "node",
+  cwd: __dirname,
+  env: envFile(".env.w1"),
+  autorestart: true,
+  restart_delay: 30000,
+  out_file: "logs/dot-report.log",
+  error_file: "logs/dot-report.err.log",
+  time: true,
+};
+
 const publisher = {
   name: "dot-publish",
   script: path.join(__dirname, "scripts", "publish.mjs"),
@@ -84,5 +101,5 @@ module.exports = {
     out_file: `logs/${b.name}.log`,
     error_file: `logs/${b.name}.err.log`,
     time: true,
-  })), publisher, swingPaper, ...swingLive],
+  })), publisher, swingPaper, ...swingLive, ...(reporter ? [reporter] : [])],
 };
