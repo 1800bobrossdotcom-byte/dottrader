@@ -202,8 +202,21 @@ of 228, and gas drops from 5.7% of the stack to 1.6%.
 ```bash
 npx tsx src/cli/swing-paper.ts                                    # no keys, cannot trade
 SWING_BUDGET_ETH=0.004 npx tsx src/cli/swing-live.ts --bot w1 --dry   # decides and prices, never sends
-SWING_BUDGET_ETH=0.004 npx tsx src/cli/swing-live.ts --bot w1         # real money
 ```
+
+For real money, put `SWING_BUDGET_ETH=0.004` in `.env.wN` and start it under pm2:
+
+```bash
+npx pm2 start ecosystem.config.cjs --only swing-w1 && npx pm2 save
+```
+
+The budget lives in the env file rather than a shell variable on purpose: a bare `npx tsx` in a
+terminal dies with the window, and with the machine. That is not hypothetical — the first live run
+stopped at 02:58 local when the machine slept, an hour before the price reached its trigger, and
+nothing restarted it. An app with no `SWING_BUDGET_ETH` is not registered at all, so `pm2 start`
+cannot bring up an unconfigured live trader.
+
+`--only` matters: a plain `pm2 start ecosystem.config.cjs` would also restart the DOT bots.
 
 It keeps its own book, reads balances from chain every tick rather than trusting that book, and
 never reads or spends DOT — the worst case is bounded by `SWING_BUDGET_ETH`. `--stop-loss` (default

@@ -36,6 +36,27 @@ const swingPaper = {
   time: true,
 };
 
+// Live swing trading. Opt in by putting SWING_BUDGET_ETH in .env.w1 (or .env.w2) — an env file the
+// process reads for itself, not a shell variable that dies with the window. Without it this app is
+// not registered at all, so `pm2 start` can never bring up an unconfigured live trader.
+const swingLive = ["w1", "w2"]
+  .map((w) => ({ w, env: envFile(`.env.${w}`) }))
+  .filter((b) => b.env && Number(b.env.SWING_BUDGET_ETH) > 0)
+  .map((b) => ({
+    name: `swing-${b.w}`,
+    script: path.join(__dirname, "node_modules", "tsx", "dist", "cli.mjs"),
+    args: `src/cli/swing-live.ts --bot ${b.w}`,
+    interpreter: "node",
+    cwd: __dirname,
+    env: b.env,
+    autorestart: true,
+    restart_delay: 15000,
+    max_memory_restart: "300M",
+    out_file: `logs/swing-${b.w}.log`,
+    error_file: `logs/swing-${b.w}.err.log`,
+    time: true,
+  }));
+
 const publisher = {
   name: "dot-publish",
   script: path.join(__dirname, "scripts", "publish.mjs"),
@@ -63,5 +84,5 @@ module.exports = {
     out_file: `logs/${b.name}.log`,
     error_file: `logs/${b.name}.err.log`,
     time: true,
-  })), publisher, swingPaper],
+  })), publisher, swingPaper, ...swingLive],
 };
