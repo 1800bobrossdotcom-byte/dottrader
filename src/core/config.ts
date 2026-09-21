@@ -60,6 +60,13 @@ const Schema = z.object({
   GRID_LEVELS: z.coerce.number().int().min(1).max(24).default(8),
   /** Let idle ETH buy dips below the anchor and sell them back higher. Doubles the opportunities per swing. */
   GRID_TWO_SIDED: z.coerce.number().int().min(0).max(1).default(1),
+  /**
+   * Whether the grid may open NEW short lots (sell DOT expecting to buy it back lower).
+   * Set to 0 in a strong uptrend: the grid has no trend filter, so it reads every leg up as a level
+   * to sell and ends up short DOT all the way. Buy-backs, buy rungs and long closes keep working,
+   * so existing lots are still managed to their targets — the bot just stops adding new ones.
+   */
+  GRID_ALLOW_NEW_SHORTS: z.coerce.number().int().min(0).max(1).default(1),
   /** Minimum gap between one agent's fills. The grid's own rungs enforce the price distance. */
   AGENT_COOLDOWN_SECONDS: z.coerce.number().min(0).default(180),
   /** Orders the swarm may execute in a single tick, across all agents. */

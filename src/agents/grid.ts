@@ -89,6 +89,9 @@ export class GridAgent extends Agent<GridState> {
     }
 
     // 2) Sells: first unfilled level at/below current price.
+    // Skipped entirely when new shorts are switched off, so the grid manages what it already holds
+    // without adding more short exposure in a trend it cannot detect.
+    if (!config.GRID_ALLOW_NEW_SHORTS) return out;
     // Ratchet floor: the last buy-back price, and the cheapest open lot (never ladder down under it).
     const openSellPrices = lots.map((l) => l.sellPriceEth).filter((x) => x > 0);
     const floorEth = Math.max(st.lastBuyBackEth, openSellPrices.length ? Math.min(...openSellPrices) : 0);

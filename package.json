@@ -4,7 +4,9 @@
   "description": "A multi-agent trading swarm whose only objective is to end every cycle holding more $DOT (Base) than it started with.",
   "type": "module",
   "private": true,
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "setup": "node scripts/setup.mjs",
     "check": "node scripts/check.mjs",
@@ -15,7 +17,8 @@
     "report": "tsx src/cli/report.ts",
     "site": "tsx src/cli/report.ts && npx -y serve site",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "close-lots": "tsx src/cli/close-lots.ts"
   },
   "dependencies": {
     "viem": "^2.31.0",

@@ -138,7 +138,12 @@ export class Ledger {
     return this.state.portfolio.dot + (this.state.sweptDot ?? 0) + (priceEth > 0 ? lotsEth / priceEth : 0);
   }
 
-  recordFill(f: Fill) {
+  /**
+   * Score a fill. `closeLotIndex` names the exact short lot a BUY closes, for callers that already
+   * hold the lot (the manual close-lots tool). Lot ids are not guaranteed unique — two levels filled
+   * in the same second share one — so matching by tag alone could close the wrong slice.
+   */
+  recordFill(f: Fill, closeLotIndex?: number) {
     this.store.append("fills.ndjson", f);
     this.state.daily.fills++;
     if (!config.LIVE) {
@@ -179,7 +184,7 @@ export class Ledger {
       });
     } else {
       // Opening a long lot: spend idle ETH on a dip, to be sold back above the fee floor.
-      if (f.tag?.startsWith("gridlong:")) {
+      if (closeLotIndex === undefined && f.tag?.startsWith("gridlong:")) {
         const priceEth = f.dot > 0 ? f.eth / f.dot : 0;
         this.state.openLots.push({
           side: "long", id: f.tag, agent: f.agent, tag: f.tag, ts: f.ts,
@@ -192,7 +197,10 @@ export class Ledger {
         return;
       }
       // A buy tagged with a short lot id closes it: DOT earned = DOT bought back - DOT originally sold.
-      const idx = f.tag ? this.state.openLots.findIndex((l) => l.id === f.tag && isShort(l)) : -1;
+      const named = closeLotIndex !== undefined ? this.state.openLots[closeLotIndex] : undefined;
+      const idx = named && isShort(named)
+        ? closeLotIndex!
+        : f.tag ? this.state.openLots.findIndex((l) => l.id === f.tag && isShort(l)) : -1;
       let earned: number;
       if (idx >= 0) {
         const lot = this.state.openLots[idx];

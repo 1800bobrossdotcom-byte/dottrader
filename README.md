@@ -119,6 +119,34 @@ Hand-traded DOT is reported separately and never counted as bot earnings: `dotEa
 trips the bot itself completed. The site shows manual movement on its own line, and it still appears in the
 stack and wallet balances because those come straight from chain.
 
+## Unwinding open slices in a trend
+
+The grid has no trend filter. It reads every rise through a level as "sell here, buy it back lower", so a
+sustained rally leaves it short DOT: the slices it sold sit as open lots, the ETH parked against them buys
+back less DOT with every further rise, and the buy-back target never prints.
+
+Two levers handle that.
+
+**Stop adding to it.** `GRID_ALLOW_NEW_SHORTS=0` in a bot's `.env.wN` stops the grid opening new short
+lots. Buy-backs, buy rungs and long closes keep working, so the lots already open are still managed to
+their targets — the bot just stops selling more DOT into strength.
+
+**Unwind what is already open.** `close-lots` buys chosen slices back at market:
+
+```bash
+npx pm2 stop dot-bot-w1 dot-bot-w2            # nothing else may spend the same ETH
+npx tsx src/cli/close-lots.ts --bot w1 --sold-below 3.0e-6         # dry run: prints the plan
+npx tsx src/cli/close-lots.ts --bot w1 --sold-below 3.0e-6 --yes   # execute
+```
+
+Select with `--sold-below <ethPerDot>` (slices sold under that price), `--ids a,b,c`, or `--all`. It runs
+per bot, worst slice first, and stops when the wallet's spendable ETH runs out. Lots are closed by position
+rather than by tag, because two levels filled in the same second share an id.
+
+Closing realises the loss, and `dotEarned` on the site will drop by it. That is the honest number: the DOT
+was lost when the price ran away from the slices, not when they were bought back. Holding an unreachable
+lot is a continuing bet on a reversal, not a way to avoid the loss already taken.
+
 ## Wallets and the vault
 
 | Wallet | Role |
