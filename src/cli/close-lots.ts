@@ -25,6 +25,7 @@ import { log } from "../core/log.js";
 import { MarketData } from "../data/market.js";
 import { GridAgent } from "../agents/grid.js";
 import { Executor } from "../exec/executor.js";
+import { pauseBot } from "../core/pause.js";
 import type { Signal } from "../core/types.js";
 
 function flag(name: string): string | undefined {
@@ -47,6 +48,14 @@ async function main() {
     process.exit(1);
   }
 
+  // Park any live bot FIRST. The ledger is read into memory here and written back; a bot ticking
+  // alongside would save its own stale copy over these closes, which is exactly how nine realised
+  // losses turned into six silent "released" lots once already.
+  const release = await pauseBot((m) => log("close", m));
+  try { await run({ soldBelow, ids, all, execute }); } finally { release(); }
+}
+
+async function run({ soldBelow, ids, all, execute }: { soldBelow?: number; ids?: string[]; all: boolean; execute: boolean }) {
   const ledger = new Ledger();
   const grid = new GridAgent();
   grid.init();

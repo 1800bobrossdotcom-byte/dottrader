@@ -134,10 +134,12 @@ their targets — the bot just stops selling more DOT into strength.
 **Unwind what is already open.** `close-lots` buys chosen slices back at market:
 
 ```bash
-npx pm2 stop dot-bot-w1 dot-bot-w2            # nothing else may spend the same ETH
 npx tsx src/cli/close-lots.ts --bot w1 --sold-below 3.0e-6         # dry run: prints the plan
 npx tsx src/cli/close-lots.ts --bot w1 --sold-below 3.0e-6 --yes   # execute
 ```
+
+It parks a running bot for you (see **Pausing a bot** below) and releases it on the way out, so the
+bot cannot save a stale ledger over the closes.
 
 Select with `--sold-below <ethPerDot>` (slices sold under that price), `--ids a,b,c`, or `--all`. It runs
 per bot, worst slice first, and stops when the wallet's spendable ETH runs out. Lots are closed by position
@@ -146,6 +148,18 @@ rather than by tag, because two levels filled in the same second share an id.
 Closing realises the loss, and `dotEarned` on the site will drop by it. That is the honest number: the DOT
 was lost when the price ran away from the slices, not when they were bought back. Holding an unreachable
 lot is a continuing bet on a reversal, not a way to avoid the loss already taken.
+
+## Pausing a bot
+
+`touch data/w1/KILL` parks that bot: it keeps running and logging but stops trading, and it writes
+`paused` to `data/w1/HEARTBEAT` to confirm. Delete the file to resume. This is how a tool takes the
+ledger safely — the alternative is a race the tool always loses, because the bot holds the ledger in
+memory and writes it back every tick, so its stale copy lands on top.
+
+That is not hypothetical. `close-lots` once bought nine lots back while the bots were live; the bots
+still had those lots open, decided their ETH had been spent elsewhere, and released six of them. The
+DOT was genuinely repurchased, but six realised losses never reached `dotEarned`, so the site showed
+a loss about 8,000 DOT smaller than the real one.
 
 ## Wallets and the vault
 
