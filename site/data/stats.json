@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-22T18:52:36.811Z",
+  "generatedAt": "2026-09-22T19:02:38.522Z",
   "codeVersion": "977be8a, 1a2b5c5",
   "mode": "live",
   "wallet": "0xcFCFc8e42AEBFC58AB78093217C2C4bB186BAc86",
@@ -24,7 +24,7 @@
     "dotEquivalent": 109359.47944212295,
     "note": "The journey is the two trading bots. The vault's original 9,000 DOT is excluded; only DOT swept into it counts."
   },
-  "journeyStackNow": 92590.60502157951,
+  "journeyStackNow": 92581.60840477931,
   "vault": {
     "address": "0x8455cF296e1265b494605207e97884813De21950",
     "sweptDot": 0,
@@ -65,19 +65,19 @@
     "dot": 92377.40630288133,
     "eth": 0.010050879477342158,
     "usdc": 0,
-    "dotEquivalent": 94974.517652528
+    "dotEquivalent": 94963.96043712622
   },
-  "onchainAt": "2026-09-22T18:52:36.804Z",
+  "onchainAt": "2026-09-22T19:02:38.514Z",
   "onchainBlock": null,
   "now": {
     "dot": 82641.21327128929,
     "eth": 0.03816994977741024,
     "usdc": 0,
-    "priceUsd": 0.010630061928398885,
-    "priceEth": 0.000003870022545898748,
-    "ethUsd": 2746.770025839793,
-    "usd": 959.6552751209404,
-    "dotEquivalent": 84849.43350915029
+    "priceUsd": 0.010692251735644889,
+    "priceEth": 0.0000038858183342357716,
+    "ethUsd": 2751.6087516087514,
+    "usd": 962.3219932765529,
+    "dotEquivalent": 84844.63199051825
   },
   "dotEarned": {
     "total": -9779.279688842456,
@@ -1683,6 +1683,12 @@
       "dotEq": 92590.60502157951,
       "priceUsd": 0.010630061928398885,
       "basis": "bots"
+    },
+    {
+      "t": 1790103757027,
+      "dotEq": 92581.60840477931,
+      "priceUsd": 0.010692251735644889,
+      "basis": "bots"
     }
   ],
   "processes": [
@@ -1694,17 +1700,17 @@
     "releasedLots": 59
   },
   "market": {
-    "liquidityUsd": 569877.14,
-    "volume24hUsd": 338909.55,
+    "liquidityUsd": 571700.05,
+    "volume24hUsd": 337796.51,
     "change": {
-      "m5": 0.03,
-      "h1": 3.7,
-      "h6": 14.42,
-      "h24": 9.05
+      "m5": 0.44,
+      "h1": 1.64,
+      "h6": 15.32,
+      "h24": 9.94
     },
     "txns24h": {
-      "buys": 337,
-      "sells": 230
+      "buys": 344,
+      "sells": 223
     },
     "burns24h": 0
   }
