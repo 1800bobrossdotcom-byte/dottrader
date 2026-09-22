@@ -10,15 +10,15 @@
  *   npx tsx src/cli/swing-paper.ts                        # cbbtc-weth, 0.5%, every 20s
  *   npx tsx src/cli/swing-paper.ts --threshold 0.3 --every 10
  */
-import { createPublicClient, http, parseAbi, type Address } from "viem";
+import { createPublicClient, http, type Address } from "viem";
 import { base } from "viem/chains";
 import { config } from "../core/config.js";
 import { log } from "../core/log.js";
-import { MARKETS, quotePerBase, type Market } from "../core/markets.js";
+import { MARKETS, quotePerBase, slot0PriceAbi, type Market } from "../core/markets.js";
 import { freshSwing, step, feeFloorPct, type SwingState, type SwingTrade } from "../agents/swing.js";
 import { Store } from "../data/store.js";
 
-const poolAbi = parseAbi(["function slot0() view returns (uint160 sqrtPriceX96, int24 tick, uint16 a, uint16 b, uint16 c, uint32 d, bool e)"]);
+
 const client = createPublicClient({ chain: base, transport: http(config.BASE_RPC_URL) });
 
 function flag(n: string, d: number) {
@@ -32,7 +32,7 @@ function flag(n: string, d: number) {
 interface Persisted { market: string; thresholdPct: number; startedAt: string; startQuote: number; swing: SwingState; log: (SwingTrade & { ts: number })[] }
 
 async function price(m: Market) {
-  const [sqrtPriceX96] = await client.readContract({ address: m.pool as Address, abi: poolAbi, functionName: "slot0" });
+  const sqrtPriceX96 = await client.readContract({ address: m.pool as Address, abi: slot0PriceAbi, functionName: "slot0" });
   return quotePerBase(sqrtPriceX96, m);
 }
 

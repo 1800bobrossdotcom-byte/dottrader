@@ -84,3 +84,18 @@ export function step(s: SwingState, price: number, thresholdPct: number, feePct:
     reason: `rally ${(thr * 100).toFixed(2)}% off local low — sold ${sold.toFixed(8)} at ${price.toPrecision(6)}`,
   };
 }
+
+/**
+ * Advance an idle market's pivot without letting it trade.
+ *
+ * With one budget and several watched markets, only one can hold a position. The rest must keep
+ * tracking their local high, or they come back armed off a stale pivot — but they must not flip
+ * themselves into `base` on a signal no money was behind. Tracking the high and nothing else is
+ * also the honest behaviour: a market that dipped while the budget was busy elsewhere, and is still
+ * down when the budget frees up, fires immediately on the next tick. The opportunity is deferred,
+ * not erased.
+ */
+export function trackIdle(s: SwingState, price: number) {
+  if (!(price > 0) || s.holding !== "quote") return;
+  if (s.pivot === null || price > s.pivot) s.pivot = price;
+}
