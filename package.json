@@ -20,7 +20,9 @@
     "test": "vitest run",
     "close-lots": "tsx src/cli/close-lots.ts",
     "repair-ledger": "tsx src/cli/repair-ledger.ts",
-    "swing:paper": "tsx src/cli/swing-paper.ts"
+    "swing:paper": "tsx src/cli/swing-paper.ts",
+    "wallets": "tsx src/cli/watch-wallets.ts",
+    "probe-pools": "tsx src/cli/probe-pools.ts"
   },
   "dependencies": {
     "viem": "^2.31.0",
