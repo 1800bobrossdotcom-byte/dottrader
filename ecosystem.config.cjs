@@ -86,6 +86,15 @@ const publisher = {
   time: true,
 };
 
+// pm2 --only on an app that was never registered prints the process list and exits silently, so a
+// missing SWING_BUDGET_ETH looks exactly like success. Say so instead.
+for (const w of ["w1", "w2"]) {
+  const env = envFile(`.env.${w}`);
+  if (env && !(Number(env.SWING_BUDGET_ETH) > 0)) {
+    console.error(`[ecosystem] swing-${w} NOT registered: .env.${w} has no SWING_BUDGET_ETH. Add e.g. SWING_BUDGET_ETH=0.004 to trade with it.`);
+  }
+}
+
 module.exports = {
   apps: [...bots.map((b) => ({
     name: b.name,
@@ -103,3 +112,5 @@ module.exports = {
     time: true,
   })), publisher, swingPaper, ...swingLive, ...(reporter ? [reporter] : [])],
 };
+
+console.error(`[ecosystem] registered: ${module.exports.apps.map((a) => a.name).join(", ")}`);
