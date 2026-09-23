@@ -126,3 +126,36 @@ export interface SwingBook {
   trades: SwingLeg[];
   gasSpentEth: number;
 }
+
+/**
+ * What the engine actually holds, decided by the chain rather than by its book.
+ *
+ * The book is a cache and can be wrong: stale, rebuilt, or written by a second copy of the process.
+ * Trusting it for *which* market holds the budget — while reading only the amounts from the chain —
+ * is what let the engine open a position in one market while already invested in another, spending
+ * the loose change left above the gas reserve.
+ *
+ * `held` is the base-token balance per market key; `prices` is ETH per base token, or null where
+ * the pool could not be read.
+ */
+export function reconcile(
+  keys: string[],
+  held: Record<string, number>,
+  prices: Record<string, number | null>,
+  dustEth = 1e-7,
+): { holding: string[]; active: string | null; mayBuy: boolean } {
+  const holding = keys.filter((k) => {
+    const amount = held[k] ?? 0;
+    if (!(amount > 0)) return false;
+    const p = prices[k];
+    // An unpriceable balance counts as held. Refusing to buy is the safe way to be wrong.
+    return p === null || p === undefined || amount * p > dustEth;
+  });
+  return {
+    holding,
+    // Only a single, unambiguous position may be called active; two means something went wrong and
+    // the engine should be unwinding, not nominating one of them as normal.
+    active: holding.length === 1 ? holding[0] : null,
+    mayBuy: holding.length === 0,
+  };
+}

@@ -24,7 +24,7 @@ import { config, TOKENS } from "../core/config.js";
 import { log } from "../core/log.js";
 import { MARKETS, LIVE_MARKETS, baseToken, type Market } from "../core/markets.js";
 import { readPrice, readFee } from "../core/pool.js";
-import { freshSwing, step, trackIdle, feeFloorPct, type SwingBook } from "../agents/swing.js";
+import { freshSwing, step, trackIdle, reconcile, feeFloorPct, type SwingBook } from "../agents/swing.js";
 import { Swapper } from "../exec/swap.js";
 import { Store } from "../data/store.js";
 import { summariseSwing, writeSwingReport } from "../swing-report.js";
@@ -79,10 +79,17 @@ async function main() {
   if (!tradeable.length) { console.error(`no market clears the fee floor at a ${thresholdPct}% threshold`); process.exit(1); }
 
   const nativeEth = Number(await swapper.balance(TOKENS.ETH)) / 1e18;
-  const spendable = Math.min(budgetEth, Math.max(0, nativeEth - config.GAS_RESERVE_ETH));
-  // Guard the divisor before it is used: a zero start makes every P&L NaN, and a NaN silently
-  // fails the stop-loss comparison, leaving the engine running with no floor at all.
-  if (!(spendable > 1e-9)) {
+  const idleEth = Math.max(0, nativeEth - config.GAS_RESERVE_ETH);
+  // Whether there is anything to trade with is not answered by the ETH balance alone: restarting
+  // while a position is open leaves almost no ETH, and exiting then would strand the position with
+  // nothing able to sell it.
+  const investedAtBoot: Market[] = [];
+  for (const m of tradeable) {
+    const t = baseToken(m);
+    if (Number(await swapper.balance(t.address)) > 0) investedAtBoot.push(m);
+    await sleep(250);
+  }
+  if (!(idleEth > 1e-9) && !investedAtBoot.length) {
     console.error(`nothing to trade with: wallet holds ${nativeEth.toFixed(6)} ETH, gas reserve is ${config.GAS_RESERVE_ETH}, budget is ${budgetEth}`);
     process.exit(1);
   }
@@ -92,20 +99,22 @@ async function main() {
   // floor. Dropping it would leave the position with nothing able to sell it: the fee makes new
   // round trips unprofitable, not the exit impossible, and being stuck in the base token is far
   // worse than paying one expensive swap to get out.
-  if (bk?.active && !tradeable.some((m) => m.key === bk!.active)) {
-    const held = markets.find((m) => m.key === bk!.active);
-    if (held) {
-      tradeable.push(held);
-      fees[held.key] ??= held.feePct;
-      log("swing", `⚠️ ${held.key} is over its fee floor but holds the budget — kept watched so it can be sold`);
-    }
+  for (const key of new Set([bk?.active, ...investedAtBoot.map((m) => m.key)].filter(Boolean) as string[])) {
+    if (tradeable.some((m) => m.key === key)) continue;
+    const stuck = markets.find((m) => m.key === key);
+    if (!stuck) continue;
+    tradeable.push(stuck);
+    fees[stuck.key] ??= stuck.feePct;
+    log("swing", `⚠️ ${stuck.key} is over its fee floor but holds a position — kept watched so it can be sold`);
   }
   const watching = tradeable.map((m) => m.key);
   // Rebuild the book whenever the shape of the run changes; a state carried across a different
   // market set or threshold is a book that no longer describes what the engine is doing.
-  if (!bk || ((bk.thresholdPct !== thresholdPct || bk.markets.join(",") !== watching.join(",")) && !bk.active)) {
+  if (!bk || ((bk.thresholdPct !== thresholdPct || bk.markets.join(",") !== watching.join(",")) && !bk.active && !investedAtBoot.length)) {
+    // The baseline is the budget, not a snapshot of idle ETH. Taking the snapshot meant a restart
+    // while invested recorded a near-zero basis and capped every later trade at that figure.
     bk = {
-      markets: watching, thresholdPct, startedAt: new Date().toISOString(), startEth: spendable,
+      markets: watching, thresholdPct, startedAt: new Date().toISOString(), startEth: Math.min(budgetEth, idleEth || budgetEth),
       swings: Object.fromEntries(watching.map((k) => [k, freshSwing(0)])),
       active: null, trades: [], gasSpentEth: 0,
     };
@@ -115,7 +124,8 @@ async function main() {
   for (const k of watching) bk.swings[k] ??= freshSwing(0);
 
   log("swing", `${dry ? "DRY" : "LIVE ⚠️"} watching ${tradeable.length} market(s): ${tradeable.map((m) => `${baseToken(m).symbol}/ETH @ ${fees[m.key]}%`).join(", ")}`);
-  log("swing", `threshold ${thresholdPct}% | wallet ${swapper.address} holds ${nativeEth.toFixed(6)} ETH | budget ${budgetEth}, spendable ${spendable.toFixed(6)}, stop-loss ${stopLossPct}%`);
+  log("swing", `threshold ${thresholdPct}% | wallet ${swapper.address} holds ${nativeEth.toFixed(6)} ETH | budget ${budgetEth}, idle ${idleEth.toFixed(6)}, stop-loss ${stopLossPct}%`);
+  if (investedAtBoot.length) log("swing", `⚠️ already holding ${investedAtBoot.map((m) => baseToken(m).symbol).join(", ")} at startup — adopted from the chain, not the book`);
   log("swing", `one budget, first qualifying dip gets it; DOT is never read or spent by this process`);
 
   let cycles = 0;
@@ -128,53 +138,79 @@ async function main() {
       }
 
       const ethNow = Number(await swapper.balance(TOKENS.ETH)) / 1e18;
-      const freeEth = Math.min(spendable, Math.max(0, ethNow - config.GAS_RESERVE_ETH));
+      // Measured against the budget each cycle, never against a startup snapshot: the snapshot is
+      // taken while the money may be committed, and would then cap the engine at the loose change.
+      const freeEth = Math.min(budgetEth, Math.max(0, ethNow - config.GAS_RESERVE_ETH));
 
-      const active = bk.active ? tradeable.find((m) => m.key === bk!.active) : undefined;
+      // ---- What the chain says we hold. The book is a cache; this is the truth. ----
+      //
+      // The book used to decide which market held the budget, while only the amounts came from the
+      // chain. That is how a second position got opened: a book that said "flat" — stale, reset, or
+      // belonging to a second copy of this process — put the engine in VIRTUAL while it already
+      // held USDC, spending the leftover ETH above the gas reserve. Which market we are in is a
+      // fact about the chain, so it is read from the chain, every cycle, like the amounts are.
       const seen: Record<string, number | null> = Object.fromEntries(tradeable.map((m) => [m.key, null]));
-      let equity = freeEth;
-      // While the budget is in a base token, `freeEth` is near zero and says nothing about what the
-      // position is worth. If that market's price read fails, equity is simply unknown — and an
-      // unknown equity must not be read as a 100% loss, or a rate limit would trip the stop-loss
-      // and halt a perfectly healthy engine.
-      let equityKnown = !bk.active;
-      let shown = "";
+      const held: Record<string, number> = {};
+      for (const m of tradeable) {
+        try { seen[m.key] = await readPrice(m); } catch (e) {
+          // One unreadable market must not blind the engine to the others.
+          log("swing", `${m.key}: price unavailable (${(e as Error).message.split("\n")[0]})`);
+        }
+        await sleep(200); // space the reads; the public Base RPC refuses a burst
+        const t = baseToken(m);
+        held[m.key] = Number(await swapper.balance(t.address)) / 10 ** t.decimals;
+        await sleep(200);
+      }
 
-      // The market holding the budget is read first, always: its price is the one the stop-loss is
-      // measured against, and it is the only market that can free the money up again.
-      // Everything else rotates, so a rate limit that bites partway through the list does not
-      // always bite the same markets — otherwise the pair listed last would be polled a fraction
-      // as often as the pair listed first, and would look far quieter than it is.
-      const order = active
-        ? [active, ...tradeable.filter((m) => m.key !== active.key)]
-        : tradeable.map((_, i) => tradeable[(i + cycles) % tradeable.length]);
+      const rec = reconcile(tradeable.map((m) => m.key), held, seen);
+      const holding = tradeable.filter((m) => rec.holding.includes(m.key));
+
+      if (holding.length > 1) {
+        // Already broken when this process started. Sell out of them as their triggers come, and
+        // open nothing new until one position is left at most.
+        log("swing", `⚠️ holding ${holding.length} positions at once (${holding.map((m) => `${held[m.key]} ${baseToken(m).symbol}`).join(", ")}) — selling only, no new buys`);
+      }
+      if (holding.length <= 1 && bk.active !== rec.active) {
+        log("swing", `book said ${bk.active ?? "flat"}, chain says ${rec.active ?? "flat"} — trusting the chain`);
+        bk.active = rec.active;
+      }
+
+      // Equity is everything the engine controls: idle ETH plus every position marked at what
+      // selling it would actually return. Marking only one position would have hidden the second.
+      let equityKnown = true;
+      let equity = freeEth;
+      for (const m of holding) {
+        const p = seen[m.key];
+        if (p === null) { equityKnown = false; continue; }
+        equity += held[m.key] * p * (1 - fees[m.key] / 100);
+      }
+      const shown = holding.map((m) => `${baseToken(m).symbol} ${seen[m.key]?.toPrecision(6) ?? "?"}`).join(", ");
+
+      // Sell candidates first: freeing the budget always beats committing more of it.
+      const order = [...holding, ...tradeable.filter((m) => !holding.includes(m))];
 
       for (const m of order) {
         const s = bk.swings[m.key];
-        let p: number;
-        try {
-          p = await readPrice(m);
-        } catch (e) {
-          // One unreadable market must not blind the engine to the other three.
-          log("swing", `${m.key}: price unavailable (${(e as Error).message.split("\n")[0]})`);
-          continue;
-        }
-        seen[m.key] = p;
-        await sleep(200); // space the reads; the public Base RPC refuses a burst
+        const p = seen[m.key];
+        if (p === null) continue;
+        const amHolding = holding.includes(m);
 
-        if (active && m.key !== active.key) { trackIdle(s, p); continue; }
-
-        if (!active) {
-          // Flat: every market is a candidate, and the budget is whatever the chain says we hold.
+        if (!amHolding) {
+          // Cannot buy while anything is held, and cannot buy without a clean, single-position book.
+          if (!rec.mayBuy) { trackIdle(s, p); continue; }
           s.quote = freeEth;
           s.base = 0;
           s.holding = "quote";
         } else {
-          s.base = Number(await swapper.balance(baseToken(m).address)) / 10 ** baseToken(m).decimals;
-          await sleep(200);
-          equity = s.base * p * (1 - fees[m.key] / 100);
-          equityKnown = true;
-          shown = `${baseToken(m).symbol} ${p.toPrecision(6)}`;
+          s.base = held[m.key];
+          s.holding = "base";
+          if (s.entryPrice === null) {
+            // Adopted a position this process did not open: price it from the last buy on record,
+            // or from where it stands now, so it can still be sold rather than held forever.
+            const buy = [...bk.trades].reverse().find((x) => x.market === m.key && x.side === "BUY_BASE");
+            s.entryPrice = buy?.price ?? p;
+            s.pivot ??= s.entryPrice;
+          }
         }
 
         const t = step(s, p, thresholdPct, fees[m.key]);
@@ -198,12 +234,12 @@ async function main() {
         const out = Number(r.amountOut) / (t.side === "BUY_BASE" ? 10 ** baseTok.decimals : 1e18);
         // Correct the book to the amount that actually arrived.
         if (t.side === "BUY_BASE") { s.base = out; t.baseDelta = out; bk.active = m.key; }
-        else { s.quote = out; t.quoteDelta = out; bk.active = null; }
+        else { s.quote = out; t.quoteDelta = out; if (bk.active === m.key) bk.active = null; }
         bk.gasSpentEth += r.gasEth;
         bk.trades.push({ ...t, market: m.key, ts: Date.now(), hash: r.hash, gasEth: r.gasEth });
         log("swing", `${t.side === "BUY_BASE" ? "🟢" : "🔴"} ${m.key} ${t.reason} | got ${out} | gas ${r.gasEth.toFixed(8)} ETH | ${r.hash}`);
         store.writeJson(file, bk);
-        break; // one budget, one commitment per cycle
+        break; // one commitment per cycle
       }
 
       const pnlPct = bk.startEth > 0 ? (equity / bk.startEth - 1) * 100 : 0;
@@ -212,7 +248,7 @@ async function main() {
         store.writeJson(file, bk); return;
       }
       if (cycles % 15 === 1) {
-        const where = bk.active ? `in ${bk.active} (${shown})` : `flat, armed on ${tradeable.length}`;
+        const where = holding.length ? `in ${holding.map((m) => m.key).join(" + ")} (${shown})` : `flat, armed on ${tradeable.length}`;
         const val = equityKnown ? `${equity.toFixed(6)} ETH (${pnlPct >= 0 ? "+" : ""}${pnlPct.toFixed(2)}%)` : "unknown (price read failed)";
         log("swing", `  ${where} | equity ${val} | ${bk.trades.length} fills | gas ${bk.gasSpentEth.toFixed(6)} ETH`);
       }
