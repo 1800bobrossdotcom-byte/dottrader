@@ -12,7 +12,7 @@ import { fileURLToPath } from "node:url";
 
 process.chdir(path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."));
 const minutes = Number(process.env.PUBLISH_MINUTES ?? 15);
-const FILES = ["site/data/stats.json", "site/data/equity.ndjson"];
+const FILES = ["site/data/stats.json", "site/data/equity.ndjson", "site/data/swing.json"];
 const sh = (c) => execSync(c, { stdio: ["ignore", "pipe", "pipe"], encoding: "utf8", env: { ...process.env, GIT_TERMINAL_PROMPT: "0", GIT_EDITOR: "true" } }).trim();
 const log = (m) => console.log(`${new Date().toISOString().slice(11, 19)} [publish] ${m}`);
 const branch = sh("git rev-parse --abbrev-ref HEAD");

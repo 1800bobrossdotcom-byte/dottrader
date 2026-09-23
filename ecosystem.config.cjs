@@ -60,19 +60,26 @@ const swingLive = ["w1", "w2"]
 // Keeps the site's balances and mark current while the bots are stopped. They are what normally
 // refresh stats.json once a tick, so without this the page freezes at whatever was true when
 // trading stopped and the publisher has nothing to push.
-const reporter = envFile(".env.w1") && {
-  name: "dot-report",
-  script: path.join(__dirname, "node_modules", "tsx", "dist", "cli.mjs"),
-  args: "src/cli/report.ts --bot w1 --every 10",
-  interpreter: "node",
-  cwd: __dirname,
-  env: envFile(".env.w1"),
-  autorestart: true,
-  restart_delay: 30000,
-  out_file: "logs/dot-report.log",
-  error_file: "logs/dot-report.err.log",
-  time: true,
-};
+// One reporter per trading wallet. stats.json is the merge of every stats.<wallet>.json on disk, so
+// a wallet with no reporter keeps contributing whatever it last wrote — which is how the site went
+// on showing two open short lots for w2 long after they were closed. A frozen file is not a stopped
+// bot; it is a wrong number presented as current.
+const reporters = ["w1", "w2"]
+  .map((w) => ({ w, env: envFile(`.env.${w}`) }))
+  .filter((b) => b.env)
+  .map((b) => ({
+    name: `dot-report-${b.w}`,
+    script: path.join(__dirname, "node_modules", "tsx", "dist", "cli.mjs"),
+    args: `src/cli/report.ts --bot ${b.w} --every 10`,
+    interpreter: "node",
+    cwd: __dirname,
+    env: b.env,
+    autorestart: true,
+    restart_delay: 30000,
+    out_file: `logs/dot-report-${b.w}.log`,
+    error_file: `logs/dot-report-${b.w}.err.log`,
+    time: true,
+  }));
 
 const publisher = {
   name: "dot-publish",
@@ -110,7 +117,7 @@ module.exports = {
     out_file: `logs/${b.name}.log`,
     error_file: `logs/${b.name}.err.log`,
     time: true,
-  })), publisher, swingPaper, ...swingLive, ...(reporter ? [reporter] : [])],
+  })), publisher, swingPaper, ...swingLive, ...reporters],
 };
 
 console.error(`[ecosystem] registered: ${module.exports.apps.map((a) => a.name).join(", ")}`);

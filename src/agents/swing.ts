@@ -99,3 +99,30 @@ export function trackIdle(s: SwingState, price: number) {
   if (!(price > 0) || s.holding !== "quote") return;
   if (s.pivot === null || price > s.pivot) s.pivot = price;
 }
+
+/** One executed leg, as it happened on chain. */
+export interface SwingLeg extends SwingTrade {
+  market: string;
+  ts: number;
+  hash?: string;
+  gasEth: number;
+}
+
+/**
+ * The live engine's book: one budget, several watched markets.
+ *
+ * Kept here rather than in the runner so the reporter can read it without importing a process that
+ * wants a private key just to be loaded.
+ */
+export interface SwingBook {
+  markets: string[];
+  thresholdPct: number;
+  startedAt: string;
+  startEth: number;
+  /** Per-market swing state. Exactly one may be holding `base` — see `active`. */
+  swings: Record<string, SwingState>;
+  /** The market the budget is currently committed to, or null when the engine is in ETH. */
+  active: string | null;
+  trades: SwingLeg[];
+  gasSpentEth: number;
+}

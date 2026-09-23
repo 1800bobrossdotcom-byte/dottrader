@@ -22,14 +22,13 @@
  */
 import { config, TOKENS } from "../core/config.js";
 import { log } from "../core/log.js";
-import { MARKETS, LIVE_MARKETS, quotePerBase, baseToken, slot0PriceAbi, poolFeeAbi, type Market } from "../core/markets.js";
-import { freshSwing, step, trackIdle, feeFloorPct, type SwingState, type SwingTrade } from "../agents/swing.js";
+import { MARKETS, LIVE_MARKETS, baseToken, type Market } from "../core/markets.js";
+import { readPrice, readFee } from "../core/pool.js";
+import { freshSwing, step, trackIdle, feeFloorPct, type SwingBook } from "../agents/swing.js";
 import { Swapper } from "../exec/swap.js";
 import { Store } from "../data/store.js";
-import { createPublicClient, http } from "viem";
-import { base } from "viem/chains";
+import { summariseSwing, writeSwingReport } from "../swing-report.js";
 
-const reader = createPublicClient({ chain: base, transport: http(config.BASE_RPC_URL) });
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 const num = (n: string, d: number) => {
@@ -42,49 +41,6 @@ const arg = (n: string) => {
   const i = process.argv.indexOf(`--${n}`);
   return i < 0 ? undefined : process.argv[i + 1];
 };
-
-interface Leg extends SwingTrade { market: string; ts: number; hash?: string; gasEth: number }
-interface Book {
-  markets: string[];
-  thresholdPct: number;
-  startedAt: string;
-  startEth: number;
-  /** Per-market swing state. Exactly one may be holding `base` — see `active`. */
-  swings: Record<string, SwingState>;
-  /** The market the budget is currently committed to, or null when the engine is in ETH. */
-  active: string | null;
-  trades: Leg[];
-  gasSpentEth: number;
-}
-
-/**
- * Price, retrying through the rate limiter.
- *
- * The public Base RPC answered "over rate limit" after six calls in three seconds. Four markets
- * polled every 20 seconds will hit it regularly, and a read that simply throws would take the whole
- * cycle with it — including the stop-loss check, and including every market later in the list than
- * the one that failed.
- */
-async function price(m: Market) {
-  let last: unknown;
-  for (let i = 0; i < 3; i++) {
-    try {
-      const sqrt = await reader.readContract({ address: m.pool, abi: slot0PriceAbi, functionName: "slot0" });
-      return quotePerBase(sqrt, m);
-    } catch (e) { last = e; await sleep(700 * 2 ** i); }
-  }
-  throw last;
-}
-
-/** Live fee, falling back to the screening figure rather than skipping the market. */
-async function feePct(m: Market) {
-  try {
-    const f = await reader.readContract({ address: m.pool, abi: poolFeeAbi, functionName: "fee" });
-    return Number(f) / 10_000;
-  } catch {
-    return m.feePct;
-  }
-}
 
 async function main() {
   const dry = process.argv.includes("--dry");
@@ -111,7 +67,7 @@ async function main() {
   const fees: Record<string, number> = {};
   const tradeable: Market[] = [];
   for (const m of markets) {
-    fees[m.key] = await feePct(m);
+    fees[m.key] = await readFee(m);
     const floor = feeFloorPct(fees[m.key]);
     if (thresholdPct < floor) {
       log("swing", `⛔ ${m.key} skipped: ${thresholdPct}% threshold is under its ${floor.toFixed(3)}% fee floor (${fees[m.key]}%/side)`);
@@ -131,7 +87,7 @@ async function main() {
     process.exit(1);
   }
 
-  let bk = store.readJson<Book | null>(file, null);
+  let bk = store.readJson<SwingBook | null>(file, null);
   // A market already holding the budget must stay watched even if its fee has since risen past the
   // floor. Dropping it would leave the position with nothing able to sell it: the fee makes new
   // round trips unprofitable, not the exit impossible, and being stuck in the base token is far
@@ -168,13 +124,14 @@ async function main() {
       cycles++;
       // Refresh dynamic fees hourly rather than every cycle; they drift, they do not jump.
       if (cycles % Math.max(1, Math.round(3600 / everySec)) === 0) {
-        for (const m of tradeable) { fees[m.key] = await feePct(m); await sleep(300); }
+        for (const m of tradeable) { fees[m.key] = await readFee(m); await sleep(300); }
       }
 
       const ethNow = Number(await swapper.balance(TOKENS.ETH)) / 1e18;
       const freeEth = Math.min(spendable, Math.max(0, ethNow - config.GAS_RESERVE_ETH));
 
       const active = bk.active ? tradeable.find((m) => m.key === bk!.active) : undefined;
+      const seen: Record<string, number | null> = Object.fromEntries(tradeable.map((m) => [m.key, null]));
       let equity = freeEth;
       // While the budget is in a base token, `freeEth` is near zero and says nothing about what the
       // position is worth. If that market's price read fails, equity is simply unknown — and an
@@ -196,12 +153,13 @@ async function main() {
         const s = bk.swings[m.key];
         let p: number;
         try {
-          p = await price(m);
+          p = await readPrice(m);
         } catch (e) {
           // One unreadable market must not blind the engine to the other three.
           log("swing", `${m.key}: price unavailable (${(e as Error).message.split("\n")[0]})`);
           continue;
         }
+        seen[m.key] = p;
         await sleep(200); // space the reads; the public Base RPC refuses a burst
 
         if (active && m.key !== active.key) { trackIdle(s, p); continue; }
@@ -259,6 +217,9 @@ async function main() {
         log("swing", `  ${where} | equity ${val} | ${bk.trades.length} fills | gas ${bk.gasSpentEth.toFixed(6)} ETH`);
       }
       store.writeJson(file, bk);
+      // Publish what the page shows from the same numbers the engine just acted on, including the
+      // markets whose price read failed — those appear with a null price rather than being dropped.
+      writeSwingReport(summariseSwing(bk, seen, fees, new Date().toISOString()));
     } catch (e) {
       log("swing", `cycle failed: ${(e as Error).message}`);
     }
