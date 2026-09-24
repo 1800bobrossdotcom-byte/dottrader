@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-24T04:54:55.418Z",
+  "generatedAt": "2026-09-24T05:05:04.613Z",
   "codeVersion": "543596c",
   "mode": "live",
   "wallet": "0xcFCFc8e42AEBFC58AB78093217C2C4bB186BAc86",
@@ -24,7 +24,7 @@
     "dotEquivalent": 109359.47944212295,
     "note": "The journey is the two trading bots. The vault's original 9,000 DOT is excluded; only DOT swept into it counts."
   },
-  "journeyStackNow": 83551.51304936798,
+  "journeyStackNow": 83551.8959730108,
   "vault": {
     "address": "0x8455cF296e1265b494605207e97884813De21950",
     "sweptDot": 0,
@@ -73,11 +73,11 @@
     "dot": 82641.21327128929,
     "eth": 0.03816994977741024,
     "usdc": 0,
-    "priceUsd": 0.00841618567585988,
-    "priceEth": 0.0000031438164463070596,
-    "ethUsd": 2677.06013363029,
-    "usd": 797.7070462212816,
-    "dotEquivalent": 84095.25248643453
+    "priceUsd": 0.008432,
+    "priceEth": 0.000003143,
+    "ethUsd": 2682.7871460388164,
+    "usd": 799.3291027403225,
+    "dotEquivalent": 84095.6301972037
   },
   "dotEarned": {
     "total": -9853.78331831204,
@@ -1891,6 +1891,12 @@
       "dotEq": 83551.51304936798,
       "priceUsd": 0.00841618567585988,
       "basis": "bots"
+    },
+    {
+      "t": 1790226303193,
+      "dotEq": 83551.8959730108,
+      "priceUsd": 0.008432,
+      "basis": "bots"
     }
   ],
   "processes": [
@@ -1902,16 +1908,16 @@
     "releasedLots": 59
   },
   "market": {
-    "liquidityUsd": 519268.52,
-    "volume24hUsd": 355154.76,
+    "liquidityUsd": 520375.91,
+    "volume24hUsd": 354782.37,
     "change": {
-      "m5": 0,
-      "h1": -0.75,
-      "h6": -7.18,
-      "h24": -9.38
+      "m5": -0.04,
+      "h1": 0.08,
+      "h6": -6.74,
+      "h24": -8.84
     },
     "txns24h": {
-      "buys": 431,
+      "buys": 432,
       "sells": 303
     },
     "burns24h": 0
