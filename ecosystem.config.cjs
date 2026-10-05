@@ -16,9 +16,25 @@ function envFile(name) {
   return out;
 }
 
+// The DOT grid is OFF, and off by construction rather than by being stopped.
+//
+// It sold slices of DOT into strength to buy them back lower. The Uniswap V4 DOT/ETH pool charges
+// about 1.1% a swap — 2.188% for a round trip — so every sell had to be repurchased more than 2.2%
+// cheaper just to break even. Every DOT pool on Base was read on chain before giving up on it: one
+// holds about $1.1m of liquidity at that fee, the next largest holds $1,067. There is nowhere to
+// route around it, so the fee is not a setting to tune, and no amount of funding changes the
+// arithmetic. It cost 9,779 DOT before it was stopped.
+//
+// Leaving it merely stopped meant one `pm2 start ecosystem.config.cjs` would bring it back, which
+// is a loss waiting on a typo. It now requires DOT_GRID_ENABLED=1 in the wallet's env file, so
+// restarting it is a deliberate act and never an accident.
 const bots = ["w1", "w2", "w3"]
-  .map((w) => ({ name: `dot-bot-${w}`, env: envFile(`.env.${w}`) }))
-  .filter((b) => b.env);
+  .map((w) => ({ w, name: `dot-bot-${w}`, env: envFile(`.env.${w}`) }))
+  .filter((b) => b.env)
+  // w3's private key was pasted into a chat and must be treated as public. Nothing here will ever
+  // run with it, whatever its env file says.
+  .filter((b) => b.w !== "w3")
+  .filter((b) => Number(b.env.DOT_GRID_ENABLED) === 1);
 
 // Paper only: no keys, reads the pool and records what it would have done. Start it on its own with
 //   npx pm2 start ecosystem.config.cjs --only swing-paper
@@ -100,6 +116,9 @@ for (const w of ["w1", "w2"]) {
   if (env && !(Number(env.SWING_BUDGET_ETH) > 0)) {
     console.error(`[ecosystem] swing-${w} NOT registered: .env.${w} has no SWING_BUDGET_ETH. Add e.g. SWING_BUDGET_ETH=0.004 to trade with it.`);
   }
+}
+if (!bots.length) {
+  console.error(`[ecosystem] DOT grid bots NOT registered: the strategy loses to a 2.188% round-trip pool fee and is off by design. To override, add DOT_GRID_ENABLED=1 to .env.w1 or .env.w2.`);
 }
 
 module.exports = {
