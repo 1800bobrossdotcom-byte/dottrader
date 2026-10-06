@@ -71,6 +71,7 @@
 
   <section id="browse" hidden>
     <div class="nudge" id="nudge" hidden><span>Choose the name other traders see. Until you do, you're shown as an anonymous trader.</span><button class="btn" type="button" id="nudgeGo">Add name</button></div>
+    <div id="matchBox" hidden></div>
     <div class="bar">
       <label class="search">
         <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.6"/><path d="M11 11l4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
@@ -81,6 +82,7 @@
         <option value="50">Within 50 mi</option><option value="100">Within 100 mi</option>
       </select>
       <button class="btn ghost" type="button" id="mapBtn" aria-pressed="false">Map</button>
+      <button class="btn ghost" type="button" id="saveSearch" hidden title="Collect everything that fits this search under My trades">Save search</button>
       <button class="btn ok" type="button" id="postCta">+ Post an item</button>
     </div>
     <div id="mapWrap" hidden><div id="map" class="map"></div><p class="hint" style="margin:-8px 0 16px;font-size:12px;color:var(--muted)">Pins are rounded to about a kilometre. Click one to jump to the listing.</p></div>
@@ -114,6 +116,11 @@
           <label for="f-cat">Category</label>
           <select id="f-cat"></select>
         </div>
+      </div>
+      <div id="f-wantwrap">
+        <label>Categories you'd take <span class="hint">— optional · puts you in front of people who have them</span></label>
+        <div class="chips pickchips" id="f-wantcats"></div>
+        <label class="tick" style="margin-top:10px"><input type="checkbox" id="f-open" checked> <span>Open to other offers too</span></label>
       </div>
       <details class="more">
         <summary>Add details, or list a digital asset</summary>
@@ -176,6 +183,16 @@
       </details>
     </div>
 
+    <div id="lookWrap" hidden>
+      <div class="sub">Looking for</div>
+      <form class="lookform" id="lookForm">
+        <input id="look-q" maxlength="80" placeholder="Pokémon cards, a Game Boy, a road bike…" aria-label="What you're looking for">
+        <select id="look-cat" class="catpick" aria-label="Category"></select>
+        <button class="btn ok" type="submit">Save</button>
+      </form>
+      <div id="lookList" class="looklist"></div>
+    </div>
+
     <div class="sub">Offers waiting on you</div>
     <div class="grid" id="offersIn"></div>
     <div class="empty" id="offersInEmpty">No one has offered on your items yet.</div>
@@ -206,6 +223,7 @@
 <script src="js/protect.js?v=1"></script>
 <script src="js/messages.js?v=1"></script>
 <script src="js/board.js?v=1"></script>
+<script src="js/match.js?v=1"></script>
 <script src="js/map.js?v=1"></script>
 <script src="js/verify.js?v=1"></script>
 <script src="js/actions.js?v=1"></script>

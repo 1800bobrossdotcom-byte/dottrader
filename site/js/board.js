@@ -28,6 +28,8 @@ function renderInner() {
   });
   if (filter.radius) shown.sort(function (a, b) { return (distTo(a.owner_id) || 0) - (distTo(b.owner_id) || 0); });
   lastShown = shown;
+  paintMatches(); paintLooking();
+  $("saveSearch").hidden = !(uid && caps.matching && (filter.q || filter.cat));
   fill($("feed"), $("feedEmpty"), shown, function (it) { return itemCard(it); });
   if (mapOn) paintMap();
   $("feedEmpty").innerHTML = !open.length
@@ -76,13 +78,13 @@ function row(n, what) {
   return '<div><span class="amt' + (n ? "" : " zero") + '"' + (n < 0 ? ' style="color:var(--red)"' : "") + ">" + (n > 0 ? "+" + n : n < 0 ? "\u2212" + (-n) : "0") + '</span><span class="what">' + esc(what) + "</span></div>";
 }
 
-function openOffer(it) {
+function openOffer(it, give) {
   var veil = document.createElement("div"); veil.className = "veil";
   var form = document.createElement("form"); form.className = "sheet f";
   form.innerHTML =
     "<h3>Offer a trade</h3>" +
     '<div style="font-size:13px;color:var(--muted)">For <b style="color:var(--ink)">' + esc(it.title) +
-      '</b> — they want <b style="color:var(--ink)">' + esc(it.want || "offers") + "</b></div>" +
+      '</b> — they want <b style="color:var(--ink)">' + esc(wantText(it)) + "</b></div>" +
     '<div><label for="o-give">What you are offering</label><input id="o-give" maxlength="80" required placeholder="Retro console, boxed"></div>' +
     '<div class="assetbox"><label class="tick"><input type="checkbox" id="o-isasset"> <span>Offering a digital asset</span></label>' +
       '<div id="o-assetfields" hidden><p class="hint" style="margin:0 0 12px">It can be on any chain — it does not have to match theirs.</p>' +
@@ -107,6 +109,7 @@ function openOffer(it) {
   });
   form.querySelector("[data-x]").addEventListener("click", function () { veil.remove(); });
   veil.addEventListener("click", function (e) { if (e.target === veil) veil.remove(); });
+  if (give) form.querySelector("#o-give").value = String(give).slice(0, 80);
   setTimeout(function () { var i = form.querySelector("#o-give"); if (i) i.focus(); }, 30);
   form.addEventListener("submit", function (e) {
     e.preventDefault();

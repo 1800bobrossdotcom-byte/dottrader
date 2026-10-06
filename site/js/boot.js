@@ -7,6 +7,7 @@
 
 /* ---- what this project has switched on ---- */
 function applyCaps() {
+  $("f-wantwrap").hidden = !caps.matching;
   $("f-photowrap").hidden = !caps.photos;
   $("p-locwrap").hidden = !caps.location;
   $("radius").hidden = !caps.location || !uid;
@@ -22,14 +23,15 @@ function probe() {
     fetch(cfg.url + "/functions/v1/verify-item").then(function (r) { return r.status !== 404; }, function () { return true; }),
     has(sb.from("offers").select("ship_by").limit(1)),
     has(sb.from("bonds").select("id").limit(1)),
+    has(sb.from("items").select("want_cats").limit(1)),
     // The bond function answers a plain GET with its price; 401 means it is there behind JWT checks.
     fetch(cfg.url + "/functions/v1/bond").then(function (r) {
       if (r.status === 200) return r.json();
       return r.status === 404 ? null : { bond_cents: 2500, fee_cents: 150 };
     }, function () { return null; })
   ]).then(function (r) {
-    caps = { photos: r[0], location: r[1], messages: r[2], verify: r[3], trades: r[4], bond: r[4] && r[5] && r[6] ? r[6] : null };
-    applyCaps(); render();
+    caps = { photos: r[0], location: r[1], messages: r[2], verify: r[3], trades: r[4], bond: r[4] && r[5] && r[7] ? r[7] : null, matching: r[6] };
+    applyCaps(); render(); loadMatches();
     if (caps.bond) sb.channel("bonds").on("postgres_changes", { event: "*", schema: "public", table: "bonds" }, load).subscribe();
     if (caps.messages) {
       sb.channel("threads").on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, load).subscribe();

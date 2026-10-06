@@ -34,6 +34,7 @@ $("postForm").addEventListener("submit", function (e) {
   };
   // Only sent when there are photos, so a project that has not run storage.sql can still post.
   if (pendingPhotos.length) rec.photos = pendingPhotos.slice(0, 4);
+  if (caps.matching) { rec.want_cats = postPicker.get(); rec.open_to_offers = $("f-open").checked; }
   Object.keys(asset).forEach(function (k) { rec[k] = asset[k]; });
   sb.from("items").insert(rec).then(function (r) {
     btn.disabled = false;
@@ -43,6 +44,7 @@ $("postForm").addEventListener("submit", function (e) {
     }
     $("postForm").reset(); $("f-cat").value = "Other"; $("f-assetfields").hidden = true;
     pendingPhotos = []; paintThumbs();
+    postPicker.set([]); $("f-open").checked = true;
     toast("Posted to the board."); show("browse"); load();
   });
 });
@@ -74,12 +76,15 @@ function openEdit(it) {
     '<div><label for="e-desc">Details</label><textarea id="e-desc" maxlength="600"></textarea></div>' +
     '<div class="rowf"><div><label for="e-want">What you want back</label><input id="e-want" maxlength="80"></div>' +
     '<div><label for="e-cat">Category</label><select id="e-cat"></select></div></div>' +
+    '<div' + (caps.matching ? "" : " hidden") + '><label>Categories you\u2019d take</label><div class="chips pickchips" id="e-wantcats"></div>' +
+      '<label class="tick" style="margin-top:10px"><input type="checkbox" id="e-open"> <span>Open to other offers too</span></label></div>' +
     '<div' + (caps.photos ? "" : " hidden") + '><label>Photos <span class="hint">— up to 4</span></label><div class="thumbs" id="e-thumbs"></div>' +
     '<label class="filebtn" style="margin-top:10px"><span>Add photos</span><input id="e-photos" type="file" accept="image/jpeg,image/png,image/webp" multiple></label></div>' +
     '<div class="acts"><button class="btn ok" type="submit">Save changes</button><button class="btn ghost" type="button" data-x>Cancel</button></div>';
   veil.appendChild(form); document.body.appendChild(veil);
   var q = function (id) { return form.querySelector("#" + id); };
   groupedOptions(q("e-cat"), null);
+  var editPicker = catPicker(q("e-wantcats"), it.want_cats || []); q("e-open").checked = it.open_to_offers !== false;
   q("e-title").value = it.title || ""; q("e-desc").value = it.descr || ""; q("e-want").value = it.want || ""; q("e-cat").value = it.cat || "Other";
   var close = function () { veil.remove(); };
   form.querySelector("[data-x]").addEventListener("click", close);
@@ -107,6 +112,7 @@ function openEdit(it) {
     e.preventDefault();
     var title = q("e-title").value.trim(); if (!title) return;
     var rec = { title: title, descr: q("e-desc").value.trim(), want: q("e-want").value.trim(), cat: q("e-cat").value };
+    if (caps.matching) { rec.want_cats = editPicker.get(); rec.open_to_offers = q("e-open").checked; }
     // Only send photos when the project has the column (it exists once storage.sql has run).
     if (photos.length || (it.photos && it.photos.length)) rec.photos = photos.slice(0, 4);
     sb.from("items").update(rec).eq("id", it.id).then(function (r) {
@@ -169,5 +175,6 @@ function load() {
       if (!$("p-note").value) $("p-note").value = profiles[uid].note || "";
     }
     render();
+    loadMatches();
   });
 }

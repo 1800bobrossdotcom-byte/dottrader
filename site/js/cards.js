@@ -70,13 +70,14 @@ function itemCard(it, opts) {
   h += assetRow(it, verifiedWallet(profiles[it.owner_id]));
   h += '<div class="sides"><div class="side h"><span class="k">Offering</span><span class="v">' + esc(it.title) + "</span></div>" +
     '<div class="arrow" aria-hidden="true"></div>' +
-    '<div class="side w"><span class="k">Wants</span><span class="v">' + esc(it.want || "Open to offers") + "</span></div></div>";
+    '<div class="side w"><span class="k">Wants</span><span class="v">' + esc(wantText(it)) + "</span></div></div>";
   var parts = sc.dots + " dots \u00b7 " + sc.trades + (sc.trades === 1 ? " trade" : " trades") + " \u00b7 " + sc.verified + " verified \u00b7 " + sc.noShows + (sc.noShows === 1 ? " no-show" : " no-shows");
   h += '<div class="foot"><span class="who" title="' + esc(parts) + '"><span class="av">' + esc(initial(it.owner_id).toUpperCase()) + '</span><b>' + esc(who(it.owner_id)) + "</b>" + dotRow(sc.dots) +
     (sc.noShows ? '<span class="strike" title="Agreed a trade and never sent their side">' + sc.noShows + (sc.noShows === 1 ? " no-show" : " no-shows") + "</span>" : "") +
     "<span>" + esc(ago(it.created_at)) + (prof && prof.area ? " · " + esc(prof.area) : "") + "</span>" +
     (function () { var d = mine ? null : distTo(it.owner_id); return d === null ? "" : '<span class="dist">' + esc(fmtMiles(d)) + " away</span>"; })() + "</span>";
   if (it.cat) h += '<span class="tag">' + esc(it.cat) + "</span>";
+  if (!traded && !pledged) h += wantedTag(it);
   var badge = badges[it.id];
   if (badge) {
     h += '<span class="tag proof" title="' + esc("Verified " + (badge.verified_at ? new Date(badge.verified_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : "") +
@@ -112,6 +113,13 @@ function itemCard(it, opts) {
     ver.title = "Photograph a handwritten note with a one-time code next to the item. Verified listings carry a badge.";
     ver.addEventListener("click", function () { openVerify(it); });
     foot.appendChild(ver);
+  }
+  var wc = matchData.counts[it.id];
+  if (mine && opts.manage && !traded && !pledged && wc && wc.listings) {
+    var sw = document.createElement("button");
+    sw.className = "btn ok"; sw.type = "button"; sw.textContent = "See who wants it";
+    sw.addEventListener("click", function () { openWanting(it); });
+    foot.appendChild(sw);
   }
   if (mine && opts.manage && !traded && !pledged) {
     var ed = document.createElement("button");
