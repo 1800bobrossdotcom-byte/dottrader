@@ -144,6 +144,14 @@
 
   /* sign-in gate */
   .gate { max-width:430px; margin:52px auto; background:var(--card); border:1px solid var(--line); border-radius:14px; padding:26px; display:grid; gap:14px; }
+  .pics { display:grid; grid-template-columns:1fr; gap:4px; border-radius:8px; overflow:hidden; }
+  .pics.many { grid-template-columns:1fr 1fr; }
+  .pics img { width:100%; aspect-ratio:4/3; object-fit:cover; display:block; background:var(--sunk); }
+  .thumbs { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+  .thumb { position:relative; width:72px; height:72px; border-radius:8px; overflow:hidden; border:1px solid var(--line); background:var(--sunk); }
+  .thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+  .thumbx { position:absolute; top:2px; right:2px; width:20px; height:20px; border-radius:50%; border:0; background:rgba(21,24,28,.75); color:#fff; font-size:14px; line-height:20px; padding:0; cursor:pointer; }
+  input[type=file] { padding:9px 0; }
   .assetbox { border:1px solid var(--line); border-radius:8px; padding:14px; background:var(--paper); }
   .tick { display:flex; align-items:center; gap:9px; font-size:14px; font-weight:500; cursor:pointer; margin:0; }
   .tick input { width:auto; }
@@ -228,6 +236,11 @@
           <select id="f-cat"></select>
         </div>
       </div>
+      <div>
+        <label for="f-photos">Photos <span class="hint">— up to 4 · location data is removed before upload</span></label>
+        <input id="f-photos" type="file" accept="image/jpeg,image/png,image/webp" multiple>
+        <div class="thumbs" id="f-thumbs"></div>
+      </div>
       <div class="assetbox">
         <label class="tick"><input type="checkbox" id="f-isasset"> <span>This is a digital asset — an NFT or tokens on a chain</span></label>
         <div id="f-assetfields" hidden>
@@ -292,6 +305,7 @@
 </main>
 
 <script src="config.js"></script>
+<script src="photos.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
 <script>
@@ -506,6 +520,45 @@
     return { asset_kind: kind, asset_chain: Number(scope.chain.value), asset_contract: contract.toLowerCase(), asset_token_id: tok };
   }
 
+  /* ---- photos ---- */
+  // Uploaded the moment they are picked, so posting is instant and a failed upload is seen
+  // while the person is still looking at the form rather than after they hit Post.
+  var pendingPhotos = [];
+  function paintThumbs() {
+    var host = $("f-thumbs");
+    host.innerHTML = "";
+    pendingPhotos.forEach(function (u, i) {
+      var w = document.createElement("div"); w.className = "thumb";
+      var img = document.createElement("img"); img.src = u; img.alt = "";
+      var x = document.createElement("button"); x.type = "button"; x.className = "thumbx"; x.textContent = "×";
+      x.title = "Remove";
+      x.addEventListener("click", function () { pendingPhotos.splice(i, 1); paintThumbs(); });
+      w.appendChild(img); w.appendChild(x); host.appendChild(w);
+    });
+    $("f-photos").disabled = pendingPhotos.length >= 4;
+  }
+  $("f-photos").addEventListener("change", function (e) {
+    var files = Array.prototype.slice.call(e.target.files || []);
+    e.target.value = "";
+    if (!files.length) return;
+    if (!uid || !sb) { toast("Sign in first."); return; }
+    var room = 4 - pendingPhotos.length;
+    if (files.length > room) { toast(room ? "Only " + room + " more photo" + (room === 1 ? "" : "s") + " fit." : "Four photos is the limit."); files = files.slice(0, room); }
+    if (!files.length) return;
+    toast("Uploading " + files.length + " photo" + (files.length === 1 ? "" : "s") + "…");
+    var P = window.DTP_PHOTOS;
+    Promise.all(files.map(function (f) {
+      return P.upload(sb, uid, f).then(function (u) { return { ok: true, url: u }; },
+                                      function (err) { return { ok: false, err: err }; });
+    })).then(function (rs) {
+      var bad = rs.filter(function (r) { return !r.ok; });
+      rs.forEach(function (r) { if (r.ok && pendingPhotos.length < 4) pendingPhotos.push(r.url); });
+      paintThumbs();
+      if (bad.length) toast(bad[0].err && bad[0].err.message ? bad[0].err.message : "A photo failed to upload.");
+      else toast("Added.");
+    });
+  });
+
   /* ---- wallet ---- */
   function myWallet() { return verifiedWallet(profiles[uid]); }
   function paintWallet() {
@@ -590,7 +643,12 @@
 
     var el = document.createElement("article");
     el.className = "item" + (traded || pledged ? " gone" : "");
-    var h = "<h3>" + esc(it.title) + "</h3>";
+    var h = "";
+    if (it.photos && it.photos.length) {
+      h += '<div class="pics' + (it.photos.length > 1 ? " many" : "") + '">' +
+        it.photos.slice(0, 4).map(function (u) { return '<img src="' + esc(u) + '" alt="" loading="lazy">'; }).join("") + "</div>";
+    }
+    h += "<h3>" + esc(it.title) + "</h3>";
     if (it.descr) h += '<p class="desc">' + esc(it.descr) + "</p>";
     h += assetRow(it, verifiedWallet(profiles[it.owner_id]));
     h += '<div class="sides"><div class="side h"><span class="k">Offering</span><span class="v">' + esc(it.title) + "</span></div>" +
@@ -805,13 +863,15 @@
     var btn = $("postBtn"); btn.disabled = true;
     var rec = {
       owner_id: uid, title: title, descr: $("f-desc").value.trim(),
-      want: $("f-want").value.trim(), cat: $("f-cat").value
+      want: $("f-want").value.trim(), cat: $("f-cat").value,
+      photos: pendingPhotos.slice(0, 4)
     };
     Object.keys(asset).forEach(function (k) { rec[k] = asset[k]; });
     sb.from("items").insert(rec).then(function (r) {
       btn.disabled = false;
       if (r.error) return fail(r.error);
       $("postForm").reset(); $("f-cat").value = "Other"; $("f-assetfields").hidden = true;
+      pendingPhotos = []; paintThumbs();
       toast("Posted to the board."); show("browse"); load();
     });
   });

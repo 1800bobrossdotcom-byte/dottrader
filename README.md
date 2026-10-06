@@ -60,14 +60,17 @@ build step.
 site/index.html    landing page
 site/app.html      the board
 site/config.js     Supabase project URL + anon key
+site/photos.js         browser-side compress + metadata strip + upload
 supabase/schema.sql    tables, row-level security, the two transition functions
 supabase/wallets.sql   wallet + cross-chain asset columns
+supabase/privacy.sql   offers readable only by their two parties
+supabase/storage.sql   photo bucket and upload policies
 ```
 
 **Setup**
 
 1. Create a Supabase project.
-2. Run `supabase/schema.sql`, then `supabase/wallets.sql`, in the SQL editor.
+2. Run `supabase/schema.sql` first, then `wallets.sql`, `privacy.sql` and `storage.sql`, in the SQL editor.
 3. Under Authentication → URL Configuration, set the Site URL to your domain and
    add `/app` to the redirect URLs.
 4. Put the project URL and the **anon public** key into `site/config.js`.
