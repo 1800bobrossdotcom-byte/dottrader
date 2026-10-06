@@ -100,13 +100,8 @@ async function readMeta(uri) {
   throw last;
 }
 
-module.exports = async function handler(req, res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  const q = req.query || Object.fromEntries(new URL(req.url, "http://x").searchParams);
-  const chain = Number(q.chain), contract = String(q.contract || ""), id = String(q.id || ""), kind = String(q.kind || "erc721");
-  if (!RPC[chain] || !/^0x[0-9a-fA-F]{40}$/.test(contract) || !/^\d{1,80}$/.test(id) || !/^erc(721|1155)$/.test(kind)) {
-    res.statusCode = 400; res.setHeader("content-type", "application/json"); return res.end(JSON.stringify({ error: "bad request" }));
-  }
+// What a token is called and what it looks like. Also used by the listing pages, for link previews.
+async function lookup(chain, contract, id, kind) {
   const idHex = pad32(BigInt(id).toString(16));
   const out = { name: "", image: null, description: "", collection: "" };
   const [uriRes, nameRes] = await Promise.allSettled([
@@ -114,18 +109,33 @@ module.exports = async function handler(req, res) {
     ethCall(chain, contract, "0x06fdde03").then(abiString),
   ]);
   if (nameRes.status === "fulfilled") out.collection = nameRes.value;
-  let status = 200;
   if (uriRes.status === "fulfilled" && uriRes.value) {
     try {
       const j = await readMeta(uriRes.value.replace(/\{id\}/g, idHex));
       out.name = String(j.name || "").slice(0, 200);
       out.description = String(j.description || "").slice(0, 600);
       out.image = gateway(j.image || j.image_url || j.imageUrl || (j.properties && j.properties.image) || j.animation_url || null);
-    } catch (e) { out.partial = true; status = 200; }
+    } catch (e) { out.partial = true; }
   } else { out.partial = true; }
-  res.statusCode = status;
+  return out;
+}
+function validToken(chain, contract, id, kind) {
+  return !!RPC[chain] && /^0x[0-9a-fA-F]{40}$/.test(contract) && /^\d{1,80}$/.test(id) && /^erc(721|1155)$/.test(kind);
+}
+
+module.exports = async function handler(req, res) {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  const q = req.query || Object.fromEntries(new URL(req.url, "http://x").searchParams);
+  const chain = Number(q.chain), contract = String(q.contract || ""), id = String(q.id || ""), kind = String(q.kind || "erc721");
+  if (!validToken(chain, contract, id, kind)) {
+    res.statusCode = 400; res.setHeader("content-type", "application/json"); return res.end(JSON.stringify({ error: "bad request" }));
+  }
+  const out = await lookup(chain, contract, id, kind);
+  res.statusCode = 200;
   res.setHeader("content-type", "application/json");
   // A token's metadata rarely changes; a day at the edge, a week of stale-while-revalidate.
   res.setHeader("cache-control", out.partial ? "public, s-maxage=300" : "public, s-maxage=86400, stale-while-revalidate=604800");
   res.end(JSON.stringify(out));
 };
+module.exports.lookup = lookup;
+module.exports.validToken = validToken;

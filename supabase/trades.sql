@@ -100,7 +100,7 @@ begin
   if not me_done then raise exception 'mark your own side sent first'; end if;
   if them_done then raise exception 'they marked their side sent — this is not a no-show'; end if;
   update public.offers set status = 'cancelled', cancelled_by = auth.uid(), defaulted_by = them where id = p_offer;
-  update public.items set status = 'open' where id = o.item_id and status = 'pledged';
+  update public.items set status = 'open' where (id = o.item_id or id = any (o.give_items)) and status = 'pledged';
 end $$;
 
 -- Walking away is still allowed, but not after saying your side is on its way.
@@ -121,7 +121,7 @@ begin
     raise exception 'you are not part of this trade';
   end if;
   update public.offers set status = 'cancelled', cancelled_by = auth.uid() where id = p_offer;
-  update public.items set status = 'open' where id = o.item_id and status = 'pledged';
+  update public.items set status = 'open' where (id = o.item_id or id = any (o.give_items)) and status = 'pledged';
 end $$;
 
 -- ---------------------------------------------------------------- creating an offer
@@ -139,6 +139,14 @@ begin
   if it.status <> 'open' then raise exception 'this item is no longer on the board'; end if;
   new.owner_id := it.owner_id;
   if new.from_id = new.owner_id then raise exception 'you cannot offer on your own item'; end if;
+  -- Listings put into the offer: the offerer's own, still on the board, each once, never the item
+  -- being offered on.
+  new.give_items := coalesce((select array_agg(distinct g) from unnest(new.give_items) g), '{}');
+  if new.item_id = any (new.give_items) then raise exception 'you cannot offer an item for itself'; end if;
+  if exists (
+    select 1 from unnest(new.give_items) gid left join public.items g on g.id = gid
+     where g.id is null or g.owner_id <> new.from_id or g.status <> 'open'
+  ) then raise exception 'every listing you put in must be your own and still on the board'; end if;
   new.status := 'pending';
   new.confirm_owner := false; new.confirm_from := false;
   new.cancelled_by := null; new.defaulted_by := null; new.ship_by := null;

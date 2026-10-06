@@ -78,6 +78,9 @@ supabase/functions/notify/index.ts   Edge Function: the emails (offers, messages
 supabase/functions/bond/index.ts   Edge Function: Stripe card holds for trade bonds
 site/swap.js           atomic NFT-for-NFT swaps through Seaport 1.6
 api/nft.js             Vercel function: NFT name and artwork, read server-side
+api/item.js            Vercel function: each listing's own page, /item/<id>, for links and search
+api/c.js               Vercel function: category pages, /c/<category>, and /c for all of them
+api/sitemap.js         Vercel function: /sitemap.xml, built from what is on the board
 supabase/setup.sql     all of the above in order, in one paste (generated; safe to re-run)
 supabase/functions/verify-item/index.ts   Edge Function that scores a proof photo
 ```
@@ -161,6 +164,23 @@ the other side. Stripe holds the money, never this database. Card holds last abo
 is why the ship-by date is four days: the case a bond covers — "they never sent" — is decided
 inside that window.
 
+## Offering what you have already posted
+
+An offer can put in up to six of the offerer's own open listings — tap them in the offer sheet
+instead of describing them again. They must be the offerer's and still on the board when the offer
+is made and again when it is accepted. Accepting pledges all of them along with the item; a
+finished trade marks them all traded; a cancelled trade or a no-show puts them all back. Any other
+pending offer that involves one of them — on it, or putting it in — is declined at that moment, so
+one listing is never promised twice.
+
+## Shareable pages
+
+Every listing has its own address, `/item/<id>`, rendered on the server so link previews and
+search engines see its title, photo and what its owner wants. Category pages live at
+`/c/<category>`, and `/sitemap.xml` lists every open listing. Taken-down listings answer 404;
+traded ones stay readable but aren't indexed. "Make an offer" on those pages opens the board at
+`/app#item=<id>`.
+
 ## Leaving a trade
 
 An offer you made can be withdrawn while it is pending. An agreed trade can be
@@ -174,8 +194,9 @@ record, visible to the other party.
 ```
 npm run test:bond   # the bond Edge Function, with Stripe, the database and sign-in faked
 npm run test:notify # the notify Edge Function, with Resend and the database faked
-npm run test:db     # 83 checks on a throwaway Postgres: the trade state machine, permissions,
-                    # forged requests, and two accepts racing on one item (needs PGHOST etc.)
+npm run test:pages  # listing, category and sitemap pages, with the database faked
+npm run test:db     # 101 checks on a throwaway Postgres: the trade state machine, permissions,
+                    # forged requests, and accepts racing on the same listings (needs PGHOST etc.)
 ```
 
 The database suite applies `setup.sql` twice before each run, so it also proves the file is safe

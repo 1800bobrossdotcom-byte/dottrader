@@ -5,9 +5,10 @@
   "description": "A barter board. Post what you have, say what you want, swap.",
   "license": "MIT",
   "scripts": {
-    "test": "npm run test:bond && npm run test:notify && npm run test:db",
+    "test": "npm run test:bond && npm run test:notify && npm run test:pages && npm run test:db",
     "test:bond": "node --experimental-strip-types --no-warnings tests/bond.test.mjs",
     "test:notify": "node --experimental-strip-types --no-warnings tests/notify.test.mjs",
+    "test:pages": "node tests/pages.test.mjs",
     "test:db": "sh tests/db/run.sh"
   }
 }

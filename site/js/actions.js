@@ -178,5 +178,40 @@ function load() {
     }
     render();
     loadMatches();
+    followLink();
   });
+}
+
+/* ---- arriving from a listing's own page: /app#item=<id> or /app#cat=<category> ---- */
+var linkTo = (function () {
+  // Read now: this file loads before the sign-in client, which may tidy the address once it starts.
+  var h = location.hash || "", m = /[#&]item=([0-9a-f-]{36})/.exec(h), c = /[#&]cat=([^&]+)/.exec(h);
+  var cat = null; try { cat = c ? decodeURIComponent(c[1]) : null; } catch (e) {}
+  return m || cat ? { item: m ? m[1] : null, cat: cat } : null;
+})();
+function followLink() {
+  if (!linkTo) return;
+  var l = linkTo; linkTo = null;
+  try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {}
+  if (l.cat && CAT_HUE[l.cat]) { filter.cat = l.cat; syncCats(); show("browse"); render(); }
+  if (!l.item) return;
+  var have = items.filter(function (x) { return x.id === l.item; })[0];
+  (have ? Promise.resolve(have) : sb.from("items").select("*").eq("id", l.item).maybeSingle().then(function (r) { return r.data; })).then(function (it) {
+    if (!it || it.status === "removed") return toast("That listing isn't on the board any more.");
+    show("browse");
+    var card = document.querySelector('#feed [data-id="' + it.id + '"]');
+    if (card) { card.scrollIntoView({ block: "center" }); card.classList.add("lit"); setTimeout(function () { card.classList.remove("lit"); }, 2600); }
+    if (it.status !== "open") return toast("That one has already been traded.");
+    if (uid && it.owner_id === uid) return;
+    if (uid && offers.some(function (o) { return o.item_id === it.id && o.from_id === uid && (o.status === "pending" || o.status === "agreed"); })) return toast("You've already made an offer on that one — it's under My trades.");
+    if (!uid) return needAccount("Make an account to offer on \u201c" + it.title + "\u201d. It takes a minute.", function () { openOffer(it); });
+    openOffer(it);
+  });
+}
+
+function shareItem(it) {
+  var url = location.origin + "/item/" + it.id;
+  if (navigator.share) return navigator.share({ title: it.title + " \u2014 up for trade", url: url }).catch(function () {});
+  (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject()).then(function () { toast("Link copied \u2014 anyone can open it, no account needed."); },
+    function () { window.prompt("Copy this link:", url); });
 }

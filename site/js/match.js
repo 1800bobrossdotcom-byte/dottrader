@@ -90,7 +90,7 @@ function paintMatches() {
       '<span class="mby">' + esc(who(theirs.owner_id)) + " " + esc(wantsLine(theirs)) + "</span>" +
       '<span class="mfor">for your <b>' + esc(mine.title) + "</b></span>";
     var b = document.createElement("button"); b.type = "button"; b.className = "btn ok"; b.textContent = "Offer it";
-    b.addEventListener("click", function () { openOffer(theirs, mine.title); });
+    b.addEventListener("click", function () { openOffer(theirs, mine); });
     c.appendChild(b); row.appendChild(c);
   });
   box.appendChild(row);
@@ -111,7 +111,7 @@ function openWanting(it) {
         var y = itemById(id); if (!y) return;
         var b = document.createElement("button"); b.type = "button";
         b.innerHTML = '<span class="wi" style="background:' + cssColor(hueOf(y.cat)) + '"></span><span>' + esc(y.title) + "<small>" + esc(who(y.owner_id)) + " " + esc(wantsLine(y)) + "</small></span>";
-        b.addEventListener("click", function () { sh.close(); openOffer(y, it.title); });
+        b.addEventListener("click", function () { sh.close(); openOffer(y, it); });
         host.appendChild(b);
       });
     });

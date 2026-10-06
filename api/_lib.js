@@ -1,0 +1,122 @@
+// Dot Trading Post — shared pieces for the public pages (listings, categories, sitemap).
+//
+// These pages are rendered on the server so that search engines and link previews (iMessage,
+// WhatsApp, Discord, X…) see a real title, description and photo for every listing. They read the
+// database with the public anon key, exactly as any visitor's browser does: row-level security
+// decides what is visible, and nothing here can see more than a stranger could.
+//
+// Files starting with an underscore are not served by Vercel; this one is only required.
+
+const SB_URL = (process.env.SUPABASE_URL || "https://yujxwfghmauajrpduagl.supabase.co").replace(/\/$/, "");
+// The anon/publishable key is public by design — it is in site/config.js too.
+const SB_KEY = process.env.SUPABASE_ANON_KEY || "sb_publishable_3bOvzS08UOQsu1376idqDg_XHPmOgfp";
+const SITE = (process.env.SITE_URL || "https://www.dottrader.app").replace(/\/$/, "");
+
+async function rest(path) {
+  const r = await fetch(SB_URL + "/rest/v1/" + path, { headers: { apikey: SB_KEY, accept: "application/json" }, signal: AbortSignal.timeout(8000) });
+  if (!r.ok) { const e = new Error("rest " + r.status); e.status = r.status; throw e; }
+  return r.json();
+}
+
+function esc(s) {
+  return String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+// JSON inside a <script> block: "</script>" and friends must not end it early.
+function jsonLd(o) { return JSON.stringify(o).replace(/</g, "\\u003c").replace(/>/g, "\\u003e").replace(/&/g, "\\u0026"); }
+function clip(s, n) { s = String(s || "").replace(/\s+/g, " ").trim(); return s.length > n ? s.slice(0, n - 1).replace(/\s+\S*$/, "") + "…" : s; }
+
+// Kept in step with GROUPS in site/js/core.js.
+const GROUPS = [
+  ["Collectables", ["Trading Cards", "Comics", "Collectibles", "Coins & Stamps", "Memorabilia", "Antiques"]],
+  ["Games & Tech", ["Video Games", "Consoles & Retro", "Computers", "Phones", "Electronics", "Cameras", "Audio & Hi-Fi"]],
+  ["Media", ["Books", "Music & Vinyl", "Film & TV", "Board Games & Puzzles"]],
+  ["Home", ["Furniture", "Home & Kitchen", "Tools & DIY", "Garden", "Appliances"]],
+  ["Wearables", ["Clothing", "Shoes & Trainers", "Watches", "Jewellery", "Bags", "Beauty"]],
+  ["Sport & Outdoors", ["Sports Gear", "Bikes", "Camping & Outdoors", "Fitness"]],
+  ["Hobbies", ["Musical Instruments", "Art", "Craft & Sewing", "Models & Hobby", "Toys & Figures"]],
+  ["Vehicles", ["Cars & Parts", "Motorbikes"]],
+  ["Everything else", ["Baby & Kids", "Pet Supplies", "Office", "Industrial", "Tickets", "Services & Skills", "Other"]],
+];
+const HUES = ["var(--pink)", "var(--blue)", "var(--purple)", "var(--red)", "var(--cyan)", "var(--green)", "var(--yellow)", "#6B7280", "var(--faint)"];
+const CATS = [].concat(...GROUPS.map((g) => g[1]));
+function slug(cat) { return String(cat).toLowerCase().replace(/&/g, " ").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""); }
+function catBySlug(s) { return CATS.find((c) => slug(c) === s) || null; }
+function hueOf(cat) { const i = GROUPS.findIndex((g) => g[1].includes(cat)); return i < 0 ? "var(--faint)" : HUES[i]; }
+
+const CHAINS = {
+  1: ["Ethereum", "https://etherscan.io"], 8453: ["Base", "https://basescan.org"], 42161: ["Arbitrum", "https://arbiscan.io"],
+  10: ["Optimism", "https://optimistic.etherscan.io"], 137: ["Polygon", "https://polygonscan.com"], 56: ["BNB Chain", "https://bscscan.com"],
+  43114: ["Avalanche", "https://snowtrace.io"], 7777777: ["Zora", "https://explorer.zora.energy"],
+};
+
+function wantText(it) {
+  const bits = [];
+  if (it.want) bits.push(it.want);
+  if (it.want_cats && it.want_cats.length) bits.push((it.want ? "or any " : "Any ") + it.want_cats.join(", "));
+  if (!bits.length) return "Open to offers";
+  if (it.open_to_offers !== false) bits.push("open to other offers");
+  return bits.join(" · ");
+}
+
+const LOGO = '<svg viewBox="0 0 40 40" aria-hidden="true" width="34" height="34"><path d="M9 5h11a15 15 0 0 1 0 30H9z" fill="#FFD23F" stroke="#121212" stroke-width="3" stroke-linejoin="round"/><circle cx="20" cy="20" r="5.5" fill="#E8392B" stroke="#121212" stroke-width="3"/></svg>';
+
+// The whole page around a body. `noindex` for pages that should be reachable but not listed.
+function page(o) {
+  const url = SITE + o.path;
+  const image = o.image || SITE + "/og.png?v=5";
+  return '<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n' +
+    '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n' +
+    "<title>" + esc(o.title) + "</title>\n" +
+    '<meta name="description" content="' + esc(o.desc) + '">\n' +
+    (o.noindex ? '<meta name="robots" content="noindex">\n' : "") +
+    (o.noindex ? "" : '<link rel="canonical" href="' + esc(url) + '">\n') +
+    '<link rel="icon" href="/favicon.ico?v=5" sizes="48x48">\n<link rel="icon" href="/favicon.svg?v=5" type="image/svg+xml">\n' +
+    '<link rel="apple-touch-icon" href="/apple-touch-icon.png?v=5">\n<link rel="manifest" href="/manifest.webmanifest?v=5">\n' +
+    '<meta property="og:site_name" content="Dot Trading Post">\n' +
+    '<meta property="og:type" content="' + (o.ogType || "website") + '">\n' +
+    '<meta property="og:title" content="' + esc(o.ogTitle || o.title) + '">\n' +
+    '<meta property="og:description" content="' + esc(o.desc) + '">\n' +
+    '<meta property="og:url" content="' + esc(url) + '">\n' +
+    '<meta property="og:image" content="' + esc(image) + '">\n' +
+    (o.imageAlt ? '<meta property="og:image:alt" content="' + esc(o.imageAlt) + '">\n' : "") +
+    '<meta name="twitter:card" content="summary_large_image">\n' +
+    '<meta name="twitter:title" content="' + esc(o.ogTitle || o.title) + '">\n' +
+    '<meta name="twitter:description" content="' + esc(o.desc) + '">\n' +
+    '<meta name="twitter:image" content="' + esc(image) + '">\n' +
+    '<meta name="theme-color" content="#F3EAD3">\n' +
+    '<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n' +
+    '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">\n' +
+    '<link rel="stylesheet" href="/css/page.css?v=1">\n' +
+    (o.ld || []).map((x) => '<script type="application/ld+json">' + jsonLd(x) + "</script>\n").join("") +
+    "</head>\n<body>\n" +
+    '<header class="top"><div class="wrap bar"><a class="brand" href="/">' + LOGO + '<span class="t">Dot Trading Post<small>BARTER BOARD</small></span></a>' +
+    '<a class="navbtn" href="/app">Open the board</a></div></header>\n' +
+    '<main class="wrap">\n' + o.body + "\n</main>\n" +
+    '<footer class="wrap foot"><a href="/">How it works</a><a href="/app">The board</a><a href="/c/trading-cards">Trading cards</a><a href="/c/video-games">Video games</a><a href="/c/consoles-retro">Consoles &amp; retro</a></footer>\n' +
+    '<script src="/js/share.js?v=1" defer></script>\n</body>\n</html>\n';
+}
+
+function send(res, status, html, maxAge) {
+  res.statusCode = status;
+  res.setHeader("content-type", "text/html; charset=utf-8");
+  // Short at the edge so a new or changed listing shows up quickly; serve stale while refreshing.
+  res.setHeader("cache-control", status === 200 ? "public, s-maxage=" + (maxAge || 120) + ", stale-while-revalidate=86400" : "public, s-maxage=60");
+  res.end(html);
+}
+
+function notFound(res, what) {
+  send(res, 404, page({
+    path: "/", title: "Not here — Dot Trading Post", desc: "This page isn't on the board.", noindex: true,
+    body: '<section class="empty"><h1>' + esc(what || "Nothing here") + '</h1><p>It may have been traded or taken down.</p><p><a class="btn" href="/app">See what is on the board</a></p></section>',
+  }));
+}
+
+// A small card linking to a listing's own page, used on category pages and under a listing.
+function miniCard(it, img) {
+  const pic = img || (it.photos && it.photos[0]);
+  return '<a class="mini" href="/item/' + esc(it.id) + '" style="--c:' + hueOf(it.cat) + '">' +
+    (pic ? '<img src="' + esc(pic) + '" alt="" loading="lazy">' : '<span class="noimg" aria-hidden="true"></span>') +
+    '<span class="mt">' + esc(it.title) + '</span><span class="mw"><b>Wants</b> ' + esc(wantText(it)) + "</span></a>";
+}
+
+module.exports = { SB_URL, SB_KEY, SITE, rest, esc, jsonLd, clip, GROUPS, CATS, slug, catBySlug, hueOf, CHAINS, wantText, page, send, notFound, miniCard };

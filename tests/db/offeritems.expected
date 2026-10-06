@@ -1,0 +1,17 @@
+O1 offering two of my listings (one named twice) stores: 2
+O2 putting in someone else's listing: refused: every listing you put in must be your own and still on the board
+O3 putting in a listing that does not exist: refused: every listing you put in must be your own and still on the board
+O4 accepted: lamp pledged, card one pledged, card two pledged
+O5 other offers putting in card two: declined
+O6 other offers on card one itself: declined
+O7 an unrelated offer: pending
+O8 offering on a pledged card: refused: this item is no longer on the board
+O9 putting a pledged card into another offer: refused: every listing you put in must be your own and still on the board
+O10 cancelled: lamp open, card one open, card two open
+O11 card one traded away elsewhere; the offer that put it in: declined
+O12 card two removed; the offer that put it in: declined
+O13 done: lamp traded, card three traded
+O14 no-show: second lamp open, card four open
+O15 more than six listings in one offer: refused: every listing you put in must be your own and still on the board
+R2 agreed trades holding one card after a simultaneous double accept: 1
+R3 the other owner was told: ERROR:  this offer is no longer pending

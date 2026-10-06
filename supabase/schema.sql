@@ -110,6 +110,8 @@ begin
   if not found then raise exception 'item not found'; end if;
   if it.owner_id <> auth.uid() then raise exception 'you can only remove your own listing'; end if;
   if it.status = 'pledged' then raise exception 'it is in an agreed trade — finish or cancel that first'; end if;
+  -- Offers elsewhere that put this listing in can't be kept any more.
+  update public.offers set status = 'declined' where status = 'pending' and p_item = any (give_items);
   if exists (select 1 from public.offers o where o.item_id = p_item and (o.status in ('agreed', 'done', 'cancelled'))) then
     update public.offers set status = 'declined' where item_id = p_item and status = 'pending';
     update public.items set status = 'removed' where id = p_item;
@@ -135,7 +137,15 @@ create table if not exists public.offers (
   created_at     timestamptz not null default now()
 );
 
+-- Listings of the offerer's own that they are putting into the offer (up to six). They travel with
+-- the trade: pledged when it is accepted, traded when it completes, back on the board if it falls
+-- through — so one listing can't be promised in two trades at once.
+alter table public.offers add column if not exists give_items uuid[] not null default '{}';
+alter table public.offers drop constraint if exists offers_give_items_max;
+alter table public.offers add constraint offers_give_items_max check (coalesce(array_length(give_items, 1), 0) <= 6);
+
 create index if not exists offers_item_idx on public.offers (item_id);
+create index if not exists offers_give_items_idx on public.offers using gin (give_items);
 create index if not exists offers_people_idx on public.offers (owner_id, from_id);
 
 alter table public.offers enable row level security;
@@ -154,22 +164,31 @@ create policy "insert own offer" on public.offers for insert
 
 create or replace function public.accept_offer(p_offer uuid)
 returns void language plpgsql security definer set search_path = public as $$
-declare o public.offers; it public.items;
+declare o public.offers; it public.items; v_all uuid[];
 begin
-  select * into o from public.offers where id = p_offer for update;
+  -- Which listings an offer involves never changes after it is made, so read that first, lock
+  -- those listings (always in the same order), and only then lock the offer itself. Two accepts
+  -- touching the same listings queue on the first lock; the second then finds its offer declined
+  -- or something pledged and stops with a reason, rather than deadlocking with the first.
+  select * into o from public.offers where id = p_offer;
   if not found then raise exception 'offer not found'; end if;
-  -- Lock the item, then check everything against it rather than against what the offer claims.
-  -- Two accepts racing on one item now queue here; the second finds it pledged and stops.
-  select * into it from public.items where id = o.item_id for update;
+  v_all := o.item_id || o.give_items;
+  perform 1 from public.items where id = any (v_all) order by id for update;
+  select * into o from public.offers where id = p_offer for update;
+  select * into it from public.items where id = o.item_id;
   if it.owner_id <> auth.uid() or o.owner_id <> it.owner_id then raise exception 'only the person who posted the item can accept'; end if;
   if it.status <> 'open' then raise exception 'this item is already in a trade'; end if;
   if o.status <> 'pending' then raise exception 'this offer is no longer pending'; end if;
+  if exists (
+    select 1 from unnest(o.give_items) gid left join public.items g on g.id = gid
+     where g.id is null or g.owner_id <> o.from_id or g.status <> 'open'
+  ) then raise exception 'something in this offer is no longer on the board — ask them to offer again'; end if;
 
   update public.offers set status = 'agreed' where id = p_offer;
-  update public.items  set status = 'pledged' where id = o.item_id;
-  -- Every other open offer on that item is now moot.
+  update public.items  set status = 'pledged' where id = any (v_all);
+  -- Every other open offer on any of these listings, or putting any of them in, is now moot.
   update public.offers set status = 'declined'
-   where item_id = o.item_id and id <> p_offer and status = 'pending';
+   where id <> p_offer and status = 'pending' and (item_id = any (v_all) or give_items && v_all);
 end $$;
 
 create or replace function public.decline_offer(p_offer uuid)
@@ -204,7 +223,7 @@ begin
   select confirm_owner and confirm_from into v_both from public.offers where id = p_offer;
   if v_both then
     update public.offers set status = 'done' where id = p_offer;
-    update public.items  set status = 'traded' where id = o.item_id;
+    update public.items  set status = 'traded' where id = o.item_id or id = any (o.give_items);
   end if;
 end $$;
 

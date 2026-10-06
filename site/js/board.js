@@ -78,14 +78,19 @@ function row(n, what) {
   return '<div><span class="amt' + (n ? "" : " zero") + '"' + (n < 0 ? ' style="color:var(--red)"' : "") + ">" + (n > 0 ? "+" + n : n < 0 ? "\u2212" + (-n) : "0") + '</span><span class="what">' + esc(what) + "</span></div>";
 }
 
+// `give` is either words to start the offer with, or one of the viewer's own listings to put in.
 function openOffer(it, give) {
+  var mineOpen = items.filter(function (x) { return x.owner_id === uid && x.status === "open" && x.id !== it.id; });
+  var picked = give && typeof give === "object" ? [give.id] : [];
   var veil = document.createElement("div"); veil.className = "veil";
   var form = document.createElement("form"); form.className = "sheet f";
   form.innerHTML =
     "<h3>Offer a trade</h3>" +
     '<div style="font-size:13px;color:var(--muted)">For <b style="color:var(--ink)">' + esc(it.title) +
       '</b> — they want <b style="color:var(--ink)">' + esc(wantText(it)) + "</b></div>" +
-    '<div><label for="o-give">What you are offering</label><input id="o-give" maxlength="80" required placeholder="Retro console, boxed"></div>' +
+    (mineOpen.length ? '<div><span class="lbl" id="o-minelbl">Offer something you have posted <span class="hint">— tap one or more</span></span>' +
+      '<div class="pickmine" id="o-mine" role="group" aria-labelledby="o-minelbl"></div></div>' : "") +
+    '<div><label for="o-give">' + (mineOpen.length ? "Or describe what you are offering" : "What you are offering") + '</label><input id="o-give" maxlength="80" required placeholder="Retro console, boxed"></div>' +
     '<div class="assetbox"><label class="tick"><input type="checkbox" id="o-isasset"> <span>Offering a digital asset</span></label>' +
       '<div id="o-assetfields" hidden><p class="hint" style="margin:0 0 12px">It can be on any chain — it does not have to match theirs.</p>' +
       '<div class="rowf"><div><label for="o-chain">Chain</label><select id="o-chain"></select></div>' +
@@ -109,8 +114,35 @@ function openOffer(it, give) {
   });
   form.querySelector("[data-x]").addEventListener("click", function () { veil.remove(); });
   veil.addEventListener("click", function (e) { if (e.target === veil) veil.remove(); });
-  if (give) form.querySelector("#o-give").value = String(give).slice(0, 80);
-  setTimeout(function () { var i = form.querySelector("#o-give"); if (i) i.focus(); }, 30);
+  var giveIn = form.querySelector("#o-give"), autoGive = "";
+  // Picking listings writes the offer's words for you, until you type your own.
+  function syncGive() {
+    var t = picked.map(function (id) { return (itemById(id) || {}).title || ""; }).filter(Boolean).join(" + ");
+    if (t.length > 80) t = t.slice(0, 79) + "\u2026";
+    if (giveIn.value === autoGive) giveIn.value = t;
+    autoGive = t;
+    form.querySelector("label[for=o-give]").textContent = picked.length ? "Your offer, in a few words" : mineOpen.length ? "Or describe what you are offering" : "What you are offering";
+  }
+  if (mineOpen.length) {
+    var host = form.querySelector("#o-mine");
+    mineOpen.forEach(function (m) {
+      var b = document.createElement("button"); b.type = "button"; b.className = "pm"; b.dataset.id = m.id;
+      var pic = m.photos && m.photos[0];
+      b.innerHTML = (pic ? '<img src="' + esc(pic) + '" alt="">' : '<span class="pi" style="background:' + hueOf(m.cat) + '">' + esc(m.title.charAt(0).toUpperCase()) + "</span>") +
+        "<span>" + esc(m.title) + "</span>";
+      b.setAttribute("aria-pressed", String(picked.indexOf(m.id) >= 0));
+      b.addEventListener("click", function () {
+        var i = picked.indexOf(m.id);
+        if (i >= 0) picked.splice(i, 1); else if (picked.length >= 6) return toast("Six listings is the most one offer can hold."); else picked.push(m.id);
+        b.setAttribute("aria-pressed", String(i < 0));
+        syncGive();
+      });
+      host.appendChild(b);
+    });
+  }
+  if (picked.length) syncGive();
+  else if (give) giveIn.value = String(give).slice(0, 80);
+  setTimeout(function () { var f = form.querySelector(picked.length || !mineOpen.length ? "#o-give" : "#o-mine .pm"); if (f) f.focus(); }, 30);
   form.addEventListener("submit", function (e) {
     e.preventDefault();
     var give = form.querySelector("#o-give").value.trim();
@@ -128,7 +160,17 @@ function openOffer(it, give) {
     veil.remove();
     var rec = { item_id: it.id, owner_id: it.owner_id, from_id: uid, give: give, msg: msg };
     Object.keys(asset).forEach(function (k) { rec[k] = asset[k]; });
+    if (picked.length) {
+      rec.give_items = picked.slice();
+      // A digital listing put in carries its token with it, so the owner sees it checked on chain.
+      var tok = isAsset ? null : picked.map(itemById).filter(function (x) { return x && x.asset_kind; })[0];
+      if (tok) ["asset_kind", "asset_chain", "asset_contract", "asset_token_id"].forEach(function (k) { rec[k] = tok[k]; });
+    }
     sb.from("offers").insert(rec)
-      .then(function (r) { if (r.error) return fail(r.error); toast("Offer sent."); load(); });
+      .then(function (r) {
+        if (r.error && /give_items/.test(r.error.message || "")) return toast("Offering your own posts isn't switched on for this board yet \u2014 describe it in words for now.");
+        if (r.error) return fail(r.error);
+        toast("Offer sent."); load();
+      });
   });
 }

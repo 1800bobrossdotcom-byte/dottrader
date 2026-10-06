@@ -14,3 +14,4 @@ H13 remove a listing in an agreed trade: refused: it is in an agreed trade — f
 H14 remove after a cancelled trade: removed, trade record kept: 1
 H15 offer on a removed listing: refused: this item is no longer on the board
 R1 agreed trades after a simultaneous double accept: 1
+R1b the other accept was told: ERROR:  this item is already in a trade

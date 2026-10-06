@@ -5,6 +5,24 @@
   "installCommand": "",
   "framework": null,
   "cleanUrls": true,
+  "rewrites": [
+    {
+      "source": "/item/:id",
+      "destination": "/api/item?id=:id"
+    },
+    {
+      "source": "/c",
+      "destination": "/api/c"
+    },
+    {
+      "source": "/c/:cat",
+      "destination": "/api/c?cat=:cat"
+    },
+    {
+      "source": "/sitemap.xml",
+      "destination": "/api/sitemap"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",

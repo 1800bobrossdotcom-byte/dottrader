@@ -121,6 +121,13 @@ function itemCard(it, opts) {
     sw.addEventListener("click", function () { openWanting(it); });
     foot.appendChild(sw);
   }
+  if (!traded) {
+    var sh = document.createElement("button");
+    sh.className = "linkbtn share"; sh.type = "button"; sh.textContent = "Share";
+    sh.setAttribute("aria-label", "Share \u201c" + it.title + "\u201d");
+    sh.addEventListener("click", function () { shareItem(it); });
+    foot.appendChild(sh);
+  }
   if (mine && opts.manage && !traded && !pledged) {
     var ed = document.createElement("button");
     ed.className = "btn ghost"; ed.type = "button"; ed.textContent = "Edit";
@@ -162,6 +169,12 @@ function offerCard(o, dir) {
   h += '<div class="sides"><div class="side h"><span class="k">They give</span><span class="v">' + esc(o.give) + "</span></div>" +
     '<div class="arrow" aria-hidden="true"></div>' +
     '<div class="side w"><span class="k">For</span><span class="v">' + esc(title) + "</span></div></div>";
+  var gi = (o.give_items || []).map(itemById).filter(Boolean);
+  if (gi.length) h += '<div class="gitems"><span class="k">' + (dir === "in" ? "Their listings in this offer" : "Your listings in this offer") + "</span>" +
+    gi.map(function (g) {
+      var pic = g.photos && g.photos[0];
+      return '<a href="/item/' + esc(g.id) + '" target="_blank" rel="noopener">' + (pic ? '<img src="' + esc(pic) + '" alt="">' : '<span class="pi" style="background:' + hueOf(g.cat) + '">' + esc(g.title.charAt(0).toUpperCase()) + "</span>") + "<span>" + esc(g.title) + "</span></a>";
+    }).join("") + "</div>";
   h += assetRow(o, verifiedWallet(profiles[o.from_id]));
   if (o.msg) h += '<div class="msg">' + esc(o.msg) + "</div>";
   el.innerHTML = h;
