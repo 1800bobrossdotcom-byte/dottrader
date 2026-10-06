@@ -68,6 +68,10 @@ supabase/storage.sql   photo bucket and upload policies
 supabase/verify.sql    proof-of-item table, badge view, withdraw + cancel
 supabase/location.sql  rough lat/lng on profiles for "near me" and the map
 supabase/messages.sql  a private thread on each offer, for its two parties only
+supabase/trades.sql    ship-by dates, "sent" + tracking, no-shows, swap orders, bonds, payouts
+supabase/functions/bond/index.ts   Edge Function: Stripe card holds for trade bonds
+site/swap.js           atomic NFT-for-NFT swaps through Seaport 1.6
+api/nft.js             Vercel function: NFT name and artwork, read server-side
 supabase/setup.sql     all of the above in order, in one paste (generated; safe to re-run)
 supabase/functions/verify-item/index.ts   Edge Function that scores a proof photo
 ```
@@ -88,7 +92,21 @@ supabase/functions/verify-item/index.ts   Edge Function that scores a proof phot
    `ANTHROPIC_API_KEY`. The function reads `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` from the
    environment Supabase gives it; nothing needs pasting for those.
 
-The board probes for each optional piece (photos, location, messages, Proof of item) when it loads
+7. For trade bonds: create a Stripe account and turn on Connect (Express accounts), so a bond
+   forfeited by a no-show can be paid to the other side. Edge Functions → Deploy a new function
+   named `bond`, paste `supabase/functions/bond/index.ts`, and turn **Verify JWT off** for it (it
+   checks the caller's session itself). Add the secret `STRIPE_SECRET_KEY` — start with your
+   `sk_test_` key and switch to `sk_live_` when you are ready. Optional: `BOND_CENTS` (default
+   2500), `BOND_FEE_CENTS` (default 150). Before charging real cards, publish terms of service
+   that describe bonds, fees and how no-shows are decided.
+8. For the swap fee: put the wallet that should receive it in `swapFee.recipient` in
+   `site/config.js`. Empty means swaps are free. Per-chain amounts are in the same place.
+
+Forfeited bonds become payouts that wait for a person: set `approved` to true on the row in
+Table Editor → payouts once you are satisfied the other side really didn't send. The recipient
+then claims it from My trades and Stripe walks them through getting paid.
+
+The board probes for each optional piece (photos, location, messages, Proof of item, protected trades, bonds) when it loads
 and simply doesn't offer what the project hasn't switched on yet, so nothing fails halfway.
 
 The anon key belongs in the page — that's what it's for. Row-level security in
@@ -109,6 +127,26 @@ The code is readable only by its owner, and only the Edge Function — holding t
 service role — can mark a row verified. The page can ask; it cannot award.
 Everyone else sees the public half through the `verification_badges` view: the
 proof photo and a one-line read, never the code.
+
+## Protected trades
+
+An agreed trade gets a ship-by date four days out. Each side marks its own side sent — posted
+with a tracking number, handed over in person, or moved on chain — and once you have, you can't
+cancel. Past the date, a side that sent can close the trade against a side that didn't: a
+no-show, which costs three dots and is visible on every card that person lists.
+
+**Swaps.** When both sides are NFTs on the same chain, nobody sends first. The lister signs a
+Seaport 1.6 order — their NFT for the other's, plus the board's flat fee if one is configured —
+and the other side fills it in one transaction: both move, or neither does. The database refuses
+an order that offers anything but the listed item or asks for anything but the offered one, and
+the filler's browser checks the order again before the wallet opens. Approvals go to OpenSea's
+conduit, which most holders have already approved.
+
+**Bonds.** Either side can put a hold on their card through Stripe. A completed trade releases
+the hold and keeps the fee; a called-off trade releases it in full; a no-show forfeits theirs to
+the other side. Stripe holds the money, never this database. Card holds last about a week, which
+is why the ship-by date is four days: the case a bond covers — "they never sent" — is decided
+inside that window.
 
 ## Leaving a trade
 

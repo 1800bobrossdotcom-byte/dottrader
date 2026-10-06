@@ -43,9 +43,22 @@ function abiString(hex) {
   return Buffer.from(h.slice(off + 64, off + 64 + len * 2), "hex").toString("utf8");
 }
 
-function gateway(u) {
+// Public IPFS gateways, best first. In 2026 ipfs.io, dweb.link, w3s.link and nftstorage.link all
+// stopped serving direct requests (429, "switching to a service worker gateway"); Filebase still
+// answers, with open CORS, so images load straight into the page too. Links that name a dead
+// gateway are rewritten onto the live one, since plenty of metadata hard-codes ipfs.io.
+const IPFS = ["https://ipfs.filebase.io/ipfs/", "https://gateway.pinata.cloud/ipfs/", "https://ipfs.io/ipfs/"];
+function ipfsPath(u) {
+  if (u.startsWith("ipfs://")) return u.slice(7).replace(/^ipfs\//, "");
+  const m = /^https?:\/\/[^/]+\/ipfs\/(.+)$/.exec(u);
+  if (m) return m[1];
+  const sub = /^https?:\/\/((?:Qm|baf)[a-z0-9]+)\.ipfs\.[^/]+\/?(.*)$/i.exec(u);
+  return sub ? sub[1] + (sub[2] ? "/" + sub[2] : "") : null;
+}
+function gateway(u, n = 0) {
   if (!u || typeof u !== "string") return null;
-  if (u.startsWith("ipfs://")) return "https://ipfs.io/ipfs/" + u.slice(7).replace(/^ipfs\//, "");
+  const p = ipfsPath(u);
+  if (p) return IPFS[Math.min(n, IPFS.length - 1)] + p;
   if (u.startsWith("ar://")) return "https://arweave.net/" + u.slice(5);
   return u;
 }
@@ -79,7 +92,12 @@ async function fetchJson(url) {
 async function readMeta(uri) {
   const m = /^data:application\/json(;[^,]*)?,([\s\S]*)$/.exec(uri);
   if (m) return JSON.parse(/base64/.test(m[1] || "") ? Buffer.from(m[2], "base64").toString("utf8") : decodeURIComponent(m[2]));
-  return fetchJson(gateway(uri));
+  if (!ipfsPath(uri)) return fetchJson(gateway(uri));
+  let last;
+  for (let n = 0; n < IPFS.length; n++) {
+    try { return await fetchJson(gateway(uri, n)); } catch (e) { last = e; }
+  }
+  throw last;
 }
 
 module.exports = async function handler(req, res) {

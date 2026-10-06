@@ -5,5 +5,23 @@
 // one that must never appear here.
 window.DTP_CONFIG = {
   url: "https://yujxwfghmauajrpduagl.supabase.co",
-  anonKey: "sb_publishable_3bOvzS08UOQsu1376idqDg_XHPmOgfp"
+  anonKey: "sb_publishable_3bOvzS08UOQsu1376idqDg_XHPmOgfp",
+
+  // Atomic NFT swaps: a flat fee paid by whoever completes a swap, in each chain's own coin,
+  // written into the signed order so it is paid in the same transaction. Leave `recipient` empty
+  // to charge nothing. Amounts are in wei (1 ETH = 1000000000000000000). The defaults are roughly
+  // $1.50–2 each at autumn-2026 prices; adjust as prices move.
+  swapFee: {
+    recipient: "",
+    wei: {
+      1: "500000000000000",            // Ethereum  0.0005 ETH
+      8453: "500000000000000",         // Base      0.0005 ETH
+      42161: "500000000000000",        // Arbitrum  0.0005 ETH
+      10: "500000000000000",           // Optimism  0.0005 ETH
+      7777777: "500000000000000",      // Zora      0.0005 ETH
+      137: "5000000000000000000",      // Polygon   5 POL
+      56: "2500000000000000",          // BNB Chain 0.0025 BNB
+      43114: "60000000000000000"       // Avalanche 0.06 AVAX
+    }
+  }
 };
