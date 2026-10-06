@@ -6,6 +6,11 @@
 "use strict";
 
 var $ = function (id) { return document.getElementById(id); };
+// An Edge Function's URL, by its address in config.js (see the note there).
+function fnUrl(k) {
+  var c = window.DTP_CONFIG || {}, f = (c.functions || {})[k] || { verify: "verify-item", bond: "bond" }[k];
+  return c.url + "/functions/v1/" + f;
+}
 
 var GROUPS = [
   ["Collectables", ["Trading Cards", "Comics", "Collectibles", "Coins & Stamps", "Memorabilia", "Antiques"]],

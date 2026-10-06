@@ -23,7 +23,7 @@ function probe() {
     has(sb.from("profiles").select("lat").limit(1)),
     has(sb.from("messages").select("id").limit(1)),
     // A plain GET has no preflight; "not deployed" is a 404 from the gateway, anything else means it is there.
-    fetch(cfg.url + "/functions/v1/verify-item").then(function (r) { return r.status !== 404; }, function () { return true; }),
+    fetch(fnUrl("verify")).then(function (r) { return r.status !== 404; }, function () { return true; }),
     has(sb.from("offers").select("ship_by").limit(1)),
     has(sb.from("bonds").select("id").limit(1)),
     has(sb.from("items").select("want_cats").limit(1)),
@@ -32,7 +32,7 @@ function probe() {
     has(sb.from("trade_history").select("id").limit(1)),
     has(sb.from("items").select("local_only").limit(1)),
     // The bond function answers a plain GET with its price; 401 means it is there behind JWT checks.
-    fetch(cfg.url + "/functions/v1/bond").then(function (r) {
+    fetch(fnUrl("bond")).then(function (r) {
       if (r.status === 200) return r.json();
       return r.status === 404 ? null : { bond_cents: 2500, fee_cents: 150 };
     }, function () { return null; })

@@ -194,7 +194,7 @@ function bondCall(body) {
   return sb.auth.getSession().then(function (r) {
     var t = r.data && r.data.session && r.data.session.access_token;
     if (!t) throw new Error("Sign in again first.");
-    return fetch(cfg.url + "/functions/v1/bond", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + t, apikey: cfg.anonKey }, body: JSON.stringify(body) });
+    return fetch(fnUrl("bond"), { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + t, apikey: cfg.anonKey }, body: JSON.stringify(body) });
   }).then(function (res) { return res.json().then(function (j) { if (!res.ok) throw new Error(j.error || "The bond service didn’t answer."); return j; }); });
 }
 function startBond(o) {

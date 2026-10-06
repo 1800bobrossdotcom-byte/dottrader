@@ -7,6 +7,11 @@ window.DTP_CONFIG = {
   url: "https://yujxwfghmauajrpduagl.supabase.co",
   anonKey: "sb_publishable_3bOvzS08UOQsu1376idqDg_XHPmOgfp",
 
+  // Edge Function addresses: the last part of each function's URL in Supabase → Edge Functions.
+  // The dashboard editor can give a function a random address whatever it is labelled, so the
+  // board asks for each one by the address written here.
+  functions: { verify: "swift-processor", bond: "bond" },
+
   // Atomic NFT swaps: a flat fee paid by whoever completes a swap, in each chain's own coin,
   // written into the signed order so it is paid in the same transaction. Leave `recipient` empty
   // to charge nothing. Amounts are in wei (1 ETH = 1000000000000000000). The defaults are roughly

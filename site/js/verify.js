@@ -54,7 +54,7 @@ function openVerify(it) {
       }).then(function (sr) {
         var token = sr.data && sr.data.session && sr.data.session.access_token;
         if (!token) throw new Error("Your session expired — sign in again.");
-        return fetch(cfg.url + "/functions/v1/verify-item", {
+        return fetch(fnUrl("verify"), {
           method: "POST",
           headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token, "apikey": cfg.anonKey },
           body: JSON.stringify({ verification_id: v.id, proof_path: url })

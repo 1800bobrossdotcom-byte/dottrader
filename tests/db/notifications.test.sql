@@ -22,3 +22,13 @@ select set_config('req.uid','a0000000-0000-0000-0000-000000000001',false);
 select 'N7 accepting with the triggers in place: ' || pg_temp.try($q$select public.accept_offer('20000000-0000-0000-0000-000000000001')$q$);
 select 'N8 turning emails off: ' || pg_temp.try($q$update public.profiles set email_notify = false where id = 'a0000000-0000-0000-0000-000000000001'$q$);
 select 'N10 anyone reads what was sent: ' || count(*) from public.notifications_sent;
+-- Where notify_event sends: the configured function address, not a fixed name.
+reset role;
+create schema if not exists net;
+create table net.log (url text, body jsonb);
+create function net.http_post(url text, body jsonb, headers jsonb) returns bigint language sql as $$ insert into net.log values (url, body); select 1::bigint $$;
+select public.notify_event('shipby_sweep', null);
+select 'N11 by default it calls: ' || url from net.log;
+update public.app_config set value = 'clever-function' where key = 'notify_function';
+truncate net.log; select public.notify_event('shipby_sweep', null);
+select 'N12 with an address set it calls: ' || url from net.log;

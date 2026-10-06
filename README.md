@@ -124,6 +124,12 @@ Forfeited bonds become payouts that wait for a person: set `approved` to true on
 Table Editor → payouts once you are satisfied the other side really didn't send. The recipient
 then claims it from My trades and Stripe walks them through getting paid.
 
+**Function addresses.** Supabase's dashboard editor can give a new function a random address
+(the last part of its URL, e.g. `clever-function`) whatever name it is labelled with. The board
+calls functions by the addresses in `functions` in `site/config.js`, and the database calls the
+notify function by the `notify_function` row in `app_config`:
+`update public.app_config set value = 'clever-function' where key = 'notify_function';`
+
 The board probes for each optional piece (photos, location, messages, Proof of item, protected trades, bonds, matching, email settings) when it loads
 and simply doesn't offer what the project hasn't switched on yet, so nothing fails halfway.
 

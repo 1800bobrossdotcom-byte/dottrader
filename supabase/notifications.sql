@@ -34,6 +34,9 @@ alter table public.app_config enable row level security;
 insert into public.app_config (key, value)
 values ('functions_url', 'https://yujxwfghmauajrpduagl.supabase.co/functions/v1')
 on conflict (key) do nothing;
+-- The notify function's address. Supabase's editor can give a new function a random address
+-- (e.g. "clever-function") whatever its label says; set this to the last part of its URL.
+insert into public.app_config (key, value) values ('notify_function', 'notify') on conflict (key) do nothing;
 
 -- pg_net lets the database make an HTTP call without waiting for it. On Supabase it is available;
 -- elsewhere (a local test database) it may not be, and notifications are then simply off.
@@ -44,13 +47,14 @@ end $$;
 
 create or replace function public.notify_event(p_kind text, p_id uuid)
 returns void language plpgsql security definer set search_path = public as $$
-declare base text;
+declare base text; fn text;
 begin
   if to_regproc('net.http_post') is null then return; end if;
   select value into base from public.app_config where key = 'functions_url';
   if base is null then return; end if;
+  select value into fn from public.app_config where key = 'notify_function';
   execute 'select net.http_post(url := $1, body := $2, headers := $3)'
-    using base || '/notify', jsonb_build_object('kind', p_kind, 'id', p_id), '{"Content-Type": "application/json"}'::jsonb;
+    using base || '/' || coalesce(nullif(btrim(fn), ''), 'notify'), jsonb_build_object('kind', p_kind, 'id', p_id), '{"Content-Type": "application/json"}'::jsonb;
 exception when others then
   raise warning 'notify_event % % failed: %', p_kind, p_id, sqlerrm;   -- never let an email break a trade
 end $$;
