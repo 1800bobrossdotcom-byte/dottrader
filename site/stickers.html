@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sticker pack — Dot Trading Post</title>
+<meta name="description" content="Free Dot Trading Post stickers: download them, share them, print a sheet at home, or order them printed. Trade anything for anything.">
+<link rel="canonical" href="https://www.dottrader.app/stickers">
+<link rel="icon" href="/favicon.ico?v=5" sizes="48x48">
+<link rel="icon" href="/favicon.svg?v=5" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png?v=5">
+<link rel="manifest" href="/manifest.webmanifest?v=5">
+<meta property="og:site_name" content="Dot Trading Post">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Dot Trading Post sticker pack">
+<meta property="og:description" content="Six free stickers — download, share, print at home or order printed.">
+<meta property="og:url" content="https://www.dottrader.app/stickers">
+<meta property="og:image" content="https://www.dottrader.app/stickers/pack-preview.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://www.dottrader.app/stickers/pack-preview.png">
+<meta name="theme-color" content="#F3EAD3">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="/css/page.css?v=3">
+<style>
+  .head .acts { margin-top:4px; }
+  .pack { display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:22px; margin:6px 0 10px; }
+  .stk { display:flex; flex-direction:column; gap:10px; background:var(--card); border:var(--bw) solid var(--ink); border-radius:var(--r); padding:14px; box-shadow:var(--sh); }
+  .stk .art { aspect-ratio:1; border:2px solid var(--ink); border-radius:6px; display:grid; place-items:center; overflow:hidden;
+    background:repeating-conic-gradient(#e7dfcc 0 25%, #f6f0e2 0 50%) 0 0/18px 18px; }
+  .stk .art.sq { background:var(--sunk); }
+  .stk .art img { width:100%; height:100%; object-fit:contain; display:block; }
+  .stk h3 { font-family:var(--display); font-weight:700; font-size:18px; margin:0; letter-spacing:-.01em; }
+  .stk p { margin:0; color:var(--muted); font-size:14px; }
+  .stk .meta { font-family:var(--mono); font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+  .stk .row { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+  .btn.sm { padding:7px 13px; font-size:13px; box-shadow:2px 2px 0 var(--ink); }
+  .qty { display:flex; align-items:center; gap:8px; margin-left:auto; font-size:13px; font-weight:600; }
+  .qty input { width:58px; font:inherit; padding:5px 8px; border:2px solid var(--ink); border-radius:6px; background:#fff; }
+  .panel { background:var(--card); border:var(--bw) solid var(--ink); border-radius:var(--r); padding:20px; box-shadow:var(--sh); margin:34px 0; }
+  .panel h2 { font-family:var(--display); font-weight:700; font-size:24px; margin:0 0 6px; letter-spacing:-.01em; }
+  .controls { display:flex; flex-wrap:wrap; gap:14px 22px; align-items:end; margin:14px 0 18px; }
+  .controls label { display:grid; gap:4px; font-family:var(--mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase; font-weight:600; }
+  .controls select { font:15px var(--body); padding:7px 10px; border:2px solid var(--ink); border-radius:6px; background:#fff; }
+  .controls .tick { display:flex; gap:8px; align-items:center; font-family:var(--body); font-size:15px; letter-spacing:0; text-transform:none; }
+  .previewer { display:flex; gap:18px; overflow-x:auto; padding:6px 2px 12px; }
+  .scaler { flex:none; position:relative; }
+  .scaler .sheet { position:absolute; top:0; left:0; transform-origin:0 0; }
+  .sheet { background:#fff; box-shadow:0 0 0 1px #bbb, 4px 4px 0 rgba(0,0,0,.12); display:grid; align-content:start; justify-content:center; }
+  .cell { display:grid; place-items:center; }
+  .cell img { display:block; }
+  .trim { overflow:hidden; position:relative; }
+  .trim.cut { outline:.6pt dashed #999; }
+  .note { font-size:14px; color:var(--muted); margin:0; }
+  .steps li { margin:6px 0; }
+  .toast { position:fixed; left:50%; bottom:22px; transform:translateX(-50%); background:var(--ink); color:#fff; padding:10px 16px; border-radius:999px; font-weight:600; font-size:14px; z-index:9; }
+  #sheets { display:none; }
+  @media print {
+    body > *:not(#sheets) { display:none !important; }
+    body { background:#fff !important; }
+    body::before, body::after { display:none !important; }
+    #sheets { display:block !important; }
+    #sheets .sheet { box-shadow:none; page-break-after:always; break-after:page; }
+    #sheets .sheet:last-child { page-break-after:auto; break-after:auto; }
+  }
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap bar"><a class="brand" href="/"><svg viewBox="0 0 40 40" aria-hidden="true" width="34" height="34"><path d="M9 5h11a15 15 0 0 1 0 30H9z" fill="#FFD23F" stroke="#121212" stroke-width="3" stroke-linejoin="round"/><circle cx="20" cy="20" r="5.5" fill="#E8392B" stroke="#121212" stroke-width="3"/></svg><span class="t">Dot Trading Post<small>BARTER BOARD</small></span></a><a class="navbtn" href="/app">Open the board</a></div></header>
+
+<main class="wrap">
+  <section class="head">
+    <h1>Sticker pack</h1>
+    <p class="lede">Six free stickers for trade binders, console boxes, laptops and meetups. Download them, share them, print a sheet at home, or order them printed. Every QR code opens dottrader.app.</p>
+    <div class="acts">
+      <button class="btn" type="button" id="zipBtn">Download all (.zip)</button>
+      <button class="btn ghost" type="button" id="sharePage">Share this pack</button>
+      <a class="btn ghost" href="#print">Print at home</a>
+    </div>
+  </section>
+
+  <div class="pack" id="pack" aria-label="Stickers"></div>
+
+  <section class="panel" id="print">
+    <h2>Print at home</h2>
+    <p class="note">Set how many of each above, choose your paper, and print onto sticker paper (or plain paper and glue). Print at <b>100% / actual size</b> — not “fit to page” — so they come out the right size.</p>
+    <div class="controls">
+      <label>Paper <select id="paper"><option value="letter">US Letter</option><option value="a4">A4</option></select></label>
+      <label>Size <select id="size"><option value="3">3 inch (full size)</option><option value="2">2 inch</option></select></label>
+      <label class="tick"><input type="checkbox" id="cuts" checked> Show cut lines</label>
+      <button class="btn" type="button" id="printBtn">Print sheet</button>
+    </div>
+    <p class="note" id="sheetInfo"></p>
+    <div class="previewer" id="previewer" aria-label="Sheet preview"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Order printed stickers</h2>
+    <ol class="steps">
+      <li><b>Die-cut</b> (cut to shape): upload the <b>PNG</b> to Sticker Mule, StickerApp or any die-cut printer and pick 3″. The white border is already there and the background is transparent, so they cut around the shape automatically.</li>
+      <li><b>Square</b>: upload the <b>PDF</b> and pick 3″ × 3″. It includes the ⅛″ bleed printers trim off.</li>
+      <li>Choose <b>matte</b> for “What would you trade for this?” so people can write on it.</li>
+    </ol>
+  </section>
+</main>
+
+<footer class="wrap foot"><a href="/">How it works</a><a href="/app">The board</a><a href="/c/trading-cards">Trading cards</a><a href="/c/video-games">Video games</a><a href="/c">All categories</a><a class="makers" href="https://cbuy.ing" target="_blank" rel="noopener"><span>From the makers of</span><img src="/cbuy.png?v=1" alt="cbuy" width="75" height="32"></a></footer>
+
+<div id="sheets" aria-hidden="true"></div>
+<script src="/js/stickers.js?v=1" defer></script>
+</body>
+</html>

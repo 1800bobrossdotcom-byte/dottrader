@@ -103,7 +103,7 @@ function page(o) {
     '<header class="top"><div class="wrap bar"><a class="brand" href="/">' + LOGO + '<span class="t">Dot Trading Post<small>BARTER BOARD</small></span></a>' +
     '<a class="navbtn" href="/app">Open the board</a></div></header>\n' +
     '<main class="wrap">\n' + o.body + "\n</main>\n" +
-    '<footer class="wrap foot"><a href="/">How it works</a><a href="/app">The board</a><a href="/c/trading-cards">Trading cards</a><a href="/c/video-games">Video games</a><a href="/c/consoles-retro">Consoles &amp; retro</a><a class="makers" href="https://cbuy.ing" target="_blank" rel="noopener"><span>From the makers of</span><img src="/cbuy.png?v=1" alt="cbuy" width="75" height="32"></a></footer>\n' +
+    '<footer class="wrap foot"><a href="/">How it works</a><a href="/app">The board</a><a href="/c/trading-cards">Trading cards</a><a href="/c/video-games">Video games</a><a href="/c/consoles-retro">Consoles &amp; retro</a><a href="/stickers">Stickers</a><a class="makers" href="https://cbuy.ing" target="_blank" rel="noopener"><span>From the makers of</span><img src="/cbuy.png?v=1" alt="cbuy" width="75" height="32"></a></footer>\n' +
     '<script src="/js/share.js?v=1" defer></script>\n</body>\n</html>\n';
 }
 
