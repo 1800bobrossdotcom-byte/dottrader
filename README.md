@@ -156,6 +156,30 @@ dot — pressing says "mine arrived", and you do not get to say that and then
 walk away. The item goes back on the board and the cancellation stays on the
 record, visible to the other party.
 
+## Tests
+
+```
+npm run test:bond   # the bond Edge Function, with Stripe, the database and sign-in faked
+npm run test:db     # 59 checks on a throwaway Postgres: the trade state machine, permissions,
+                    # forged requests, and two accepts racing on one item (needs PGHOST etc.)
+```
+
+The database suite applies `setup.sql` twice before each run, so it also proves the file is safe
+to re-run.
+
+## Rules the database enforces, not the page
+
+- An offer's owner is looked up from the item; a new offer always starts pending, unconfirmed,
+  with no no-show — whatever the request says.
+- Accepting locks the item first; an item can have at most one agreed or finished trade (a unique
+  index, not just a check).
+- Listing status only moves through the trade functions. Remove deletes a listing nobody traded on
+  and otherwise takes it off the board while keeping its history, so a no-show can't be erased.
+- Locations are rounded to about a kilometre by a trigger, whatever the browser sends.
+- New accounts get an anonymous name ("Trader 7F3A"), never one taken from the email.
+- Proof-of-item photos live in a private bucket; the public badge says when an item was verified,
+  never shows the photo.
+
 ## A note on the schema
 
 `offers` has no update or delete policy at all. Both transitions that matter go

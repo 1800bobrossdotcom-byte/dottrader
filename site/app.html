@@ -340,6 +340,7 @@
   .radios { display:grid; gap:8px; }
   .radios label { display:flex; gap:10px; align-items:center; font-family:var(--body); font-size:14px; font-weight:600; letter-spacing:0; text-transform:none; border:2px solid var(--ink); border-radius:6px; padding:9px 12px; background:#fff; cursor:pointer; margin:0; }
   .radios input { width:auto; accent-color:var(--ink); }
+  .sr { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0; }
 
   @media (prefers-reduced-motion: reduce) { .item, .btn, .chip, .wal { transition:none; } }
 </style>
@@ -384,7 +385,7 @@
   </section>
 
   <section id="browse" hidden>
-    <div class="nudge" id="nudge" hidden><span>Add your name so traders know who they're dealing with.</span><button class="btn" type="button" id="nudgeGo">Add name</button></div>
+    <div class="nudge" id="nudge" hidden><span>Choose the name other traders see. Until you do, you're shown as an anonymous trader.</span><button class="btn" type="button" id="nudgeGo">Add name</button></div>
     <div class="bar">
       <label class="search">
         <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.6"/><path d="M11 11l4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
@@ -507,8 +508,9 @@
 <script src="config.js"></script>
 <script src="photos.js"></script>
 <script src="swap.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+<!-- Pinned by hash: if a CDN ever served a different file, the browser would refuse to run it. -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js" integrity="sha384-Rj26LVGvoeRVR6+mwQmFfcR3QOBEwT+ZmuCWpuiqeTzJpCs0ER4ITAWGb4Hiy3Ok" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js" integrity="sha384-Htz1SE4Sl5aitpvFgr2j0sfsGUIuSXI6t8hEyrlQ93zflEF3a29bH2AvkUROUw7J" crossorigin="anonymous"></script>
 <script>
 (function () {
   "use strict";
@@ -763,9 +765,37 @@
     return (p && p.name) || "Someone";
   }
   var toastT = null;
+  // One polite live region for everything the board says in a toast, so screen readers hear it.
+  var liveRegion = document.createElement("div"); liveRegion.className = "sr"; liveRegion.setAttribute("role", "status"); liveRegion.setAttribute("aria-live", "polite");
+  document.body.appendChild(liveRegion);
+  // Every sheet is a dialog: labelled by its heading, focus moved in and given back, Escape closes
+  // it (except the new-password sheet, which must be finished).
+  var focusStack = [];
+  new MutationObserver(function (muts) {
+    muts.forEach(function (m) {
+      Array.prototype.forEach.call(m.addedNodes, function (n) {
+        if (n.nodeType !== 1 || !n.classList.contains("veil")) return;
+        var box = n.firstElementChild; if (!box) return;
+        box.setAttribute("role", "dialog"); box.setAttribute("aria-modal", "true");
+        var h = box.querySelector("h3"); if (h) box.setAttribute("aria-label", h.textContent);
+        focusStack.push(document.activeElement);
+        setTimeout(function () { if (!box.contains(document.activeElement)) { var f = box.querySelector("input, select, textarea, button"); if (f) f.focus(); } }, 60);
+      });
+      Array.prototype.forEach.call(m.removedNodes, function (n) {
+        if (n.nodeType !== 1 || !n.classList.contains("veil")) return;
+        var back = focusStack.pop(); if (back && back.focus && document.contains(back)) back.focus();
+      });
+    });
+  }).observe(document.body, { childList: true });
+  document.addEventListener("keydown", function (e) {
+    if (e.key !== "Escape") return;
+    var vs = document.querySelectorAll("body > .veil"), v = vs[vs.length - 1]; if (!v) return;
+    var x = v.querySelector("[data-x]"); if (x) { e.preventDefault(); x.click(); }
+  });
   function toast(msg) {
     var old = document.querySelector(".toast"); if (old) old.remove();
-    var el = document.createElement("div"); el.className = "toast"; el.textContent = msg;
+    var el = document.createElement("div"); el.className = "toast"; el.textContent = msg; el.setAttribute("aria-hidden", "true");
+    if (liveRegion) { liveRegion.textContent = ""; setTimeout(function () { liveRegion.textContent = msg; }, 30); }
     document.body.appendChild(el);
     clearTimeout(toastT); toastT = setTimeout(function () { el.remove(); }, 2800);
   }
@@ -774,20 +804,32 @@
   }
 
   /* dots: counted from the trade record, never stored as a number anyone can write */
+  // Two accounts trading back and forth used to mint dots for nothing. Now the first finished trade
+  // with a person counts in full, the second half, and the rest not at all; a vouch counts once per
+  // person; a trade earns more when it was tracked both ways or swapped on chain; and walking away
+  // from an agreed trade costs three. Farming needs many genuinely different, finished partners.
   function scoreOf(id) {
-    if (!id) return { dots: 0, trades: 0, vouches: 0, profile: 0 };
-    var trades = 0, vouches = 0, noShows = 0;
-    signals.forEach(function (o) {
+    if (!id) return { dots: 0, trades: 0, partners: 0, verified: 0, vouches: 0, profile: 0, noShows: 0, tradePts: 0, verifiedPts: 0 };
+    var trades = 0, vouches = 0, noShows = 0, verified = 0, tradePts = 0, verifiedPts = 0, per = {}, vouchedBy = {};
+    signals.slice().sort(function (a, b) { return a.created_at < b.created_at ? -1 : 1; }).forEach(function (o) {
       if (o.defaulted_by && o.defaulted_by === id) noShows++;
       var side = o.from_id === id ? "from" : (o.owner_id === id ? "owner" : null);
       if (!side) return;
-      if (o.status === "done") trades++;
-      if (side === "from" && o.confirm_owner) vouches++;
-      if (side === "owner" && o.confirm_from) vouches++;
+      var partner = side === "from" ? o.owner_id : o.from_id;
+      if (o.status === "done") {
+        trades++;
+        var k = per[partner] = (per[partner] || 0) + 1, w = k === 1 ? 1 : k === 2 ? 0.5 : 0;
+        var ver = !!(o.swapped || (o.owner_sent_how === "post" && o.from_sent_how === "post"));
+        if (ver) verified++;
+        tradePts += 2 * w; if (ver) verifiedPts += w;
+      }
+      var vouched = side === "from" ? o.confirm_owner : o.confirm_from;
+      if (vouched && !vouchedBy[partner]) { vouchedBy[partner] = true; vouches++; }
     });
     var p = profiles[id];
     var profile = p && (p.area || p.note) ? 1 : 0;
-    return { dots: Math.max(0, trades * 2 + vouches + profile - noShows * 3), trades: trades, vouches: vouches, profile: profile, noShows: noShows };
+    return { dots: Math.max(0, Math.floor(tradePts + verifiedPts + vouches + profile - noShows * 3)), trades: trades, partners: Object.keys(per).length,
+             verified: verified, vouches: vouches, profile: profile, noShows: noShows, tradePts: tradePts, verifiedPts: verifiedPts };
   }
   function rankOf(n) { var r = RANKS[0][1]; RANKS.forEach(function (x) { if (n >= x[0]) r = x[1]; }); return r; }
   function level(n) { var lv = 0; RANKS.forEach(function (x) { if (n >= x[0]) lv++; }); return Math.max(1, Math.min(5, lv)); }
@@ -1186,7 +1228,7 @@
     var h = "";
     if (it.photos && it.photos.length) {
       h += '<div class="pics' + (it.photos.length > 1 ? " many" : "") + '">' +
-        it.photos.slice(0, 4).map(function (u) { return '<img src="' + esc(u) + '" alt="" loading="lazy">'; }).join("") + "</div>";
+        it.photos.slice(0, 4).map(function (u, i) { return '<img src="' + esc(u) + '" alt="' + esc(it.title + (it.photos.length > 1 ? " \u2014 photo " + (i + 1) : "")) + '" loading="lazy">'; }).join("") + "</div>";
     } else if (it.asset_kind && it.asset_kind !== "erc20") {
       var artId = "art-" + Math.random().toString(36).slice(2, 10);
       pendingMeta.push({ id: artId, asset: it });
@@ -1198,16 +1240,17 @@
     h += '<div class="sides"><div class="side h"><span class="k">Offering</span><span class="v">' + esc(it.title) + "</span></div>" +
       '<div class="arrow" aria-hidden="true"></div>' +
       '<div class="side w"><span class="k">Wants</span><span class="v">' + esc(it.want || "Open to offers") + "</span></div></div>";
-    h += '<div class="foot"><span class="who"><span class="av">' + esc(initial(it.owner_id).toUpperCase()) + '</span><b>' + esc(who(it.owner_id)) + "</b>" + dotRow(sc.dots) +
+    var parts = sc.dots + " dots \u00b7 " + sc.trades + (sc.trades === 1 ? " trade" : " trades") + " \u00b7 " + sc.verified + " verified \u00b7 " + sc.noShows + (sc.noShows === 1 ? " no-show" : " no-shows");
+    h += '<div class="foot"><span class="who" title="' + esc(parts) + '"><span class="av">' + esc(initial(it.owner_id).toUpperCase()) + '</span><b>' + esc(who(it.owner_id)) + "</b>" + dotRow(sc.dots) +
       (sc.noShows ? '<span class="strike" title="Agreed a trade and never sent their side">' + sc.noShows + (sc.noShows === 1 ? " no-show" : " no-shows") + "</span>" : "") +
       "<span>" + esc(ago(it.created_at)) + (prof && prof.area ? " · " + esc(prof.area) : "") + "</span>" +
       (function () { var d = mine ? null : distTo(it.owner_id); return d === null ? "" : '<span class="dist">' + esc(fmtMiles(d)) + " away</span>"; })() + "</span>";
     if (it.cat) h += '<span class="tag">' + esc(it.cat) + "</span>";
     var badge = badges[it.id];
     if (badge) {
-      h += '<a class="tag proof" href="' + esc(badge.proof_url) + '" target="_blank" rel="noopener" title="' +
-        esc(badge.summary || "The lister photographed a handwritten note with a one-time code next to this item.") +
-        '"><s></s>Proof of item</a>';
+      h += '<span class="tag proof" title="' + esc("Verified " + (badge.verified_at ? new Date(badge.verified_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : "") +
+        ": the lister photographed this item next to a handwritten note with a one-time code." + (badge.summary ? " " + badge.summary : "")) +
+        '"><s></s>Proof of item</span>';
     }
     if (traded) h += '<span class="tag ok">Traded</span>';
     else if (pledged) h += '<span class="tag hold">Agreed — awaiting delivery</span>';
@@ -1641,9 +1684,10 @@
       : (filter.radius && !locOf(uid)
           ? '<strong>Set your location first</strong>“Near me” needs a rough location on your profile. It is rounded to about a kilometre.<br><button class="btn ok" type="button" data-go="loc">Set location</button>'
           : '<strong>No matches</strong>Nothing here fits that search. Try another word, widen the distance, or clear the filter.<br><button class="btn ghost" type="button" data-go="clear">Clear filters</button>');
-    $("nudge").hidden = !(uid && !(profiles[uid] && profiles[uid].name));
+    var myName = profiles[uid] && profiles[uid].name;
+    $("nudge").hidden = !(uid && (!myName || /^Trader [0-9A-F]{4}$/.test(myName)));
 
-    var myItems = uid ? items.filter(function (it) { return it.owner_id === uid; }) : [];
+    var myItems = uid ? items.filter(function (it) { return it.owner_id === uid && it.status !== "removed"; }) : [];
     var inc = uid ? offers.filter(function (o) { return o.owner_id === uid; }) : [];
     var out = uid ? offers.filter(function (o) { return o.from_id === uid; }) : [];
     var waiting = inc.filter(function (o) { return o.status === "pending"; }).length +
@@ -1668,8 +1712,9 @@
     $("myDotRow").innerHTML = dotRow(sc.dots).replace(/^<span class="dots"[^>]*>/, "").replace(/<\/span>$/, "");
     $("myRank").textContent = rankOf(sc.dots);
     $("myLedger").innerHTML =
-      row(sc.trades * 2, sc.trades + (sc.trades === 1 ? " completed trade" : " completed trades") + " — two dots each") +
-      row(sc.vouches, sc.vouches === 1 ? "partner pressed their dot for you" : "partners pressed their dot for you") +
+      row(Math.floor(sc.tradePts), sc.trades + (sc.trades === 1 ? " completed trade" : " completed trades") + " with " + sc.partners + (sc.partners === 1 ? " person" : " different people") + " \u2014 two dots for the first with each person, one for the second, none after") +
+      row(Math.floor(sc.verifiedPts), sc.verified + " verified \u2014 tracked both ways or swapped on chain") +
+      row(sc.vouches, sc.vouches === 1 ? "person pressed their dot for you" : "different people pressed their dot for you") +
       row(sc.profile, "profile filled in") +
       (sc.noShows ? row(-3 * sc.noShows, sc.noShows + (sc.noShows === 1 ? " trade" : " trades") + " agreed and never sent — three dots each") : "");
     paintWallet();
@@ -1741,8 +1786,11 @@
     if (leafletP) return leafletP;
     leafletP = new Promise(function (res, rej) {
       var css = document.createElement("link"); css.rel = "stylesheet";
-      css.href = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"; document.head.appendChild(css);
+      css.href = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css";
+      css.integrity = "sha384-c6Rcwz4e4CITMbu/NBmnNS8yN2sC3cUElMEMfP3vqqKFp7GOYaaBBCqmaWBjmkjb"; css.crossOrigin = "anonymous";
+      document.head.appendChild(css);
       var js = document.createElement("script"); js.src = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js";
+      js.integrity = "sha384-NElt3Op+9NBMCYaef5HxeJmU4Xeard/Lku8ek6hoPTvYkQPh3zLIrJP7KiRocsxO"; js.crossOrigin = "anonymous";
       js.onload = res; js.onerror = function () { leafletP = null; rej(new Error("Could not load the map.")); };
       document.head.appendChild(js);
     });
@@ -1874,7 +1922,7 @@
         input.disabled = true;
         say("Uploading the photo…");
         var url;
-        window.DTP_PHOTOS.upload(sb, uid, f).then(function (u) {
+        window.DTP_PHOTOS.upload(sb, uid, f, "proofs").then(function (u) {
           url = u;
           say("Reading the note… this takes about ten seconds.");
           return sb.auth.getSession();
@@ -1884,7 +1932,7 @@
           return fetch(cfg.url + "/functions/v1/verify-item", {
             method: "POST",
             headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token, "apikey": cfg.anonKey },
-            body: JSON.stringify({ verification_id: v.id, proof_url: url })
+            body: JSON.stringify({ verification_id: v.id, proof_path: url })
           });
         }).then(function (res) {
           return res.json().then(function (j) { return { status: res.status, body: j || {} }; });
@@ -2025,9 +2073,14 @@
 
   function removeItem(it) {
     if (!confirm("Remove \u201c" + it.title + "\u201d from the board? Pending offers on it go with it.")) return;
-    sb.from("items").delete().eq("id", it.id).then(function (r) {
+    // remove_item() deletes a listing nobody traded on, and otherwise takes it off the board while
+    // keeping its trade history (no-shows and finished trades are part of other people's records).
+    sb.rpc("remove_item", { p_item: it.id }).then(function (r) {
+      if (r.error && r.error.code === "PGRST202") {
+        return sb.from("items").delete().eq("id", it.id).then(function (d) { if (d.error) return fail(d.error); toast("Listing removed."); load(); });
+      }
       if (r.error) return fail(r.error);
-      toast("Listing removed."); load();
+      toast(r.data === "removed" ? "Taken off the board. Its trade history stays on record." : "Listing removed."); load();
     });
   }
 

@@ -1,0 +1,29 @@
+S1 accept sets ship-by ~4 days: 4
+S2 post without tracking: refused: add the tracking number
+S3 post with tracking: ok
+S4 mark sent twice: refused: you already marked your side sent
+S5 cancel after sending: refused: you already marked your side sent
+S6 claim before deadline: refused: the ship-by date has not passed yet
+S7 outsider claims: refused: you are not part of this trade
+S8 non-sender claims against sender: refused: mark your own side sent first
+S9 sender claims after deadline: ok
+S10 result: cancelled, no-show recorded against bob: true
+S11 item back on board: open
+S12 anyone can count no-shows: 1
+W1 wrong item offered: refused: the order does not offer the listed item
+W2 extra thing asked of the other side: refused: the second item may only be the fee
+W3 paid to someone else: refused: the order does not ask for the offered item
+W4 not from the linked wallet: refused: the order must come from your linked wallet
+W5 non-lister posts order: refused: the lister sets up the swap
+W6 correct order: ok
+W7 lister records the fill: refused: the person filling the swap records it
+W8 filler records the fill: ok
+W9 both sides now sent on chain: true
+W10 order after the swap: refused: this trade was already swapped
+B1 party sees bond: 1
+B2 bob cannot see alice's payout: 0
+B3 party writes a bond: refused: new row violates row-level security policy for table "bonds"
+B4 party marks own bond released: ok, still held: 1
+B5 alice sees her payout: 1
+B6 alice approves her own payout: ok, approved rows: 0
+B7 outsider sees bonds: 0

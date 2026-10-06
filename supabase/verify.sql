@@ -41,12 +41,14 @@ create policy "verifications readable by owner" on public.verifications for sele
 -- No insert, update or delete policies at all: starting one goes through the function below, and
 -- finishing one is the Edge Function's job, with the service role.
 
--- The public half: which items are verified, with the proof photo and the model's one-line read.
--- Same shape as offer_signals, and the same rule — this select list IS the security boundary.
+-- The public half: which items are verified, when, and the model's one-line read. Not the proof
+-- photo: it shows handwriting, a room, whatever else was on the table, and people only need to
+-- know the check passed. Proof photos live in the private `proofs` bucket. This select list IS
+-- the security boundary.
 drop view if exists public.verification_badges;
 create view public.verification_badges
   with (security_invoker = off) as
-  select id, item_id, owner_id, status, proof_url, verified_at,
+  select id, item_id, owner_id, status, verified_at,
          analysis -> 'scores' ->> 'summary'        as summary,
          (analysis -> 'scores' ->> 'weighted_score')::int as score
   from public.verifications
@@ -93,7 +95,7 @@ create or replace function public.withdraw_offer(p_offer uuid)
 returns void language plpgsql security definer set search_path = public as $$
 declare o public.offers;
 begin
-  select * into o from public.offers where id = p_offer;
+  select * into o from public.offers where id = p_offer for update;
   if not found then raise exception 'offer not found'; end if;
   if o.from_id <> auth.uid() then raise exception 'only the person who made the offer can withdraw it'; end if;
   if o.status <> 'pending' then raise exception 'only a pending offer can be withdrawn'; end if;
@@ -113,7 +115,7 @@ create or replace function public.cancel_trade(p_offer uuid)
 returns void language plpgsql security definer set search_path = public as $$
 declare o public.offers;
 begin
-  select * into o from public.offers where id = p_offer;
+  select * into o from public.offers where id = p_offer for update;
   if not found then raise exception 'offer not found'; end if;
   if o.status <> 'agreed' then raise exception 'only an agreed trade can be cancelled'; end if;
   if auth.uid() = o.owner_id then

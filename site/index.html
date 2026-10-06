@@ -33,7 +33,7 @@
     --paper:#F3EAD3; --card:#FFFCF4; --sunk:#EADFC4;
     --ink:#121212; --muted:#4B4740; --faint:#8C867A; --line-soft:rgba(18,18,18,.14);
     --red:#E8392B; --yellow:#FFD23F; --cyan:#27B2E8; --blue:#2F56D6; --pink:#F2518F; --green:#1DB36A; --purple:#7B4FD6; --orange:#FF8A2B;
-    --have:var(--blue); --want:var(--red); --dot:var(--green);
+    --have:var(--blue); --want:var(--red); --dot:var(--green); --rose:var(--pink); --teal:var(--cyan);
     --have-soft:#E3EAFF; --want-soft:#FFE4E0; --dot-soft:#DDF5E8; --dot-off:#FFFCF4;
     --display:"Space Grotesk","Helvetica Neue",Arial,sans-serif;
     --body:"IBM Plex Sans",system-ui,-apple-system,sans-serif;
@@ -132,6 +132,13 @@
   .cant h3 { font-family:var(--display); font-weight:700; font-size:18px; margin:0 0 6px; letter-spacing:-.015em; line-height:1.15; }
   .cant p { margin:0; color:var(--muted); font-size:14.5px; }
 
+  .safe { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+  @media (max-width:860px){ .safe { grid-template-columns:1fr 1fr; } }
+  @media (max-width:560px){ .safe { grid-template-columns:1fr; } }
+  .sf { --c:var(--green); background:var(--card); border:var(--bw) solid var(--ink); border-radius:8px; padding:18px 18px 16px; box-shadow:var(--sh); position:relative; overflow:hidden; }
+  .sf::before { content:""; position:absolute; top:0; left:0; right:0; height:12px; background:radial-gradient(circle, var(--c) 1.6px, transparent 1.9px) 0 0/7px 7px; border-bottom:2px solid var(--ink); }
+  .sf b { display:block; font-family:var(--display); font-size:17px; letter-spacing:-.01em; margin:10px 0 6px; }
+  .sf p { margin:0; color:var(--muted); font-size:14.5px; }
   .cats { display:flex; flex-wrap:wrap; gap:9px; }
   .cat { --c:var(--ink); border:2px solid var(--ink); background:var(--card); border-radius:999px; padding:6px 13px; font-size:13.5px; color:var(--ink); font-weight:600; box-shadow:2px 2px 0 var(--ink); }
   .cat::before { content:""; width:9px; height:9px; border-radius:50%; background:var(--c); border:1.5px solid var(--ink); display:inline-block; margin-right:7px; vertical-align:-1px; }
@@ -147,6 +154,7 @@
 
   <nav>
     <a class="brand" href="/"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M9 5h11a15 15 0 0 1 0 30H9z" fill="#FFD23F" stroke="#121212" stroke-width="3" stroke-linejoin="round"/><circle cx="20" cy="20" r="5.5" fill="#E8392B" stroke="#121212" stroke-width="3"/></svg><span class="t">Dot Trading Post<small>BARTER BOARD</small></span></a>
+    <a class="navlink" href="#safe">Trade safely</a>
     <a class="navlink" href="#dots">How dots work</a>
     <a class="navbtn" href="/app">Open the board</a>
   </nav>
@@ -190,19 +198,34 @@
     </div>
   </section>
 
+  <section id="safe">
+    <h2>Built so neither trader has to just hope</h2>
+    <p class="sub">The hard part of swapping with a stranger is sending first. Every step of a trade on the board is designed around that.</p>
+    <div class="safe">
+      <div class="sf" style="--c:var(--blue)"><b>Trust you can read</b><p>Every trader shows their dots, how many trades they've finished, how many were verified, and any no-shows — before you agree to anything.</p></div>
+      <div class="sf" style="--c:var(--red)"><b>A deadline, and a record</b><p>Once you agree, both sides have four days to send. Mark yours sent with a tracking number. If the other side never sends, close it as a no-show — it costs them dots, and everyone can see it.</p></div>
+      <div class="sf" style="--c:var(--green)"><b>Talk privately</b><p>Each trade has its own message thread that only the two of you can read. Arrange a meetup or a postage plan without posting anything public.</p></div>
+      <div class="sf" style="--c:var(--cyan)"><b>Near, not exact</b><p>"Near me" uses a location rounded to about a kilometre, enforced by the database. Nobody sees your address unless you send it.</p></div>
+      <div class="sf" style="--c:var(--purple)"><b>NFTs that can't be half-traded</b><p>When both sides are NFTs on the same chain, the swap is one transaction: both move, or neither does. Nobody sends first. Listings are checked on chain, so you know it's still held.</p></div>
+      <div class="sf" style="--c:var(--yellow)"><b>No money in the middle</b><p>Trades are item for item. No money moves through the board and no card numbers are stored here, so there's nothing in the middle to lose.</p></div>
+    </div>
+  </section>
+
   <section id="dots">
     <h2>Dots are earned, never bought</h2>
     <p class="sub">A barter board runs on whether you can trust a stranger. Dots are the only answer to that, so they're the one thing the app guards.</p>
     <div class="dotbox">
       <div class="earn">
-        <div><span class="amt">+2</span><span class="what">for every completed trade, both sides</span></div>
-        <div><span class="amt">+1</span><span class="what">when your trade partner vouches afterwards</span></div>
+        <div><span class="amt">+2</span><span class="what">for your first finished trade with someone · +1 the second time · nothing after</span></div>
+        <div><span class="amt">+1</span><span class="what">when the trade was tracked both ways, or swapped on chain</span></div>
+        <div><span class="amt">+1</span><span class="what">the first time each partner presses their dot for you</span></div>
         <div><span class="amt">+1</span><span class="what">for filling in your profile</span></div>
+        <div><span class="amt">&minus;3</span><span class="what">for agreeing a trade and never sending your side</span></div>
         <div><span class="amt">0</span><span class="what">for posting, browsing, or anything you can do alone</span></div>
       </div>
       <div class="cant">
         <h3>Nobody can award themselves one</h3>
-        <p>Dots aren't stored as a number anyone can write. They're counted from the trade record itself — every dot traces back to a swap somebody else accepted, or a vouch somebody else left. There's nothing to edit and nothing to buy.</p>
+        <p>Dots aren't stored as a number anyone can write. They're counted from the trade record itself — every dot traces back to a swap somebody else accepted, or a vouch somebody else left. Trading back and forth with the same person stops counting after the second time, so two friends can't manufacture a reputation. There's nothing to edit and nothing to buy.</p>
       </div>
     </div>
   </section>

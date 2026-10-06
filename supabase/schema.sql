@@ -30,12 +30,14 @@ create policy "insert own profile" on public.profiles for insert with check (aut
 drop policy if exists "update own profile" on public.profiles;
 create policy "update own profile" on public.profiles for update using (auth.uid() = id);
 
--- Give every new account a profile row so names resolve from the first visit.
+-- Give every new account a profile row so names resolve from the first visit. The name is an
+-- anonymous placeholder, never derived from the email: profiles are public, and the part of an
+-- address before the @ is often a real name. The board asks people to choose their own.
 create or replace function public.handle_new_user()
 returns trigger language plpgsql security definer set search_path = public as $$
 begin
   insert into public.profiles (id, name)
-  values (new.id, split_part(coalesce(new.email, 'trader'), '@', 1))
+  values (new.id, 'Trader ' || upper(substr(replace(new.id::text, '-', ''), 1, 4)))
   on conflict (id) do nothing;
   return new;
 end $$;
@@ -55,9 +57,14 @@ create table if not exists public.items (
   want        text not null default '' check (char_length(want) <= 80),
   cat         text not null default 'Other',
   -- open: on the board · pledged: agreed, awaiting delivery · traded: finished
-  status      text not null default 'open' check (status in ('open', 'pledged', 'traded')),
+  status      text not null default 'open',
   created_at  timestamptz not null default now()
 );
+
+-- open: on the board · pledged: in an agreed trade · traded: finished · removed: taken down by its
+-- owner but kept, because trades that happened on it are part of other people's records.
+alter table public.items drop constraint if exists items_status_check;
+alter table public.items add constraint items_status_check check (status in ('open', 'pledged', 'traded', 'removed'));
 
 create index if not exists items_created_idx on public.items (created_at desc);
 create index if not exists items_owner_idx on public.items (owner_id);
@@ -73,8 +80,44 @@ create policy "insert own item" on public.items for insert with check (auth.uid(
 drop policy if exists "update own item" on public.items;
 create policy "update own item" on public.items for update using (auth.uid() = owner_id);
 
+-- No delete policy: deleting an item used to cascade away its offers, which let someone erase a
+-- no-show or a finished trade from the record. remove_item() below deletes only an item nobody has
+-- traded on, and otherwise takes it off the board while keeping the history.
 drop policy if exists "delete own item" on public.items;
-create policy "delete own item" on public.items for delete using (auth.uid() = owner_id);
+
+-- An item's status is the trade's business, not its owner's: new items start open, and only the
+-- trade functions (which run as the database owner) move it after that. An owner editing a title
+-- can't quietly reopen something they have promised to someone.
+create or replace function public.items_guard() returns trigger
+language plpgsql as $$
+begin
+  if current_user in ('anon', 'authenticated') then
+    if tg_op = 'INSERT' then new.status := 'open';
+    elsif new.status is distinct from old.status then raise exception 'listing status changes go through the board';
+    end if;
+  end if;
+  return new;
+end $$;
+drop trigger if exists items_guard on public.items;
+create trigger items_guard before insert or update on public.items
+  for each row execute function public.items_guard();
+
+create or replace function public.remove_item(p_item uuid)
+returns text language plpgsql security definer set search_path = public as $$
+declare it public.items;
+begin
+  select * into it from public.items where id = p_item for update;
+  if not found then raise exception 'item not found'; end if;
+  if it.owner_id <> auth.uid() then raise exception 'you can only remove your own listing'; end if;
+  if it.status = 'pledged' then raise exception 'it is in an agreed trade — finish or cancel that first'; end if;
+  if exists (select 1 from public.offers o where o.item_id = p_item and (o.status in ('agreed', 'done', 'cancelled'))) then
+    update public.offers set status = 'declined' where item_id = p_item and status = 'pending';
+    update public.items set status = 'removed' where id = p_item;
+    return 'removed';
+  end if;
+  delete from public.items where id = p_item;
+  return 'deleted';
+end $$;
 
 -- ---------------------------------------------------------------- offers
 
@@ -111,11 +154,15 @@ create policy "insert own offer" on public.offers for insert
 
 create or replace function public.accept_offer(p_offer uuid)
 returns void language plpgsql security definer set search_path = public as $$
-declare o public.offers;
+declare o public.offers; it public.items;
 begin
-  select * into o from public.offers where id = p_offer;
+  select * into o from public.offers where id = p_offer for update;
   if not found then raise exception 'offer not found'; end if;
-  if o.owner_id <> auth.uid() then raise exception 'only the person who posted the item can accept'; end if;
+  -- Lock the item, then check everything against it rather than against what the offer claims.
+  -- Two accepts racing on one item now queue here; the second finds it pledged and stops.
+  select * into it from public.items where id = o.item_id for update;
+  if it.owner_id <> auth.uid() or o.owner_id <> it.owner_id then raise exception 'only the person who posted the item can accept'; end if;
+  if it.status <> 'open' then raise exception 'this item is already in a trade'; end if;
   if o.status <> 'pending' then raise exception 'this offer is no longer pending'; end if;
 
   update public.offers set status = 'agreed' where id = p_offer;
@@ -129,7 +176,7 @@ create or replace function public.decline_offer(p_offer uuid)
 returns void language plpgsql security definer set search_path = public as $$
 declare o public.offers;
 begin
-  select * into o from public.offers where id = p_offer;
+  select * into o from public.offers where id = p_offer for update;
   if not found then raise exception 'offer not found'; end if;
   if o.owner_id <> auth.uid() then raise exception 'only the person who posted the item can decline'; end if;
   if o.status <> 'pending' then raise exception 'this offer is no longer pending'; end if;
@@ -142,7 +189,7 @@ create or replace function public.press_dot(p_offer uuid)
 returns void language plpgsql security definer set search_path = public as $$
 declare o public.offers; v_both boolean;
 begin
-  select * into o from public.offers where id = p_offer;
+  select * into o from public.offers where id = p_offer for update;
   if not found then raise exception 'offer not found'; end if;
   if o.status <> 'agreed' then raise exception 'this trade is not awaiting delivery'; end if;
 
@@ -160,6 +207,11 @@ begin
     update public.items  set status = 'traded' where id = o.item_id;
   end if;
 end $$;
+
+-- The invariant the trade functions maintain, made impossible to break: one item, at most one live
+-- or finished trade.
+create unique index if not exists offers_one_trade_per_item on public.offers (item_id)
+  where status in ('agreed', 'done');
 
 -- ---------------------------------------------------------------- realtime
 

@@ -1,0 +1,29 @@
+#!/bin/sh
+# Database tests: the trade state machine, who may do what, and the rules that must hold even
+# against a hand-made request. Each suite gets a fresh throwaway database with stand-ins for the
+# Supabase pieces (auth.uid, roles, storage, realtime), then setup.sql applied TWICE — it must be
+# safe to re-run — then the suite, whose output is compared line by line with its .expected file.
+#
+# Needs a Postgres 15+ you can create databases on, via the usual PGHOST/PGPORT/PGUSER variables.
+set -u
+DIR=$(cd "$(dirname "$0")" && pwd); ROOT="$DIR/../.."
+fail=0
+for t in messages trades hardening; do
+  DB="dtp_test_${t}_$$"
+  createdb "$DB" || exit 2
+  psql -q -v ON_ERROR_STOP=1 -d "$DB" -f "$DIR/stub.sql" >/dev/null 2>&1 &&
+  psql -q -v ON_ERROR_STOP=1 -d "$DB" -f "$ROOT/supabase/setup.sql" >/dev/null 2>&1 &&
+  psql -q -v ON_ERROR_STOP=1 -d "$DB" -f "$ROOT/supabase/setup.sql" >/dev/null 2>&1 || { echo "FAIL $t: setup.sql did not apply cleanly twice"; fail=1; dropdb "$DB"; continue; }
+  out=$(psql -q -d "$DB" -f "$DIR/$t.test.sql" 2>/dev/null | sed 's/^ *//' | grep -E '^[A-Z][0-9]+ ')
+  if [ "$t" = hardening ]; then
+    # Two owners' sessions accept two offers on one item at the same moment: exactly one may win.
+    for n in 1 2; do
+      psql -q -d "$DB" -c "begin; set local role authenticated; select set_config('req.uid','a0000000-0000-0000-0000-000000000001',true); select public.accept_offer('40000000-0000-0000-0000-00000000000$n'); select pg_sleep(1); commit;" >/dev/null 2>&1 &
+    done; wait
+    out="$out
+$(psql -q -t -d "$DB" -c "select 'R1 agreed trades after a simultaneous double accept: ' || count(*) from public.offers where item_id = '30000000-0000-0000-0000-000000000001' and status = 'agreed'" | sed 's/^ *//' | grep -E '^R1')"
+  fi
+  if [ "$out" = "$(cat "$DIR/$t.expected")" ]; then echo "ok   $t ($(echo "$out" | wc -l | tr -d ' ') checks)"; else echo "FAIL $t"; echo "$out" | diff -u "$DIR/$t.expected" - ; fail=1; fi
+  dropdb "$DB"
+done
+exit $fail

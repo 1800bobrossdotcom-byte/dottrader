@@ -38,3 +38,22 @@ create policy "upload into own folder" on storage.objects for insert to authenti
 drop policy if exists "remove own photos" on storage.objects;
 create policy "remove own photos" on storage.objects for delete to authenticated
   using (bucket_id = 'photos' and (storage.foldername(name))[1] = auth.uid()::text);
+
+-- Proof-of-item photos: private. Only their uploader can read them back; the verify-item Edge
+-- Function reads them with the service role. Nothing about them is public.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('proofs', 'proofs', false, 8388608, array['image/jpeg', 'image/png', 'image/webp'])
+on conflict (id) do update
+  set public = false,
+      file_size_limit = excluded.file_size_limit,
+      allowed_mime_types = excluded.allowed_mime_types;
+
+drop policy if exists "upload proof into own folder" on storage.objects;
+create policy "upload proof into own folder" on storage.objects for insert to authenticated
+  with check (bucket_id = 'proofs' and (storage.foldername(name))[1] = auth.uid()::text);
+
+drop policy if exists "read own proofs" on storage.objects;
+create policy "read own proofs" on storage.objects for select to authenticated
+  using (bucket_id = 'proofs' and (storage.foldername(name))[1] = auth.uid()::text);
+
+-- The listing-photo read policy must not cover proofs: it is scoped to bucket 'photos' above.

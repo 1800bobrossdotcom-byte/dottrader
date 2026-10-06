@@ -4,13 +4,13 @@
 // paste this file. Then Edge Functions → Secrets → add ANTHROPIC_API_KEY. SUPABASE_URL and
 // SUPABASE_SERVICE_ROLE_KEY are injected automatically.
 //
-// Called by the board after the owner uploads their proof photo:
-//   POST { verification_id, proof_url }   with the caller's Supabase session as the bearer token.
+// Called by the board after the owner uploads their proof photo to the private `proofs` bucket:
+//   POST { verification_id, proof_path }   with the caller's Supabase session as the bearer token.
 //
 // This runs here and not in the page for one reason: the vision model needs an API key, and a key
 // in a browser is a key everyone has. The caller is identified from their session token, the
-// verification row is checked to be theirs and still pending, the photo is fetched from the public
-// bucket and sent to the model, and the verdict is written back with the service role — the only
+// verification row is checked to be theirs and still pending, the photo is read from the private
+// bucket with the service role and sent to the model, and the verdict is written back with the service role — the only
 // thing anywhere that can mark an item verified.
 //
 // Lifted from cbay's item_verify.js. Two changes: the model returns a typed JSON object through
@@ -102,16 +102,17 @@ Deno.serve(async (req) => {
   if (whoErr || !who?.user) return json({ error: "sign in first" }, 401);
   const uid = who.user.id;
 
-  let body: { verification_id?: string; proof_url?: string };
+  let body: { verification_id?: string; proof_path?: string };
   try { body = await req.json(); } catch { return json({ error: "bad request" }, 400); }
   const vid = String(body.verification_id ?? "");
-  const proofUrl = String(body.proof_url ?? "");
-  if (!vid || !proofUrl) return json({ error: "verification_id and proof_url are required" }, 400);
+  const proofPath = String(body.proof_path ?? "");
+  if (!vid || !proofPath) return json({ error: "verification_id and proof_path are required" }, 400);
 
-  // The proof must be in our own bucket, under the caller's own folder. Anything else is someone
-  // pointing the checker at an arbitrary image.
-  const bucketPrefix = `${url}/storage/v1/object/public/photos/${uid}/`;
-  if (!proofUrl.startsWith(bucketPrefix)) return json({ error: "proof photo must be one you uploaded" }, 400);
+  // The proof must be in the private proofs bucket, under the caller's own folder. Anything else is
+  // someone pointing the checker at an arbitrary image.
+  if (!proofPath.startsWith(`${uid}/`) || proofPath.includes("..") || !/^[0-9a-f-]{36}\/[A-Za-z0-9._-]+$/.test(proofPath)) {
+    return json({ error: "proof photo must be one you uploaded" }, 400);
+  }
 
   const { data: v } = await service.from("verifications").select("*").eq("id", vid).single();
   if (!v) return json({ error: "verification not found" }, 404);
@@ -128,8 +129,9 @@ Deno.serve(async (req) => {
   ]);
   const name = (prof?.name || "").trim() || "trader";
 
-  // Fetch the photo ourselves rather than trusting bytes from the browser.
-  const img = await fetch(proofUrl);
+  // Read the photo ourselves, from the private bucket, rather than trusting bytes from the browser.
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const img = await fetch(`${url}/storage/v1/object/proofs/${proofPath}`, { headers: { Authorization: `Bearer ${serviceKey}`, apikey: serviceKey } });
   if (!img.ok) return json({ error: "could not fetch the proof photo" }, 400);
   const mediaType = (img.headers.get("content-type") || "image/jpeg").split(";")[0];
   if (!["image/jpeg", "image/png", "image/webp"].includes(mediaType)) return json({ error: "unsupported image type" }, 415);
@@ -174,7 +176,8 @@ Deno.serve(async (req) => {
   const passed = weighted >= PASS && !criticalFail;
 
   const analysis = { scores: { ...scores, weighted_score: weighted }, passed, threshold: PASS, model: "claude-opus-5-5", at: new Date().toISOString() };
-  const update: Record<string, unknown> = { proof_url: proofUrl, analysis, status: passed ? "verified" : "failed" };
+  // proof_url holds the private path; the verifications table is readable only by its owner.
+  const update: Record<string, unknown> = { proof_url: proofPath, analysis, status: passed ? "verified" : "failed" };
   if (passed) update.verified_at = new Date().toISOString();
   const { error: upErr } = await service.from("verifications").update(update).eq("id", vid);
   if (upErr) return json({ error: "could not save the verdict" }, 500);

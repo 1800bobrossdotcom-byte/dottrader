@@ -1,0 +1,14 @@
+T1 bob writes in his trade: 1
+T2 bob forging alice as sender -> rows still: 1
+T3 alice reads thread: 1
+T4 eve reads messages: 0
+T5 eve reads offers: 0
+T6 after eve tried, alice sees: 2
+T7 edit attempt, edited rows visible: 0
+T8 delete attempt, rows left: 2
+T9 after withdraw, status: withdrawn
+T10 message into withdrawn trade, rows: 2
+T11 anon reads messages: 0
+T12 anon reads offers: 0
+T13 anon reads offer_signals: 1
+T14 messages in realtime publication: 1

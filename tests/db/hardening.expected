@@ -1,0 +1,16 @@
+H1 new profile name: Trader A000
+H2 item submitted as traded is stored as: open
+H3 forged done+vouched offer stored as: pending, confirms false/false
+H4 forged no-show stored as: pending, no-show recorded: false
+H5 offer naming a fake owner stored with owner: the real owner
+H6 the fake owner accepts: refused: only the person who posted the item can accept
+H7 owner flips status directly: refused: listing status changes go through the board
+H8 direct delete leaves the item: 1
+H9 precise location stored as: 43.16,-77.6
+H10 badge view columns: id,item_id,owner_id,score,status,summary,verified_at
+H11 proofs bucket public: false
+H12 remove untraded listing: deleted
+H13 remove a listing in an agreed trade: refused: it is in an agreed trade — finish or cancel that first
+H14 remove after a cancelled trade: removed, trade record kept: 1
+H15 offer on a removed listing: refused: this item is no longer on the board
+R1 agreed trades after a simultaneous double accept: 1

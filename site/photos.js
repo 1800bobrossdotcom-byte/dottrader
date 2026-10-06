@@ -139,8 +139,10 @@
     }).catch(function () { return file; });
   }
 
-  // Compress, strip, verify, upload. Resolves to the public URL.
-  function upload(sb, uid, file) {
+  // Compress, strip, verify, upload. Resolves to the public URL — or, for the private `proofs`
+  // bucket, to the storage path, since a private object has no public address.
+  function upload(sb, uid, file, bucket) {
+    bucket = bucket || "photos";
     if (!uid) return Promise.reject(new Error("Sign in to add photos."));
     if (!ALLOWED[file.type]) return Promise.reject(new Error("Photos need to be JPEG, PNG or WebP."));
     return compress(file).then(function (blob) {
@@ -151,10 +153,10 @@
         if (!matchesMime(bytes, type)) throw new Error("That file is not the kind of image it says it is.");
         if (bytes.length > MAX_BYTES) throw new Error("That photo is still over 8 MB after compression.");
         var path = uid + "/" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 8) + "." + ALLOWED[type];
-        return sb.storage.from("photos").upload(path, new Blob([bytes], { type: type }), { contentType: type, upsert: false })
+        return sb.storage.from(bucket).upload(path, new Blob([bytes], { type: type }), { contentType: type, upsert: false })
           .then(function (r) {
             if (r.error) throw r.error;
-            return sb.storage.from("photos").getPublicUrl(path).data.publicUrl;
+            return bucket === "photos" ? sb.storage.from(bucket).getPublicUrl(path).data.publicUrl : path;
           });
       });
     });

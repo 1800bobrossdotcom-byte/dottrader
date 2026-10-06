@@ -61,7 +61,7 @@ create or replace function public.mark_sent(p_offer uuid, p_how text, p_carrier 
 returns void language plpgsql security definer set search_path = public as $$
 declare o public.offers;
 begin
-  select * into o from public.offers where id = p_offer;
+  select * into o from public.offers where id = p_offer for update;
   if not found then raise exception 'offer not found'; end if;
   if o.status <> 'agreed' then raise exception 'only an agreed trade can be marked sent'; end if;
   if p_how not in ('post', 'in_person', 'onchain') then raise exception 'say how it was sent'; end if;
@@ -86,7 +86,7 @@ create or replace function public.claim_no_show(p_offer uuid)
 returns void language plpgsql security definer set search_path = public as $$
 declare o public.offers; me_done boolean; them_done boolean; them uuid;
 begin
-  select * into o from public.offers where id = p_offer;
+  select * into o from public.offers where id = p_offer for update;
   if not found then raise exception 'offer not found'; end if;
   if o.status <> 'agreed' then raise exception 'only an agreed trade can be claimed'; end if;
   if o.ship_by is null or now() <= o.ship_by then raise exception 'the ship-by date has not passed yet'; end if;
@@ -108,7 +108,7 @@ create or replace function public.cancel_trade(p_offer uuid)
 returns void language plpgsql security definer set search_path = public as $$
 declare o public.offers;
 begin
-  select * into o from public.offers where id = p_offer;
+  select * into o from public.offers where id = p_offer for update;
   if not found then raise exception 'offer not found'; end if;
   if o.status <> 'agreed' then raise exception 'only an agreed trade can be cancelled'; end if;
   if auth.uid() = o.owner_id then
@@ -124,10 +124,41 @@ begin
   update public.items set status = 'open' where id = o.item_id and status = 'pledged';
 end $$;
 
+-- ---------------------------------------------------------------- creating an offer
+
+-- A new offer's owner is whoever owns the item — looked up here, never taken from the browser — and
+-- every field the trade functions control starts blank. Before this, a hand-made request could
+-- name any "owner", or arrive already agreed, done, vouched for, or carrying a no-show against
+-- someone who never traded.
+create or replace function public.offers_guard() returns trigger
+language plpgsql security definer set search_path = public as $$
+declare it public.items;
+begin
+  select * into it from public.items where id = new.item_id;
+  if not found then raise exception 'item not found'; end if;
+  if it.status <> 'open' then raise exception 'this item is no longer on the board'; end if;
+  new.owner_id := it.owner_id;
+  if new.from_id = new.owner_id then raise exception 'you cannot offer on your own item'; end if;
+  new.status := 'pending';
+  new.confirm_owner := false; new.confirm_from := false;
+  new.cancelled_by := null; new.defaulted_by := null; new.ship_by := null;
+  new.owner_sent_at := null; new.owner_sent_how := null; new.owner_carrier := null; new.owner_ref := null;
+  new.from_sent_at := null;  new.from_sent_how := null;  new.from_carrier := null;  new.from_ref := null;
+  new.swap_order := null; new.swap_sig := null; new.swap_tx := null;
+  new.created_at := now();
+  return new;
+end $$;
+drop trigger if exists offers_guard on public.offers;
+create trigger offers_guard before insert on public.offers
+  for each row execute function public.offers_guard();
+
 -- The public half gains the no-show column: it is what costs dots, so everyone must be able to count it.
 drop view if exists public.offer_signals;
 create view public.offer_signals with (security_invoker = off) as
-  select id, item_id, owner_id, from_id, status, confirm_owner, confirm_from, defaulted_by, created_at
+  select id, item_id, owner_id, from_id, status, confirm_owner, confirm_from, defaulted_by,
+         -- how each side sent (not the tracking numbers) and whether it was an on-chain swap: what
+         -- makes a finished trade "verified" when dots are counted
+         owner_sent_how, from_sent_how, (swap_tx is not null) as swapped, created_at
   from public.offers;
 grant select on public.offer_signals to anon, authenticated;
 
@@ -141,7 +172,7 @@ create or replace function public.post_swap(p_offer uuid, p_order jsonb, p_sig t
 returns void language plpgsql security definer set search_path = public as $$
 declare o public.offers; it public.items; w text; n int;
 begin
-  select * into o from public.offers where id = p_offer;
+  select * into o from public.offers where id = p_offer for update;
   if not found then raise exception 'offer not found'; end if;
   if auth.uid() <> o.owner_id then raise exception 'the lister sets up the swap'; end if;
   if o.status <> 'agreed' then raise exception 'only an agreed trade can be swapped'; end if;
@@ -170,7 +201,7 @@ create or replace function public.record_swap(p_offer uuid, p_tx text)
 returns void language plpgsql security definer set search_path = public as $$
 declare o public.offers;
 begin
-  select * into o from public.offers where id = p_offer;
+  select * into o from public.offers where id = p_offer for update;
   if not found then raise exception 'offer not found'; end if;
   if auth.uid() <> o.from_id then raise exception 'the person filling the swap records it'; end if;
   if o.status <> 'agreed' or o.swap_order is null then raise exception 'there is no swap to record'; end if;

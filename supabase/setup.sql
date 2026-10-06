@@ -44,12 +44,14 @@ create policy "insert own profile" on public.profiles for insert with check (aut
 drop policy if exists "update own profile" on public.profiles;
 create policy "update own profile" on public.profiles for update using (auth.uid() = id);
 
--- Give every new account a profile row so names resolve from the first visit.
+-- Give every new account a profile row so names resolve from the first visit. The name is an
+-- anonymous placeholder, never derived from the email: profiles are public, and the part of an
+-- address before the @ is often a real name. The board asks people to choose their own.
 create or replace function public.handle_new_user()
 returns trigger language plpgsql security definer set search_path = public as $$
 begin
   insert into public.profiles (id, name)
-  values (new.id, split_part(coalesce(new.email, 'trader'), '@', 1))
+  values (new.id, 'Trader ' || upper(substr(replace(new.id::text, '-', ''), 1, 4)))
   on conflict (id) do nothing;
   return new;
 end $$;
@@ -69,9 +71,14 @@ create table if not exists public.items (
   want        text not null default '' check (char_length(want) <= 80),
   cat         text not null default 'Other',
   -- open: on the board · pledged: agreed, awaiting delivery · traded: finished
-  status      text not null default 'open' check (status in ('open', 'pledged', 'traded')),
+  status      text not null default 'open',
   created_at  timestamptz not null default now()
 );
+
+-- open: on the board · pledged: in an agreed trade · traded: finished · removed: taken down by its
+-- owner but kept, because trades that happened on it are part of other people's records.
+alter table public.items drop constraint if exists items_status_check;
+alter table public.items add constraint items_status_check check (status in ('open', 'pledged', 'traded', 'removed'));
 
 create index if not exists items_created_idx on public.items (created_at desc);
 create index if not exists items_owner_idx on public.items (owner_id);
@@ -87,8 +94,44 @@ create policy "insert own item" on public.items for insert with check (auth.uid(
 drop policy if exists "update own item" on public.items;
 create policy "update own item" on public.items for update using (auth.uid() = owner_id);
 
+-- No delete policy: deleting an item used to cascade away its offers, which let someone erase a
+-- no-show or a finished trade from the record. remove_item() below deletes only an item nobody has
+-- traded on, and otherwise takes it off the board while keeping the history.
 drop policy if exists "delete own item" on public.items;
-create policy "delete own item" on public.items for delete using (auth.uid() = owner_id);
+
+-- An item's status is the trade's business, not its owner's: new items start open, and only the
+-- trade functions (which run as the database owner) move it after that. An owner editing a title
+-- can't quietly reopen something they have promised to someone.
+create or replace function public.items_guard() returns trigger
+language plpgsql as $$
+begin
+  if current_user in ('anon', 'authenticated') then
+    if tg_op = 'INSERT' then new.status := 'open';
+    elsif new.status is distinct from old.status then raise exception 'listing status changes go through the board';
+    end if;
+  end if;
+  return new;
+end $$;
+drop trigger if exists items_guard on public.items;
+create trigger items_guard before insert or update on public.items
+  for each row execute function public.items_guard();
+
+create or replace function public.remove_item(p_item uuid)
+returns text language plpgsql security definer set search_path = public as $$
+declare it public.items;
+begin
+  select * into it from public.items where id = p_item for update;
+  if not found then raise exception 'item not found'; end if;
+  if it.owner_id <> auth.uid() then raise exception 'you can only remove your own listing'; end if;
+  if it.status = 'pledged' then raise exception 'it is in an agreed trade — finish or cancel that first'; end if;
+  if exists (select 1 from public.offers o where o.item_id = p_item and (o.status in ('agreed', 'done', 'cancelled'))) then
+    update public.offers set status = 'declined' where item_id = p_item and status = 'pending';
+    update public.items set status = 'removed' where id = p_item;
+    return 'removed';
+  end if;
+  delete from public.items where id = p_item;
+  return 'deleted';
+end $$;
 
 -- ---------------------------------------------------------------- offers
 
@@ -125,11 +168,15 @@ create policy "insert own offer" on public.offers for insert
 
 create or replace function public.accept_offer(p_offer uuid)
 returns void language plpgsql security definer set search_path = public as $$
-declare o public.offers;
+declare o public.offers; it public.items;
 begin
-  select * into o from public.offers where id = p_offer;
+  select * into o from public.offers where id = p_offer for update;
   if not found then raise exception 'offer not found'; end if;
-  if o.owner_id <> auth.uid() then raise exception 'only the person who posted the item can accept'; end if;
+  -- Lock the item, then check everything against it rather than against what the offer claims.
+  -- Two accepts racing on one item now queue here; the second finds it pledged and stops.
+  select * into it from public.items where id = o.item_id for update;
+  if it.owner_id <> auth.uid() or o.owner_id <> it.owner_id then raise exception 'only the person who posted the item can accept'; end if;
+  if it.status <> 'open' then raise exception 'this item is already in a trade'; end if;
   if o.status <> 'pending' then raise exception 'this offer is no longer pending'; end if;
 
   update public.offers set status = 'agreed' where id = p_offer;
@@ -143,7 +190,7 @@ create or replace function public.decline_offer(p_offer uuid)
 returns void language plpgsql security definer set search_path = public as $$
 declare o public.offers;
 begin
-  select * into o from public.offers where id = p_offer;
+  select * into o from public.offers where id = p_offer for update;
   if not found then raise exception 'offer not found'; end if;
   if o.owner_id <> auth.uid() then raise exception 'only the person who posted the item can decline'; end if;
   if o.status <> 'pending' then raise exception 'this offer is no longer pending'; end if;
@@ -156,7 +203,7 @@ create or replace function public.press_dot(p_offer uuid)
 returns void language plpgsql security definer set search_path = public as $$
 declare o public.offers; v_both boolean;
 begin
-  select * into o from public.offers where id = p_offer;
+  select * into o from public.offers where id = p_offer for update;
   if not found then raise exception 'offer not found'; end if;
   if o.status <> 'agreed' then raise exception 'this trade is not awaiting delivery'; end if;
 
@@ -174,6 +221,11 @@ begin
     update public.items  set status = 'traded' where id = o.item_id;
   end if;
 end $$;
+
+-- The invariant the trade functions maintain, made impossible to break: one item, at most one live
+-- or finished trade.
+create unique index if not exists offers_one_trade_per_item on public.offers (item_id)
+  where status in ('agreed', 'done');
 
 -- ---------------------------------------------------------------- realtime
 
@@ -334,6 +386,25 @@ drop policy if exists "remove own photos" on storage.objects;
 create policy "remove own photos" on storage.objects for delete to authenticated
   using (bucket_id = 'photos' and (storage.foldername(name))[1] = auth.uid()::text);
 
+-- Proof-of-item photos: private. Only their uploader can read them back; the verify-item Edge
+-- Function reads them with the service role. Nothing about them is public.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('proofs', 'proofs', false, 8388608, array['image/jpeg', 'image/png', 'image/webp'])
+on conflict (id) do update
+  set public = false,
+      file_size_limit = excluded.file_size_limit,
+      allowed_mime_types = excluded.allowed_mime_types;
+
+drop policy if exists "upload proof into own folder" on storage.objects;
+create policy "upload proof into own folder" on storage.objects for insert to authenticated
+  with check (bucket_id = 'proofs' and (storage.foldername(name))[1] = auth.uid()::text);
+
+drop policy if exists "read own proofs" on storage.objects;
+create policy "read own proofs" on storage.objects for select to authenticated
+  using (bucket_id = 'proofs' and (storage.foldername(name))[1] = auth.uid()::text);
+
+-- The listing-photo read policy must not cover proofs: it is scoped to bucket 'photos' above.
+
 -- ============================================================================================
 -- verify.sql
 -- ============================================================================================
@@ -381,12 +452,14 @@ create policy "verifications readable by owner" on public.verifications for sele
 -- No insert, update or delete policies at all: starting one goes through the function below, and
 -- finishing one is the Edge Function's job, with the service role.
 
--- The public half: which items are verified, with the proof photo and the model's one-line read.
--- Same shape as offer_signals, and the same rule — this select list IS the security boundary.
+-- The public half: which items are verified, when, and the model's one-line read. Not the proof
+-- photo: it shows handwriting, a room, whatever else was on the table, and people only need to
+-- know the check passed. Proof photos live in the private `proofs` bucket. This select list IS
+-- the security boundary.
 drop view if exists public.verification_badges;
 create view public.verification_badges
   with (security_invoker = off) as
-  select id, item_id, owner_id, status, proof_url, verified_at,
+  select id, item_id, owner_id, status, verified_at,
          analysis -> 'scores' ->> 'summary'        as summary,
          (analysis -> 'scores' ->> 'weighted_score')::int as score
   from public.verifications
@@ -433,7 +506,7 @@ create or replace function public.withdraw_offer(p_offer uuid)
 returns void language plpgsql security definer set search_path = public as $$
 declare o public.offers;
 begin
-  select * into o from public.offers where id = p_offer;
+  select * into o from public.offers where id = p_offer for update;
   if not found then raise exception 'offer not found'; end if;
   if o.from_id <> auth.uid() then raise exception 'only the person who made the offer can withdraw it'; end if;
   if o.status <> 'pending' then raise exception 'only a pending offer can be withdrawn'; end if;
@@ -453,7 +526,7 @@ create or replace function public.cancel_trade(p_offer uuid)
 returns void language plpgsql security definer set search_path = public as $$
 declare o public.offers;
 begin
-  select * into o from public.offers where id = p_offer;
+  select * into o from public.offers where id = p_offer for update;
   if not found then raise exception 'offer not found'; end if;
   if o.status <> 'agreed' then raise exception 'only an agreed trade can be cancelled'; end if;
   if auth.uid() = o.owner_id then
@@ -475,8 +548,9 @@ end $$;
 --
 -- Run this in the Supabase SQL editor after schema.sql. Order relative to the others does not matter.
 --
--- Coordinates are stored rounded to two decimals (about a kilometre) by the board before they are
--- sent, and the board never asks for more than that. Profiles are public, so this is the right
+-- Coordinates are stored rounded to two decimals (about a kilometre). The board rounds before it
+-- sends, but the promise can't depend on the browser behaving: the trigger below rounds whatever
+-- arrives, so a modified client can't publish a precise location either. Profiles are public, so this is the right
 -- grain: enough to say "12 miles away", not enough to find a front door.
 
 alter table public.profiles
@@ -486,6 +560,21 @@ alter table public.profiles
 alter table public.profiles drop constraint if exists profiles_latlng_range;
 alter table public.profiles add constraint profiles_latlng_range
   check ((lat is null and lng is null) or (lat between -90 and 90 and lng between -180 and 180));
+
+create or replace function public.profiles_round_location() returns trigger
+language plpgsql as $$
+begin
+  if new.lat is not null then new.lat := round(new.lat::numeric, 2)::double precision; end if;
+  if new.lng is not null then new.lng := round(new.lng::numeric, 2)::double precision; end if;
+  return new;
+end $$;
+drop trigger if exists profiles_round_location on public.profiles;
+create trigger profiles_round_location before insert or update of lat, lng on public.profiles
+  for each row execute function public.profiles_round_location();
+
+-- Anything stored before this existed.
+update public.profiles set lat = round(lat::numeric, 2)::double precision, lng = round(lng::numeric, 2)::double precision
+ where lat is not null and (lat <> round(lat::numeric, 2)::double precision or lng <> round(lng::numeric, 2)::double precision);
 
 -- ============================================================================================
 -- messages.sql
@@ -610,7 +699,7 @@ create or replace function public.mark_sent(p_offer uuid, p_how text, p_carrier 
 returns void language plpgsql security definer set search_path = public as $$
 declare o public.offers;
 begin
-  select * into o from public.offers where id = p_offer;
+  select * into o from public.offers where id = p_offer for update;
   if not found then raise exception 'offer not found'; end if;
   if o.status <> 'agreed' then raise exception 'only an agreed trade can be marked sent'; end if;
   if p_how not in ('post', 'in_person', 'onchain') then raise exception 'say how it was sent'; end if;
@@ -635,7 +724,7 @@ create or replace function public.claim_no_show(p_offer uuid)
 returns void language plpgsql security definer set search_path = public as $$
 declare o public.offers; me_done boolean; them_done boolean; them uuid;
 begin
-  select * into o from public.offers where id = p_offer;
+  select * into o from public.offers where id = p_offer for update;
   if not found then raise exception 'offer not found'; end if;
   if o.status <> 'agreed' then raise exception 'only an agreed trade can be claimed'; end if;
   if o.ship_by is null or now() <= o.ship_by then raise exception 'the ship-by date has not passed yet'; end if;
@@ -657,7 +746,7 @@ create or replace function public.cancel_trade(p_offer uuid)
 returns void language plpgsql security definer set search_path = public as $$
 declare o public.offers;
 begin
-  select * into o from public.offers where id = p_offer;
+  select * into o from public.offers where id = p_offer for update;
   if not found then raise exception 'offer not found'; end if;
   if o.status <> 'agreed' then raise exception 'only an agreed trade can be cancelled'; end if;
   if auth.uid() = o.owner_id then
@@ -673,10 +762,41 @@ begin
   update public.items set status = 'open' where id = o.item_id and status = 'pledged';
 end $$;
 
+-- ---------------------------------------------------------------- creating an offer
+
+-- A new offer's owner is whoever owns the item — looked up here, never taken from the browser — and
+-- every field the trade functions control starts blank. Before this, a hand-made request could
+-- name any "owner", or arrive already agreed, done, vouched for, or carrying a no-show against
+-- someone who never traded.
+create or replace function public.offers_guard() returns trigger
+language plpgsql security definer set search_path = public as $$
+declare it public.items;
+begin
+  select * into it from public.items where id = new.item_id;
+  if not found then raise exception 'item not found'; end if;
+  if it.status <> 'open' then raise exception 'this item is no longer on the board'; end if;
+  new.owner_id := it.owner_id;
+  if new.from_id = new.owner_id then raise exception 'you cannot offer on your own item'; end if;
+  new.status := 'pending';
+  new.confirm_owner := false; new.confirm_from := false;
+  new.cancelled_by := null; new.defaulted_by := null; new.ship_by := null;
+  new.owner_sent_at := null; new.owner_sent_how := null; new.owner_carrier := null; new.owner_ref := null;
+  new.from_sent_at := null;  new.from_sent_how := null;  new.from_carrier := null;  new.from_ref := null;
+  new.swap_order := null; new.swap_sig := null; new.swap_tx := null;
+  new.created_at := now();
+  return new;
+end $$;
+drop trigger if exists offers_guard on public.offers;
+create trigger offers_guard before insert on public.offers
+  for each row execute function public.offers_guard();
+
 -- The public half gains the no-show column: it is what costs dots, so everyone must be able to count it.
 drop view if exists public.offer_signals;
 create view public.offer_signals with (security_invoker = off) as
-  select id, item_id, owner_id, from_id, status, confirm_owner, confirm_from, defaulted_by, created_at
+  select id, item_id, owner_id, from_id, status, confirm_owner, confirm_from, defaulted_by,
+         -- how each side sent (not the tracking numbers) and whether it was an on-chain swap: what
+         -- makes a finished trade "verified" when dots are counted
+         owner_sent_how, from_sent_how, (swap_tx is not null) as swapped, created_at
   from public.offers;
 grant select on public.offer_signals to anon, authenticated;
 
@@ -690,7 +810,7 @@ create or replace function public.post_swap(p_offer uuid, p_order jsonb, p_sig t
 returns void language plpgsql security definer set search_path = public as $$
 declare o public.offers; it public.items; w text; n int;
 begin
-  select * into o from public.offers where id = p_offer;
+  select * into o from public.offers where id = p_offer for update;
   if not found then raise exception 'offer not found'; end if;
   if auth.uid() <> o.owner_id then raise exception 'the lister sets up the swap'; end if;
   if o.status <> 'agreed' then raise exception 'only an agreed trade can be swapped'; end if;
@@ -719,7 +839,7 @@ create or replace function public.record_swap(p_offer uuid, p_tx text)
 returns void language plpgsql security definer set search_path = public as $$
 declare o public.offers;
 begin
-  select * into o from public.offers where id = p_offer;
+  select * into o from public.offers where id = p_offer for update;
   if not found then raise exception 'offer not found'; end if;
   if auth.uid() <> o.from_id then raise exception 'the person filling the swap records it'; end if;
   if o.status <> 'agreed' or o.swap_order is null then raise exception 'there is no swap to record'; end if;
