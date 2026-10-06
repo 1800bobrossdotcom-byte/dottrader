@@ -65,6 +65,7 @@ ok("it never fetches the whole board, every profile, or every trade", !log.some(
 ok("profiles are fetched only for the people on screen", log.some(l => /^profiles .*id=in\./.test(l)));
 ok("records come from the database, for those people", log.some(l => /^rpc trader_stats /.test(l) && l.includes(B) && l.includes(C)));
 ok("a card spells out the record the database added up", (await p.textContent("#feed .item:has-text('Card 1') .who .rec")) === "12 trades · 9 verified · 0 no-shows");
+ok("the circles count dots, one each up to five, with the number beside", JSON.stringify(await p.$eval("#feed .item:has-text('Card 1') .who .dots", e => [e.querySelectorAll("s.on").length, e.querySelector("em").textContent])) === '[5,"21 dots"]');
 await p.click("#moreBtn"); await p.waitForTimeout(500);
 c = await cards();
 ok("Load more adds the next page", c.length === 60 && c[59] === "Card 60", c.length + " cards");

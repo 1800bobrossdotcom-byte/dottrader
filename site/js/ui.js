@@ -39,11 +39,12 @@ function scoreOf(id) {
 }
 function rankOf(n) { var r = RANKS[0][1]; RANKS.forEach(function (x) { if (n >= x[0]) r = x[1]; }); return r; }
 function level(n) { var lv = 0; RANKS.forEach(function (x) { if (n >= x[0]) lv++; }); return Math.max(1, Math.min(5, lv)); }
+// One lit circle per dot, up to five, then the exact count beside them. (The circles used to show
+// rank, which read as a dot count: going from 2 dots to 5 lit only one more.)
 function dotRow(n) {
-  var lv = n > 0 ? level(n) : 0;
-  var h = '<span class="dots" title="' + n + ' dots — ' + esc(rankOf(n)) + '">';
-  for (var i = 0; i < 5; i++) h += "<s" + (i < lv ? ' class="on"' : "") + "></s>";
-  return h + "<em>" + n + "</em></span>";
+  var h = '<span class="dots" title="' + n + (n === 1 ? " dot" : " dots") + " \u2014 " + esc(rankOf(n)) + '">';
+  for (var i = 0; i < 5; i++) h += "<s" + (i < n ? ' class="on"' : "") + "></s>";
+  return h + "<em>" + n + (n === 1 ? " dot" : " dots") + "</em></span>";
 }
 
 function show(which) {

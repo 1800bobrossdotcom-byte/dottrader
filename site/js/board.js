@@ -72,7 +72,7 @@ function renderInner() {
 
   var sc = scoreOf(uid);
   $("myDots").textContent = sc.dots;
-  $("myDotRow").innerHTML = dotRow(sc.dots).replace(/^<span class="dots"[^>]*>/, "").replace(/<\/span>$/, "");
+  $("myDotRow").innerHTML = dotRow(sc.dots).replace(/^<span class="dots"[^>]*>/, "").replace(/<em>.*<\/em><\/span>$/, "");
   $("myRank").textContent = rankOf(sc.dots);
   $("myLedger").innerHTML =
     row(Math.floor(sc.tradePts), sc.trades + (sc.trades === 1 ? " completed trade" : " completed trades") + " with " + sc.partners + (sc.partners === 1 ? " person" : " different people") + " \u2014 two dots for the first with each person, one for the second, none after") +
