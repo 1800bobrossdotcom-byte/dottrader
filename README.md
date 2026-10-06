@@ -66,14 +66,15 @@ supabase/wallets.sql   wallet + cross-chain asset columns
 supabase/privacy.sql   offers readable only by their two parties
 supabase/storage.sql   photo bucket and upload policies
 supabase/verify.sql    proof-of-item table, badge view, withdraw + cancel
+supabase/location.sql  rough lat/lng on profiles for "near me" and the map
 supabase/functions/verify-item/index.ts   Edge Function that scores a proof photo
 ```
 
 **Setup**
 
 1. Create a Supabase project.
-2. Run `supabase/schema.sql` first, then `wallets.sql`, `privacy.sql`, `storage.sql`
-   and `verify.sql`, in the SQL editor.
+2. Run `supabase/schema.sql` first, then `wallets.sql`, `privacy.sql`, `storage.sql`,
+   `verify.sql` and `location.sql`, in the SQL editor.
 3. Under Authentication → URL Configuration, set the Site URL to your domain and
    add `/app` to the redirect URLs.
 4. Put the project URL and the **anon public** key into `site/config.js`.
