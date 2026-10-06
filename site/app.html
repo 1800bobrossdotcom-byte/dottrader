@@ -381,7 +381,7 @@
   function shortAddr(a) { return a ? a.slice(0, 6) + "…" + a.slice(-4) : ""; }
 
   var sb = null, uid = null, myEmail = "";
-  var items = [], offers = [], profiles = {};
+  var items = [], offers = [], signals = [], profiles = {};
   var filter = { q: "", cat: "" };
 
   function esc(s) {
@@ -417,7 +417,7 @@
   function scoreOf(id) {
     if (!id) return { dots: 0, trades: 0, vouches: 0, profile: 0 };
     var trades = 0, vouches = 0;
-    offers.forEach(function (o) {
+    signals.forEach(function (o) {
       var side = o.from_id === id ? "from" : (o.owner_id === id ? "owner" : null);
       if (!side) return;
       if (o.status === "done") trades++;
@@ -585,7 +585,7 @@
     opts = opts || {};
     var traded = it.status === "traded", pledged = it.status === "pledged";
     var mine = uid && it.owner_id === uid;
-    var pending = offers.filter(function (o) { return o.item_id === it.id && o.status === "pending"; }).length;
+    var pending = signals.filter(function (o) { return o.item_id === it.id && o.status === "pending"; }).length;
     var sc = scoreOf(it.owner_id), prof = profiles[it.owner_id];
 
     var el = document.createElement("article");
@@ -835,14 +835,20 @@
   function load() {
     return Promise.all([
       sb.from("items").select("*").order("created_at", { ascending: false }).limit(400),
+      // Only the viewer's own offers come back here — the policy sees to that.
       sb.from("offers").select("*").order("created_at", { ascending: false }).limit(800),
-      sb.from("profiles").select("*").limit(800)
+      sb.from("profiles").select("*").limit(800),
+      // The public half of every offer: enough to count dots, nothing anyone said.
+      sb.from("offer_signals").select("*").limit(2000)
     ]).then(function (r) {
       if (r[0].error || r[1].error || r[2].error) {
         note("Could not load the board. If this is the first run, check the schema was applied in Supabase.", "bad");
         return;
       }
       items = r[0].data || []; offers = r[1].data || [];
+      // If privacy.sql has not been run yet the view is missing; fall back to what we can see so
+      // the board still works, just with dots counted only from the viewer's own trades.
+      signals = r[3].error ? offers : (r[3].data || []);
       profiles = {}; (r[2].data || []).forEach(function (p) { profiles[p.id] = p; });
       if (uid && profiles[uid]) {
         if (!$("p-name").value) $("p-name").value = profiles[uid].name || "";
