@@ -923,6 +923,10 @@
       foot.appendChild(ver);
     }
     if (mine && opts.manage && !traded && !pledged) {
+      var ed = document.createElement("button");
+      ed.className = "btn ghost"; ed.type = "button"; ed.textContent = "Edit";
+      ed.addEventListener("click", function () { openEdit(it); });
+      foot.appendChild(ed);
       var del = document.createElement("button");
       del.className = "btn no"; del.type = "button"; del.textContent = "Remove";
       del.addEventListener("click", function () { removeItem(it); });
@@ -1238,7 +1242,63 @@
     }).then(function (r) { if (r.error) return fail(r.error); toast("Profile saved."); load(); });
   });
 
+  function openEdit(it) {
+    var veil = document.createElement("div"); veil.className = "veil";
+    var form = document.createElement("form"); form.className = "sheet f";
+    var photos = (it.photos || []).slice();
+    form.innerHTML =
+      "<h3>Edit listing</h3>" +
+      '<div><label for="e-title">What you are offering</label><input id="e-title" maxlength="80" required></div>' +
+      '<div><label for="e-desc">Details</label><textarea id="e-desc" maxlength="600"></textarea></div>' +
+      '<div class="rowf"><div><label for="e-want">What you want back</label><input id="e-want" maxlength="80"></div>' +
+      '<div><label for="e-cat">Category</label><select id="e-cat"></select></div></div>' +
+      '<div><label>Photos <span class="hint">— up to 4</span></label><div class="thumbs" id="e-thumbs"></div>' +
+      '<label class="filebtn" style="margin-top:10px"><span>Add photos</span><input id="e-photos" type="file" accept="image/jpeg,image/png,image/webp" multiple></label></div>' +
+      '<div class="acts"><button class="btn ok" type="submit">Save changes</button><button class="btn ghost" type="button" data-x>Cancel</button></div>';
+    veil.appendChild(form); document.body.appendChild(veil);
+    var q = function (id) { return form.querySelector("#" + id); };
+    groupedOptions(q("e-cat"), null);
+    q("e-title").value = it.title || ""; q("e-desc").value = it.descr || ""; q("e-want").value = it.want || ""; q("e-cat").value = it.cat || "Other";
+    var close = function () { veil.remove(); };
+    form.querySelector("[data-x]").addEventListener("click", close);
+    veil.addEventListener("click", function (e) { if (e.target === veil) close(); });
+    function paint() {
+      var host = q("e-thumbs"); host.innerHTML = "";
+      photos.forEach(function (u, i) {
+        var w = document.createElement("div"); w.className = "thumb";
+        var img = document.createElement("img"); img.src = u; img.alt = "";
+        var x = document.createElement("button"); x.type = "button"; x.className = "thumbx"; x.textContent = "×"; x.title = "Remove";
+        x.addEventListener("click", function () { photos.splice(i, 1); paint(); });
+        w.appendChild(img); w.appendChild(x); host.appendChild(w);
+      });
+      q("e-photos").disabled = photos.length >= 4;
+    }
+    paint();
+    q("e-photos").addEventListener("change", function (e) {
+      var files = Array.prototype.slice.call(e.target.files || []).slice(0, 4 - photos.length); e.target.value = "";
+      if (!files.length) return;
+      toast("Uploading…");
+      Promise.all(files.map(function (f) { return window.DTP_PHOTOS.upload(sb, uid, f).catch(function (err) { toast(err.message || "Upload failed."); return null; }); }))
+        .then(function (us) { us.forEach(function (u) { if (u && photos.length < 4) photos.push(u); }); paint(); });
+    });
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var title = q("e-title").value.trim(); if (!title) return;
+      var rec = { title: title, descr: q("e-desc").value.trim(), want: q("e-want").value.trim(), cat: q("e-cat").value };
+      // Only send photos when the project has the column (it exists once storage.sql has run).
+      if (photos.length || (it.photos && it.photos.length)) rec.photos = photos.slice(0, 4);
+      sb.from("items").update(rec).eq("id", it.id).then(function (r) {
+        if (r.error) {
+          if (/'photos' column/.test(r.error.message || "")) return toast("Photo storage is not set up yet — run supabase/storage.sql.");
+          return fail(r.error);
+        }
+        close(); toast("Saved."); load();
+      });
+    });
+  }
+
   function removeItem(it) {
+    if (!confirm("Remove \u201c" + it.title + "\u201d from the board? Pending offers on it go with it.")) return;
     sb.from("items").delete().eq("id", it.id).then(function (r) {
       if (r.error) return fail(r.error);
       toast("Listing removed."); load();
