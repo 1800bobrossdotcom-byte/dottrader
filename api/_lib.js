@@ -88,6 +88,7 @@ function page(o) {
     '<meta property="og:description" content="' + esc(o.desc) + '">\n' +
     '<meta property="og:url" content="' + esc(url) + '">\n' +
     '<meta property="og:image" content="' + esc(image) + '">\n' +
+    (o.imageSize ? '<meta property="og:image:width" content="' + o.imageSize[0] + '">\n<meta property="og:image:height" content="' + o.imageSize[1] + '">\n' : "") +
     (o.imageAlt ? '<meta property="og:image:alt" content="' + esc(o.imageAlt) + '">\n' : "") +
     '<meta name="twitter:card" content="summary_large_image">\n' +
     '<meta name="twitter:title" content="' + esc(o.ogTitle || o.title) + '">\n' +

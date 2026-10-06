@@ -5,12 +5,17 @@
   "description": "A barter board. Post what you have, say what you want, swap.",
   "license": "MIT",
   "scripts": {
-    "test": "npm run test:bond && npm run test:notify && npm run test:delivery && npm run test:pages && npm run test:browser && npm run test:db",
+    "test": "npm run test:bond && npm run test:notify && npm run test:delivery && npm run test:pages && npm run test:og && npm run test:browser && npm run test:db",
     "test:bond": "node --experimental-strip-types --no-warnings tests/bond.test.mjs",
     "test:notify": "node --experimental-strip-types --no-warnings tests/notify.test.mjs",
     "test:pages": "node tests/pages.test.mjs",
     "test:db": "sh tests/db/run.sh",
     "test:browser": "node tests/browser/run.mjs",
-    "test:delivery": "node --experimental-strip-types --no-warnings tests/delivery.test.mjs"
+    "test:delivery": "node --experimental-strip-types --no-warnings tests/delivery.test.mjs",
+    "test:og": "node tests/og.test.mjs"
+  },
+  "dependencies": {
+    "@resvg/resvg-js": "^2.6.2",
+    "@vercel/og": "^0.6.8"
   }
 }

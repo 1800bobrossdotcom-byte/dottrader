@@ -52,11 +52,11 @@ const lds = (b) => [...b.matchAll(/<script type="application\/ld\+json">([\s\S]*
   ok("an open listing answers 200 as HTML", r.status === 200 && /text\/html/.test(r.headers["content-type"]));
   ok("its title names the listing", /<title>Charizard &lt;script&gt;alert\(1\)&lt;\/script&gt; holo — up for trade \| Dot Trading Post<\/title>/.test(r.body), (r.body.match(/<title>.*<\/title>/) || [])[0]);
   ok("nothing the lister typed can open a tag", !/<script>alert/.test(r.body) && !/<\/script>alert/.test(r.body));
-  ok("link previews get its first photo", meta(r.body, "og:image") === items[0].photos[0]);
+  ok("link previews use the listing's own card image, sized for X and the rest", /^https:\/\/www\.dottrader\.app\/og\/item\/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\.png\?v=[0-9a-f]{10}$/.test(meta(r.body, "og:image")) && meta(r.body, "og:image:width") === "1200" && meta(r.body, "twitter:image") === meta(r.body, "og:image"), meta(r.body, "og:image"));
   ok("…and a description with what they want", /Wants N64 games · or any Consoles &amp; Retro/.test(meta(r.body, "og:description") || ""), meta(r.body, "og:description"));
   ok("search engines may index it", !/noindex/.test(r.body));
   const ld = lds(r.body);
-  ok("structured data: a Product with both photos, and breadcrumbs", ld[0]["@type"] === "Product" && ld[0].image.length === 2 && ld[0].name === items[0].title && ld[1]["@type"] === "BreadcrumbList" && ld[1].itemListElement[1].item.endsWith("/c/trading-cards"));
+  ok("structured data: a Product with both photos, and breadcrumbs", ld[0]["@type"] === "Product" && ld[0].image.length === 3 && /\/og\/item\/.*\.png$/.test(ld[0].image[2]) && ld[0].name === items[0].title && ld[1]["@type"] === "BreadcrumbList" && ld[1].itemListElement[1].item.endsWith("/c/trading-cards"));
   ok("structured data can't close its own script tag", !/<\/script>alert/.test(r.body.split('application/ld+json">')[1].split("</script>")[0]));
   ok("Make an offer goes into the board", r.body.includes('href="/app#item=' + I1 + '"'));
   ok("shows the owner, the proof badge, and the swipe hint", /Listed by <b>Alice &amp; Co<\/b> · Leeds/.test(r.body) && /Proof of item/.test(r.body) && /Swipe for 1 more photo</.test(r.body));

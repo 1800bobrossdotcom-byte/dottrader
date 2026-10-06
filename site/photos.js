@@ -124,7 +124,9 @@
     var big = file.size > 4 * 1024 * 1024;
     var maxSide = mobile || big ? 1200 : 1600;
     var quality = mobile ? 0.72 : (big ? 0.75 : 0.82);
-    if (file.size < 200 * 1024) return Promise.resolve(file);
+    // WebP is always re-encoded as JPEG: link previews (and the card drawn for them) can't use it.
+    var webp = file.type === "image/webp";
+    if (file.size < 200 * 1024 && !webp) return Promise.resolve(file);
     return createImageBitmap(file).then(function (bmp) {
       var scale = Math.min(1, maxSide / Math.max(bmp.width, bmp.height));
       var w = Math.max(1, Math.round(bmp.width * scale)), h = Math.max(1, Math.round(bmp.height * scale));
@@ -135,7 +137,7 @@
       var toBlob = c.convertToBlob
         ? c.convertToBlob({ type: "image/jpeg", quality: quality })
         : new Promise(function (r) { c.toBlob(r, "image/jpeg", quality); });
-      return toBlob.then(function (blob) { return blob && blob.size < file.size ? blob : file; });
+      return toBlob.then(function (blob) { return blob && (webp || blob.size < file.size) ? blob : file; });
     }).catch(function () { return file; });
   }
 

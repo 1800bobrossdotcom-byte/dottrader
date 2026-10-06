@@ -84,6 +84,7 @@ api/nft.js             Vercel function: NFT name and artwork, read server-side
 api/item.js            Vercel function: each listing's own page, /item/<id>, for links and search
 api/c.js               Vercel function: category pages, /c/<category>, and /c for all of them
 api/sitemap.js         Vercel function: /sitemap.xml, built from what is on the board
+api/og.js              Vercel function: each listing's link-preview card, /og/item/<id>.png
 supabase/setup.sql     all of the above in order, in one paste (generated; safe to re-run)
 supabase/functions/verify-item/index.ts   Edge Function that scores a proof photo
 ```
@@ -229,6 +230,7 @@ npm run test:bond   # the bond Edge Function, with Stripe, the database and sign
 npm run test:notify # the notify Edge Function, with Resend and the database faked
 npm run test:delivery # checking on-chain deliveries, with the chains' RPCs faked
 npm run test:pages  # listing, category and sitemap pages, with the database faked
+npm run test:og     # link-preview cards: on-chain SVG, photos, broken artwork, refused addresses
 npm run test:browser # the board in headless Chromium under the live security policy: posting,
                     # offers, matching, protected trades and swaps, activity, local pickup
 npm run test:db     # 141 checks on a throwaway Postgres: the trade state machine, permissions,

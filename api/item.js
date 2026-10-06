@@ -67,7 +67,7 @@ module.exports = async function handler(req, res) {
   const ld = [
     {
       "@context": "https://schema.org", "@type": "Product", name: it.title, description: it.descr || desc,
-      category: it.cat, url: L.SITE + path, ...(pics.length ? { image: pics } : {}),
+      category: it.cat, url: L.SITE + path, image: pics.filter((u) => /^https?:/.test(u)).concat(L.SITE + "/og/item/" + id + ".png"),
     },
     {
       "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [
@@ -107,8 +107,12 @@ module.exports = async function handler(req, res) {
     (more.length ? '<section class="more"><h2>More ' + L.esc(it.cat) + ' up for trade</h2><div class="grid">' + more.map((m) => L.miniCard(m)).join("") +
       '</div><p><a class="btn ghost" href="' + catPath + '">All ' + L.esc(it.cat) + "</a></p></section>" : "");
 
+  // The link preview is a card drawn for this listing (api/og.js): previews can't use an NFT's
+  // on-chain SVG or most IPFS links directly. The version changes whenever what it shows does, so
+  // services that cache previews fetch the new one.
+  const v = require("crypto").createHash("sha1").update([it.title, want, it.status, (it.photos || [])[0] || "", it.asset_contract || "", it.asset_token_id || "", prof && prof.name || ""].join("|")).digest("hex").slice(0, 10);
   L.send(res, 200, L.page({
     path, title: L.clip(it.title, 70) + " — up for trade | Dot Trading Post", ogTitle: it.title + " — up for trade", desc,
-    image: pics[0] || null, imageAlt: it.title, noindex: !open, ld, body,
+    image: L.SITE + "/og/item/" + id + ".png?v=" + v, imageSize: [1200, 630], imageAlt: it.title, noindex: !open, ld, body,
   }));
 };

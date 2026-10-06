@@ -2,10 +2,14 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "outputDirectory": "site",
   "buildCommand": "",
-  "installCommand": "",
+  "installCommand": "npm ci --omit=dev --no-audit --no-fund",
   "framework": null,
   "cleanUrls": true,
   "rewrites": [
+    {
+      "source": "/og/item/:file",
+      "destination": "/api/og?id=:file"
+    },
     {
       "source": "/item/:id",
       "destination": "/api/item?id=:id"
@@ -23,6 +27,13 @@
       "destination": "/api/sitemap"
     }
   ],
+  "functions": {
+    "api/og.js": {
+      "includeFiles": "api/_fonts/**",
+      "memory": 1024,
+      "maxDuration": 20
+    }
+  },
   "headers": [
     {
       "source": "/(.*)",
