@@ -2,7 +2,7 @@
 "use strict";
 (function () {
   var STICKERS = [
-    { id: "diecut-logo", name: "The D", kind: "die", text: "The logo on halftone dots, with the name on a ribbon." },
+    { id: "diecut-logo", name: "The D", kind: "die", text: "The logo on halftone dots, the name on a ribbon, dottrader.app and a little QR code." },
     { id: "diecut-scan", name: "Scan to swap", kind: "die", text: "A card with the QR code, the D peeking over the corner." },
     { id: "diecut-physical-nft", name: "Physical for NFT", kind: "die", text: "A comic burst: a box for an NFT. No bridge, no cash." },
     { id: "square-pitch", name: "The pitch", kind: "square", text: "Trade anything for anything — the three ways to swap, and the QR code." },

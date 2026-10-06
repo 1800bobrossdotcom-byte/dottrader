@@ -3,7 +3,7 @@ import { createRequire } from "node:module"; import fs from "node:fs"; import cr
 const require = createRequire(import.meta.url);
 const QR = require("qrcode");
 const { chromium } = await import("/opt/node22/lib/node_modules/playwright/index.mjs");
-const S = process.argv[2], OUT = process.argv[3]; fs.mkdirSync(OUT, { recursive: true });
+const S = process.argv[2], OUT = process.argv[3], ONLY = process.argv.slice(4); fs.mkdirSync(OUT, { recursive: true });
 const URL_ = "https://dottrader.app/?ref=sticker";
 
 const C = { paper: "#F3EAD3", card: "#FFFCF4", ink: "#121212", yellow: "#FFD23F", red: "#E8392B", cyan: "#27B2E8", pink: "#F2518F", blue: "#2F56D6", purple: "#7B4FD6", green: "#1DB36A" };
@@ -49,9 +49,16 @@ const cutFilter = (r, preview) => `<svg width="0" height="0" style="position:abs
   <feMerge>${preview ? '<feMergeNode in="line"/>' : ""}<feMergeNode in="white"/></feMerge></filter></svg>`;
 
 const DIE = {
-  "diecut-logo": `<div style="display:grid;justify-items:center;gap:.06in">
-      <div style="width:2.15in;height:2.15in;border-radius:50%;background:${halftone(C.pink, 10, 2)},${C.card};border:.03in solid ${C.ink};display:grid;place-items:center">${logo("1.75in")}</div>
-      <div class="disp" style="background:${C.ink};color:${C.yellow};font-size:.27in;padding:.07in .16in .05in;border-radius:.08in;margin-top:-.32in;transform:rotate(-3deg);box-shadow:.05in .05in 0 ${C.red}">Dot Trading Post</div>
+  "diecut-logo": `<div style="display:grid;justify-items:center;gap:.04in">
+      <div style="position:relative">
+        <div style="width:1.95in;height:1.95in;border-radius:50%;background:${halftone(C.pink, 10, 2)},${C.card};border:.03in solid ${C.ink};display:grid;place-items:center">${logo("1.55in")}</div>
+        <div style="position:absolute;right:-.36in;top:-.08in;transform:rotate(7deg);background:${C.card};border:.025in solid ${C.ink};border-radius:.1in;padding:.045in .045in .03in;box-shadow:.04in .04in 0 ${C.ink};display:grid;justify-items:center;gap:.015in">
+          <div style="border:.015in solid ${C.ink};border-radius:.06in;overflow:hidden">${qr(78)}</div>
+          <div class="mono" style="font-size:.065in;letter-spacing:.12em">Scan me</div>
+        </div>
+      </div>
+      <div class="disp" style="background:${C.ink};color:${C.yellow};font-size:.27in;padding:.07in .16in .05in;border-radius:.08in;margin-top:-.34in;transform:rotate(-3deg);box-shadow:.05in .05in 0 ${C.red};position:relative">Dot Trading Post</div>
+      <div class="mono" style="font-size:.13in;font-weight:500;letter-spacing:.08em;text-transform:none;background:${C.yellow};border:.02in solid ${C.ink};border-radius:999px;padding:.035in .12in;box-shadow:.03in .03in 0 ${C.ink};margin-top:.04in;transform:rotate(-3deg)">dottrader.app</div>
     </div>`,
   "diecut-scan": `<div style="position:relative;padding:.28in 0 0 .28in">
       <div style="position:absolute;left:0;top:0;transform:rotate(-8deg);z-index:2">${logo(".85in")}</div>
@@ -138,11 +145,12 @@ async function render(name, inner, w, h, die, preview) {
   await p.close();
   return file;
 }
-for (const [k, v] of Object.entries(DIE)) { await render(k, v, 3.2, 3.2, true); await render(k, v, 3.2, 3.2, true, true); }
-for (const [k, v] of Object.entries(SQ)) await render(k, v, 3.25, 3.25, false);
+const want = (k) => !ONLY.length || ONLY.includes(k);
+for (const [k, v] of Object.entries(DIE)) { if (!want(k)) continue; await render(k, v, 3.2, 3.2, true); await render(k, v, 3.2, 3.2, true, true); }
+for (const [k, v] of Object.entries(SQ)) if (want(k)) await render(k, v, 3.25, 3.25, false);
 
 // Prove every QR scans, on the final pixels, with two different readers at print size and at
 // the smaller sizes a phone camera actually sees.
 const { execFileSync } = await import("node:child_process");
-console.log(execFileSync(process.execPath, [new URL("./probe2.mjs", import.meta.url).pathname, ...made.filter((f) => !/logo|physical-nft/.test(f))], { encoding: "utf8" }));
+console.log(execFileSync(process.execPath, [new URL("./probe2.mjs", import.meta.url).pathname, ...made.filter((f) => !/physical-nft/.test(f))], { encoding: "utf8" }));
 await browser.close();

@@ -6,7 +6,7 @@ Six stickers, ready to send to a printer. Every QR code points to `https://dottr
 
 | File | Kind | Size |
 |---|---|---|
-| `diecut-logo` | Die-cut: the D with "Dot Trading Post" | 3″ |
+| `diecut-logo` | Die-cut: the D with "Dot Trading Post", dottrader.app and a small QR code | 3″ |
 | `diecut-scan` | Die-cut: "Scan to swap" card with QR | 3″ |
 | `diecut-physical-nft` | Die-cut: "Physical for NFT" burst | 3″ |
 | `square-pitch` | Square: "Trade anything for anything", the three ways to swap, QR | 3″ × 3″ |
