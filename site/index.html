@@ -176,6 +176,16 @@
   .makers img { height:32px; width:auto; display:block; transition:transform .15s; }
   .makers:hover img { transform:rotate(-4deg) scale(1.06); }
   .makers:hover span { color:var(--ink); }
+  .stix { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.25fr); gap:34px; align-items:center; }
+  @media (max-width:760px){ .stix { grid-template-columns:1fr; } }
+  .stix .acts { display:flex; flex-wrap:wrap; gap:12px; }
+  .stix ul { margin:0 0 26px; padding:0; list-style:none; display:grid; gap:8px; font-size:15.5px; }
+  .stix li::before { content:""; width:10px; height:10px; border-radius:50%; background:var(--red); border:2px solid var(--ink); display:inline-block; margin-right:10px; vertical-align:-1px; }
+  .fan { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; text-decoration:none; }
+  .fan img { width:100%; height:auto; display:block; filter:drop-shadow(4px 5px 0 rgba(18,18,18,.18)); transition:transform .15s; }
+  .fan img:nth-child(1) { transform:rotate(-5deg); } .fan img:nth-child(2) { transform:rotate(3deg); } .fan img:nth-child(3) { transform:rotate(-2deg); }
+  .fan img:nth-child(4) { transform:rotate(4deg); } .fan img:nth-child(5) { transform:rotate(-3deg); } .fan img:nth-child(6) { transform:rotate(5deg); }
+  .fan:hover img { transform:rotate(0) scale(1.03); }
 </style>
 </head>
 <body>
@@ -186,6 +196,7 @@
     <a class="navlink" href="#match">Matching</a>
     <a class="navlink" href="#safe">Trade safely</a>
     <a class="navlink" href="#dots">How dots work</a>
+    <a class="navlink" href="#stickers">Stickers</a>
     <a class="navbtn" href="/app">Open the board</a>
   </nav>
 
@@ -306,6 +317,29 @@
     <p class="sub" style="margin-top:26px">
       <a class="btn" href="/app">Open the board</a>
     </p>
+  </section>
+
+  <section id="stickers">
+    <div class="stix">
+      <div>
+        <h2>Free stickers — stick a Dot on it</h2>
+        <p class="sub">Six stickers for trade binders, console boxes, laptops and meetup tables. Every QR code opens the board.</p>
+        <ul>
+          <li>Download them — PNG, PDF or the whole pack</li>
+          <li>Share them straight from your phone</li>
+          <li>Print a sheet at home, or order them printed</li>
+        </ul>
+        <div class="acts"><a class="btn" href="/stickers">Get the sticker pack</a><a class="btn ghost" href="/stickers#print">Print a sheet</a></div>
+      </div>
+      <a class="fan" href="/stickers" aria-label="See the sticker pack">
+        <img src="/stickers/thumb/diecut-logo.webp" alt="The D sticker" width="360" height="360" loading="lazy">
+        <img src="/stickers/thumb/square-pitch.webp" alt="Trade anything for anything sticker" width="360" height="360" loading="lazy">
+        <img src="/stickers/thumb/diecut-physical-nft.webp" alt="Physical for NFT sticker" width="360" height="360" loading="lazy">
+        <img src="/stickers/thumb/square-scan.webp" alt="Scan to swap QR sticker" width="360" height="360" loading="lazy">
+        <img src="/stickers/thumb/diecut-scan.webp" alt="Scan to swap card sticker" width="360" height="360" loading="lazy">
+        <img src="/stickers/thumb/square-trade-me.webp" alt="What would you trade for this sticker" width="360" height="360" loading="lazy">
+      </a>
+    </div>
   </section>
 
   <footer>

@@ -8,7 +8,7 @@ import { spawn } from "node:child_process";
 import { ROOT } from "./harness.mjs";
 
 const SITE = path.join(ROOT, "site");
-const TYPES = { ".html": "text/html", ".js": "application/javascript", ".css": "text/css", ".svg": "image/svg+xml", ".png": "image/png", ".ico": "image/x-icon", ".json": "application/json", ".webmanifest": "application/manifest+json", ".pdf": "application/pdf" };
+const TYPES = { ".html": "text/html", ".js": "application/javascript", ".css": "text/css", ".svg": "image/svg+xml", ".png": "image/png", ".ico": "image/x-icon", ".json": "application/json", ".webmanifest": "application/manifest+json", ".pdf": "application/pdf", ".webp": "image/webp" };
 const server = http.createServer((req, res) => {
   const p = path.normalize(decodeURIComponent(new URL(req.url, "http://x").pathname)).replace(/^(\.\.[/\\])+/, "");
   const file = path.join(SITE, p === "/" ? "index.html" : p);

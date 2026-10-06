@@ -93,6 +93,11 @@ ok("no sideways scroll on a phone", sw[0] <= sw[1], sw.join(" vs "));
 await m.p.screenshot({ path: OUT + "/stickers-phone.png", fullPage: true });
 await m.ctx.close();
 
+// The homepage section
+const home = fs.readFileSync(ROOT + "/site/index.html", "utf8");
+const thumbs = [...home.matchAll(/src="(\/stickers\/thumb\/[^"]+)"/g)].map((m) => m[1]);
+ok("the homepage shows the pack and links to it", /id="stickers"/.test(home) && /href="\/stickers"/.test(home) && thumbs.length === 6 && thumbs.every((t) => fs.existsSync(ROOT + "/site" + t)), thumbs.length + " thumbs");
+
 await b.close();
 console.log(res.join("\n"));
 process.exit(res.some((r) => !r.startsWith("PASS")) ? 1 : 0);
