@@ -80,7 +80,7 @@ function row(n, what) {
 
 // `give` is either words to start the offer with, or one of the viewer's own listings to put in.
 function openOffer(it, give) {
-  var mineOpen = items.filter(function (x) { return x.owner_id === uid && x.status === "open" && x.id !== it.id; });
+  var mineOpen = !caps.giveItems ? [] : items.filter(function (x) { return x.owner_id === uid && x.status === "open" && x.id !== it.id; });
   var picked = give && typeof give === "object" ? [give.id] : [];
   var veil = document.createElement("div"); veil.className = "veil";
   var form = document.createElement("form"); form.className = "sheet f";
