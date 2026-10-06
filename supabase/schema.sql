@@ -140,7 +140,7 @@ end $$;
 -- press closes the trade. The caller can only ever set their own field.
 create or replace function public.press_dot(p_offer uuid)
 returns void language plpgsql security definer set search_path = public as $$
-declare o public.offers; both boolean;
+declare o public.offers; v_both boolean;
 begin
   select * into o from public.offers where id = p_offer;
   if not found then raise exception 'offer not found'; end if;
@@ -154,8 +154,8 @@ begin
     raise exception 'you are not part of this trade';
   end if;
 
-  select confirm_owner and confirm_from into both from public.offers where id = p_offer;
-  if both then
+  select confirm_owner and confirm_from into v_both from public.offers where id = p_offer;
+  if v_both then
     update public.offers set status = 'done' where id = p_offer;
     update public.items  set status = 'traded' where id = o.item_id;
   end if;
@@ -164,6 +164,18 @@ end $$;
 -- ---------------------------------------------------------------- realtime
 
 -- So every open browser sees new listings and offers without a refresh.
-alter publication supabase_realtime add table public.items;
-alter publication supabase_realtime add table public.offers;
-alter publication supabase_realtime add table public.profiles;
+do $$
+begin
+  if not exists (select 1 from pg_publication_tables
+                 where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'items') then
+    alter publication supabase_realtime add table public.items;
+  end if;
+  if not exists (select 1 from pg_publication_tables
+                 where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'offers') then
+    alter publication supabase_realtime add table public.offers;
+  end if;
+  if not exists (select 1 from pg_publication_tables
+                 where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'profiles') then
+    alter publication supabase_realtime add table public.profiles;
+  end if;
+end $$;
