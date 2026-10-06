@@ -1,0 +1,664 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The board — Dot Trading Post</title>
+<meta name="description" content="Post what you have, say what you want, swap with someone who has it.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='9' fill='%231F7A4D'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --paper:#EDEEF0; --card:#F9FAFB; --sunk:#E3E5E9;
+    --ink:#15181C; --muted:#5E646C; --faint:#9AA0A8;
+    --line:#D6D9DE; --line-soft:#E4E7EB;
+    --have:#2B5CE6; --have-soft:rgba(43,92,230,.10);
+    --want:#B06707; --want-soft:rgba(176,103,7,.12);
+    --dot:#1F7A4D; --dot-soft:rgba(31,122,77,.12); --dot-off:#C8CDD3;
+    --stop:#C03421;
+    --display:"Bricolage Grotesque","Trebuchet MS",sans-serif;
+    --body:"IBM Plex Sans",system-ui,-apple-system,sans-serif;
+    --mono:"IBM Plex Mono",ui-monospace,monospace;
+    --r:10px; color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper:#121417; --card:#1A1E23; --sunk:#22272E;
+      --ink:#E8EAED; --muted:#959BA4; --faint:#6B727B;
+      --line:#2C323A; --line-soft:#242A31;
+      --have:#87A4FF; --have-soft:rgba(135,164,255,.14);
+      --want:#E8A33D; --want-soft:rgba(232,163,61,.15);
+      --dot:#5FC68F; --dot-soft:rgba(95,198,143,.15); --dot-off:#39404A;
+      --stop:#FF8A75; color-scheme: dark;
+    }
+  }
+  * { box-sizing:border-box; }
+  html { background:var(--paper); }
+  body { margin:0; background:var(--paper); color:var(--ink); font:15px/1.5 var(--body); -webkit-font-smoothing:antialiased; }
+  button, input, textarea, select { font:inherit; color:inherit; }
+  :focus-visible { outline:2px solid var(--have); outline-offset:2px; }
+  img { max-width:100%; }
+
+  .top { position:sticky; top:0; z-index:20; background:var(--paper); border-bottom:1px solid var(--line); }
+  .top-in { max-width:1040px; margin:0 auto; padding-block:12px; padding-inline:16px; display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  .brand { font-family:var(--display); font-weight:800; font-size:19px; letter-spacing:-.02em; display:flex; align-items:center; gap:9px; margin-right:auto; text-decoration:none; color:inherit; }
+  .brand i { width:11px; height:11px; border-radius:50%; background:var(--dot); box-shadow:0 0 0 4px var(--dot-soft); }
+  .tabs { display:flex; gap:4px; background:var(--sunk); padding:3px; border-radius:999px; }
+  .tab { border:0; background:none; padding:7px 14px; border-radius:999px; cursor:pointer; font-size:13.5px; font-weight:500; color:var(--muted); white-space:nowrap; }
+  .tab[aria-selected="true"] { background:var(--card); color:var(--ink); box-shadow:0 1px 2px rgba(0,0,0,.08); }
+  .tab .badge { display:inline-block; min-width:17px; padding:0 4px; margin-left:5px; border-radius:999px; background:var(--want); color:var(--paper); font-family:var(--mono); font-size:10.5px; line-height:17px; }
+  .me { display:flex; align-items:center; gap:8px; font-size:13px; color:var(--muted); }
+  .linkbtn { background:none; border:0; color:var(--muted); cursor:pointer; text-decoration:underline; font-size:13px; padding:0; }
+  .linkbtn:hover { color:var(--ink); }
+
+  main { max-width:1040px; margin:0 auto; padding-inline:16px; padding-block:20px 72px; }
+  .note { border:1px solid var(--line); background:var(--card); border-radius:var(--r); padding:14px 16px; margin-bottom:18px; font-size:14px; color:var(--muted); }
+  .note b { color:var(--ink); font-weight:600; }
+  .note.warn { border-left:3px solid var(--want); }
+  .note.bad { border-left:3px solid var(--stop); }
+
+  .bar { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px; }
+  .search { flex:1 1 220px; min-width:0; display:flex; align-items:center; gap:8px; background:var(--card); border:1px solid var(--line); border-radius:var(--r); padding:0 12px; }
+  .search input { flex:1; min-width:0; border:0; background:none; padding:11px 0; outline:none; }
+  .search svg { flex:none; color:var(--faint); }
+  .chips { display:flex; gap:6px; flex-wrap:wrap; }
+  .chip { border:1px solid var(--line); background:var(--card); color:var(--muted); padding:8px 13px; border-radius:999px; cursor:pointer; font-size:13px; white-space:nowrap; }
+  .chip[aria-pressed="true"] { background:var(--ink); color:var(--paper); border-color:var(--ink); }
+  .catpick { background:var(--card); border:1px solid var(--line); border-radius:999px; padding:8px 12px; font-size:13px; color:var(--muted); max-width:100%; }
+
+  .grid { display:grid; gap:12px; }
+  @media (min-width:780px){ .grid { grid-template-columns:1fr 1fr; } }
+  .item { background:var(--card); border:1px solid var(--line); border-radius:var(--r); padding:16px; display:flex; flex-direction:column; gap:12px; min-width:0; }
+  .item.gone { opacity:.62; }
+  .item h3 { font-family:var(--display); font-weight:700; font-size:17.5px; letter-spacing:-.012em; margin:0; text-wrap:balance; }
+  .desc { margin:0; color:var(--muted); font-size:14px; overflow-wrap:anywhere; }
+  .sides { display:grid; grid-template-columns:1fr auto 1fr; gap:10px; }
+  .side { min-width:0; border-radius:8px; padding:9px 11px; }
+  .side.h { background:var(--have-soft); } .side.w { background:var(--want-soft); }
+  .side .k { font-family:var(--mono); font-size:9.5px; letter-spacing:.1em; text-transform:uppercase; display:block; margin-bottom:3px; }
+  .side.h .k { color:var(--have); } .side.w .k { color:var(--want); }
+  .side .v { font-size:13.5px; overflow-wrap:anywhere; }
+  .arrow { align-self:center; color:var(--faint); }
+  .foot { display:flex; align-items:center; gap:8px; flex-wrap:wrap; border-top:1px solid var(--line-soft); padding-top:11px; margin-top:auto; }
+  .who { font-size:12.5px; color:var(--muted); margin-right:auto; display:flex; align-items:center; gap:7px; flex-wrap:wrap; }
+  .who b { color:var(--ink); font-weight:600; }
+  .tag { font-family:var(--mono); font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; padding:3px 8px; border-radius:999px; border:1px solid var(--line); color:var(--muted); }
+  .tag.ok { color:var(--dot); border-color:var(--dot); background:var(--dot-soft); }
+  .tag.mine { color:var(--have); border-color:var(--have); background:var(--have-soft); }
+  .tag.hold { color:var(--want); border-color:var(--want); background:var(--want-soft); }
+
+  .dots { display:inline-flex; align-items:center; gap:3px; }
+  .dots s { width:7px; height:7px; border-radius:50%; background:var(--dot-off); display:block; }
+  .dots s.on { background:var(--dot); }
+  .dots em { font-style:normal; font-family:var(--mono); font-size:11px; color:var(--muted); margin-left:3px; }
+
+  .btn { border:1px solid var(--ink); background:var(--ink); color:var(--paper); padding:9px 15px; border-radius:8px; cursor:pointer; font-size:13.5px; font-weight:500; }
+  .btn:hover { opacity:.88; }
+  .btn.ghost { background:none; color:var(--ink); border-color:var(--line); }
+  .btn.ok { background:var(--dot); border-color:var(--dot); color:var(--paper); }
+  .btn.no { background:none; color:var(--stop); border-color:var(--stop); }
+  .btn.press { background:var(--dot); border-color:var(--dot); color:var(--paper); display:inline-flex; align-items:center; gap:8px; }
+  .btn.press s { width:9px; height:9px; border-radius:50%; background:var(--paper); display:block; }
+  .btn:disabled { opacity:.45; cursor:not-allowed; }
+  .presshint { font-size:12.5px; color:var(--muted); }
+
+  .form { background:var(--card); border:1px solid var(--line); border-radius:var(--r); padding:18px; display:grid; gap:14px; max-width:620px; }
+  .f label { display:block; font-size:13px; font-weight:600; margin-bottom:5px; }
+  .f .hint { font-size:12.5px; color:var(--muted); font-weight:400; }
+  .f input, .f textarea, .f select { width:100%; background:var(--paper); border:1px solid var(--line); border-radius:8px; padding:10px 12px; outline:none; }
+  .f input:focus, .f textarea:focus, .f select:focus { border-color:var(--have); }
+  .f textarea { min-height:76px; resize:vertical; }
+  .rowf { display:grid; gap:14px; }
+  @media (min-width:560px){ .rowf { grid-template-columns:1fr 1fr; } }
+
+  h2 { font-family:var(--display); font-weight:700; font-size:20px; letter-spacing:-.015em; margin:0 0 4px; }
+  .lede { color:var(--muted); font-size:14px; margin:0 0 16px; max-width:62ch; }
+  .sub { font-family:var(--mono); font-size:10.5px; letter-spacing:.11em; text-transform:uppercase; color:var(--faint); margin:26px 0 10px; }
+  .sub:first-child { margin-top:0; }
+  .empty { border:1px dashed var(--line); border-radius:var(--r); padding:30px 20px; text-align:center; color:var(--muted); font-size:14px; }
+  .empty strong { display:block; font-family:var(--display); font-size:17px; color:var(--ink); font-weight:700; margin-bottom:5px; }
+
+  .offer { background:var(--card); border:1px solid var(--line); border-radius:var(--r); padding:14px 16px; display:grid; gap:10px; }
+  .offer .on { font-size:12.5px; color:var(--muted); }
+  .offer .on b { color:var(--ink); font-weight:600; }
+  .offer .msg { font-size:13.5px; color:var(--muted); border-left:2px solid var(--line); padding-left:10px; }
+  .acts { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+
+  .standing { background:var(--card); border:1px solid var(--line); border-radius:var(--r); padding:18px; display:grid; gap:14px; margin-bottom:18px; }
+  .score { display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; }
+  .score .n { font-family:var(--display); font-weight:800; font-size:34px; line-height:1; color:var(--dot); }
+  .score .lab { font-family:var(--mono); font-size:10.5px; letter-spacing:.11em; text-transform:uppercase; color:var(--faint); }
+  .ledger { display:grid; gap:7px; }
+  .ledger div { display:flex; gap:10px; font-size:13.5px; align-items:baseline; }
+  .ledger .amt { font-family:var(--mono); color:var(--dot); min-width:34px; }
+  .ledger .amt.zero { color:var(--faint); }
+  .ledger .what { color:var(--muted); }
+
+  .veil { position:fixed; inset:0; background:rgba(8,10,13,.55); display:flex; align-items:flex-end; justify-content:center; z-index:40; padding:16px; }
+  @media (min-width:640px){ .veil { align-items:center; } }
+  .sheet { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:20px; width:100%; max-width:480px; max-height:86vh; overflow-y:auto; display:grid; gap:14px; }
+  .sheet h3 { font-family:var(--display); font-weight:700; font-size:18px; margin:0; }
+  .toast { position:fixed; left:50%; transform:translateX(-50%); bottom:18px; background:var(--ink); color:var(--paper); padding:11px 18px; border-radius:999px; font-size:13.5px; z-index:60; box-shadow:0 6px 24px rgba(0,0,0,.28); max-width:calc(100% - 32px); text-align:center; }
+
+  /* sign-in gate */
+  .gate { max-width:430px; margin:52px auto; background:var(--card); border:1px solid var(--line); border-radius:14px; padding:26px; display:grid; gap:14px; }
+  .gate h2 { font-size:23px; }
+  .gate p { margin:0; color:var(--muted); font-size:14.5px; }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-in">
+    <a class="brand" href="/"><i></i> Dot Trading Post</a>
+    <div class="tabs" role="tablist" id="tabs" hidden>
+      <button class="tab" id="t-browse" role="tab" aria-selected="true">Browse</button>
+      <button class="tab" id="t-post" role="tab" aria-selected="false">Post</button>
+      <button class="tab" id="t-mine" role="tab" aria-selected="false">Mine <span class="badge" id="mineCount" hidden>0</span></button>
+    </div>
+    <div class="me" id="me" hidden><span id="meName"></span><button class="linkbtn" id="signOut">Sign out</button></div>
+  </div>
+</header>
+
+<main>
+  <div class="note" id="status" hidden></div>
+
+  <!-- sign in -->
+  <section id="gate" hidden>
+    <div class="gate">
+      <h2>Sign in to trade</h2>
+      <p>No password. Put in your email and we send a link that signs you straight in.</p>
+      <form class="f" id="authForm" style="display:grid;gap:12px">
+        <div>
+          <label for="email">Email</label>
+          <input id="email" type="email" required autocomplete="email" placeholder="you@example.com">
+        </div>
+        <button class="btn" id="authBtn" type="submit">Send me a link</button>
+      </form>
+      <p id="authMsg" hidden></p>
+    </div>
+  </section>
+
+  <section id="browse" hidden>
+    <div class="bar">
+      <label class="search">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.6"/><path d="M11 11l4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <input id="q" type="search" placeholder="Search items and wants" autocomplete="off">
+      </label>
+      <div class="chips" id="cats"></div>
+      <select id="catPick" class="catpick" aria-label="Filter by category"></select>
+    </div>
+    <div class="grid" id="feed"></div>
+    <div class="empty" id="feedEmpty"><strong>Nothing on the board yet</strong>Post something you would trade and it shows up here for everyone.</div>
+  </section>
+
+  <section id="post" hidden>
+    <h2>Post an item</h2>
+    <p class="lede">Say what you have and what you would take for it. No prices and no money — someone offers a swap and you decide.</p>
+    <form class="form f" id="postForm">
+      <div>
+        <label for="f-title">What you are offering</label>
+        <input id="f-title" maxlength="80" required placeholder="Charizard holo, 1999 base set">
+      </div>
+      <div>
+        <label for="f-desc">Details <span class="hint">— condition, size, anything they would ask</span></label>
+        <textarea id="f-desc" maxlength="600" placeholder="Played condition, one soft corner. Sleeved since forever."></textarea>
+      </div>
+      <div class="rowf">
+        <div>
+          <label for="f-want">What you want back</label>
+          <input id="f-want" maxlength="80" placeholder="Open to offers">
+        </div>
+        <div>
+          <label for="f-cat">Category</label>
+          <select id="f-cat"></select>
+        </div>
+      </div>
+      <div><button class="btn" id="postBtn" type="submit">Put it on the board</button></div>
+    </form>
+  </section>
+
+  <section id="mine" hidden>
+    <h2>Your standing</h2>
+    <p class="lede">Dots are earned by trading and by the other side pressing their dot for you. They cannot be bought, and nobody can hand themselves one.</p>
+    <div class="standing">
+      <div class="score">
+        <span class="n" id="myDots">0</span>
+        <span class="dots" id="myDotRow"></span>
+        <span class="lab" id="myRank">New trader</span>
+      </div>
+      <div class="ledger" id="myLedger"></div>
+      <form class="f" id="profForm" style="display:grid;gap:12px;border-top:1px solid var(--line-soft);padding-top:14px">
+        <div class="rowf">
+          <div><label for="p-name">Your name <span class="hint">— what traders see</span></label><input id="p-name" maxlength="40" placeholder="Priya"></div>
+          <div><label for="p-area">Where you trade <span class="hint">— earns a dot</span></label><input id="p-area" maxlength="60" placeholder="North Leeds"></div>
+        </div>
+        <div><label for="p-note">How you like to swap</label><input id="p-note" maxlength="80" placeholder="Happy to post, prefer meeting up"></div>
+        <div><button class="btn ghost" type="submit">Save profile</button></div>
+      </form>
+    </div>
+
+    <div class="sub">Offers waiting on you</div>
+    <div class="grid" id="offersIn"></div>
+    <div class="empty" id="offersInEmpty">No one has offered on your items yet.</div>
+
+    <div class="sub">Offers you have made</div>
+    <div class="grid" id="offersOut"></div>
+    <div class="empty" id="offersOutEmpty">You have not offered on anything yet.</div>
+
+    <div class="sub">Your items</div>
+    <div class="grid" id="myItems"></div>
+    <div class="empty" id="myItemsEmpty">Nothing posted yet. Head to <b>Post</b>.</div>
+  </section>
+</main>
+
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+
+  var GROUPS = [
+    ["Collectables", ["Trading Cards", "Comics", "Collectibles", "Coins & Stamps", "Memorabilia", "Antiques"]],
+    ["Games & Tech", ["Video Games", "Consoles & Retro", "Computers", "Phones", "Electronics", "Cameras", "Audio & Hi-Fi"]],
+    ["Media", ["Books", "Music & Vinyl", "Film & TV", "Board Games & Puzzles"]],
+    ["Home", ["Furniture", "Home & Kitchen", "Tools & DIY", "Garden", "Appliances"]],
+    ["Wearables", ["Clothing", "Shoes & Trainers", "Watches", "Jewellery", "Bags", "Beauty"]],
+    ["Sport & Outdoors", ["Sports Gear", "Bikes", "Camping & Outdoors", "Fitness"]],
+    ["Hobbies", ["Musical Instruments", "Art", "Craft & Sewing", "Models & Hobby", "Toys & Figures"]],
+    ["Vehicles", ["Cars & Parts", "Motorbikes"]],
+    ["Everything else", ["Baby & Kids", "Pet Supplies", "Office", "Industrial", "Tickets", "Services & Skills", "Other"]]
+  ];
+  var QUICK = ["Trading Cards", "Video Games", "Electronics", "Clothing", "Furniture"];
+  var RANKS = [[0, "New trader"], [3, "Known"], [8, "Trusted"], [16, "Well vouched"], [30, "Pillar of the post"]];
+
+  var sb = null, uid = null, myEmail = "";
+  var items = [], offers = [], profiles = {};
+  var filter = { q: "", cat: "" };
+
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function ago(t) {
+    if (!t) return "";
+    var s = (Date.now() - new Date(t).getTime()) / 1000;
+    if (s < 90) return "just now";
+    if (s < 5400) return Math.round(s / 60) + "m ago";
+    if (s < 172800) return Math.round(s / 3600) + "h ago";
+    return Math.round(s / 86400) + "d ago";
+  }
+  function who(id) {
+    if (id && uid && id === uid) return "You";
+    var p = profiles[id];
+    return (p && p.name) || "Someone";
+  }
+  var toastT = null;
+  function toast(msg) {
+    var old = document.querySelector(".toast"); if (old) old.remove();
+    var el = document.createElement("div"); el.className = "toast"; el.textContent = msg;
+    document.body.appendChild(el);
+    clearTimeout(toastT); toastT = setTimeout(function () { el.remove(); }, 2800);
+  }
+  function note(html, kind) {
+    var n = $("status"); n.innerHTML = html; n.className = "note" + (kind ? " " + kind : ""); n.hidden = false;
+  }
+
+  /* dots: counted from the trade record, never stored as a number anyone can write */
+  function scoreOf(id) {
+    if (!id) return { dots: 0, trades: 0, vouches: 0, profile: 0 };
+    var trades = 0, vouches = 0;
+    offers.forEach(function (o) {
+      var side = o.from_id === id ? "from" : (o.owner_id === id ? "owner" : null);
+      if (!side) return;
+      if (o.status === "done") trades++;
+      if (side === "from" && o.confirm_owner) vouches++;
+      if (side === "owner" && o.confirm_from) vouches++;
+    });
+    var p = profiles[id];
+    var profile = p && (p.area || p.note) ? 1 : 0;
+    return { dots: trades * 2 + vouches + profile, trades: trades, vouches: vouches, profile: profile };
+  }
+  function rankOf(n) { var r = RANKS[0][1]; RANKS.forEach(function (x) { if (n >= x[0]) r = x[1]; }); return r; }
+  function level(n) { var lv = 0; RANKS.forEach(function (x) { if (n >= x[0]) lv++; }); return Math.max(1, Math.min(5, lv)); }
+  function dotRow(n) {
+    var lv = n > 0 ? level(n) : 0;
+    var h = '<span class="dots" title="' + n + ' dots — ' + esc(rankOf(n)) + '">';
+    for (var i = 0; i < 5; i++) h += "<s" + (i < lv ? ' class="on"' : "") + "></s>";
+    return h + "<em>" + n + "</em></span>";
+  }
+
+  function show(which) {
+    ["browse", "post", "mine"].forEach(function (k) {
+      $(k).hidden = k !== which;
+      $("t-" + k).setAttribute("aria-selected", String(k === which));
+    });
+    render();
+  }
+  ["browse", "post", "mine"].forEach(function (k) {
+    $("t-" + k).addEventListener("click", function () { show(k); });
+  });
+
+  function groupedOptions(sel, allLabel) {
+    if (allLabel) { var a = document.createElement("option"); a.value = ""; a.textContent = allLabel; sel.appendChild(a); }
+    GROUPS.forEach(function (g) {
+      var og = document.createElement("optgroup"); og.label = g[0];
+      g[1].forEach(function (c) { var o = document.createElement("option"); o.value = c; o.textContent = c; og.appendChild(o); });
+      sel.appendChild(og);
+    });
+  }
+  (function buildCats() {
+    var wrap = $("cats");
+    var all = document.createElement("button");
+    all.className = "chip"; all.type = "button"; all.textContent = "All";
+    all.setAttribute("aria-pressed", "true");
+    all.addEventListener("click", function () { filter.cat = ""; syncCats(); render(); });
+    wrap.appendChild(all);
+    QUICK.forEach(function (c) {
+      var b = document.createElement("button");
+      b.className = "chip"; b.type = "button"; b.textContent = c; b.dataset.cat = c;
+      b.setAttribute("aria-pressed", "false");
+      b.addEventListener("click", function () { filter.cat = filter.cat === c ? "" : c; syncCats(); render(); });
+      wrap.appendChild(b);
+    });
+    groupedOptions($("catPick"), "All categories");
+    $("catPick").addEventListener("change", function (e) { filter.cat = e.target.value; syncCats(); render(); });
+    groupedOptions($("f-cat"), null);
+    $("f-cat").value = "Other";
+  })();
+  function syncCats() {
+    Array.prototype.forEach.call($("cats").children, function (b) {
+      b.setAttribute("aria-pressed", String((b.dataset.cat || "") === filter.cat));
+    });
+    if ($("catPick").value !== filter.cat) $("catPick").value = filter.cat;
+  }
+  $("q").addEventListener("input", function (e) { filter.q = e.target.value.trim().toLowerCase(); render(); });
+
+  function itemCard(it, opts) {
+    opts = opts || {};
+    var traded = it.status === "traded", pledged = it.status === "pledged";
+    var mine = uid && it.owner_id === uid;
+    var pending = offers.filter(function (o) { return o.item_id === it.id && o.status === "pending"; }).length;
+    var sc = scoreOf(it.owner_id), prof = profiles[it.owner_id];
+
+    var el = document.createElement("article");
+    el.className = "item" + (traded || pledged ? " gone" : "");
+    var h = "<h3>" + esc(it.title) + "</h3>";
+    if (it.descr) h += '<p class="desc">' + esc(it.descr) + "</p>";
+    h += '<div class="sides"><div class="side h"><span class="k">Offering</span><span class="v">' + esc(it.title) + "</span></div>" +
+      '<div class="arrow" aria-hidden="true">&#8646;</div>' +
+      '<div class="side w"><span class="k">Wants</span><span class="v">' + esc(it.want || "Open to offers") + "</span></div></div>";
+    h += '<div class="foot"><span class="who"><b>' + esc(who(it.owner_id)) + "</b>" + dotRow(sc.dots) +
+      "<span>" + esc(ago(it.created_at)) + (prof && prof.area ? " · " + esc(prof.area) : "") + "</span></span>";
+    if (it.cat) h += '<span class="tag">' + esc(it.cat) + "</span>";
+    if (traded) h += '<span class="tag ok">Traded</span>';
+    else if (pledged) h += '<span class="tag hold">Agreed — awaiting delivery</span>';
+    else if (mine) h += '<span class="tag mine">' + (pending ? pending + (pending === 1 ? " offer" : " offers") : "Yours") + "</span>";
+    h += "</div>";
+    el.innerHTML = h;
+
+    var foot = el.querySelector(".foot");
+    if (!traded && !pledged && !mine && uid) {
+      var b = document.createElement("button");
+      b.className = "btn"; b.type = "button"; b.textContent = "Offer a trade";
+      b.addEventListener("click", function () { openOffer(it); });
+      foot.appendChild(b);
+    }
+    if (mine && opts.manage && !traded && !pledged) {
+      var del = document.createElement("button");
+      del.className = "btn no"; del.type = "button"; del.textContent = "Remove";
+      del.addEventListener("click", function () { removeItem(it); });
+      foot.appendChild(del);
+    }
+    return el;
+  }
+
+  function offerCard(o, dir) {
+    var it = items.filter(function (x) { return x.id === o.item_id; })[0];
+    var other = dir === "in" ? o.from_id : o.owner_id;
+    var title = it ? it.title : "an item that has been removed";
+    var el = document.createElement("article"); el.className = "offer";
+
+    var head = dir === "in"
+      ? "<b>" + esc(who(o.from_id)) + "</b> wants to trade for <b>" + esc(title) + "</b>"
+      : "You offered on <b>" + esc(title) + "</b>" + (it ? " from <b>" + esc(who(it.owner_id)) + "</b>" : "");
+    var h = '<div class="on">' + head + " " + dotRow(scoreOf(other).dots) + " · " + esc(ago(o.created_at)) + "</div>";
+    h += '<div class="sides"><div class="side h"><span class="k">They give</span><span class="v">' + esc(o.give) + "</span></div>" +
+      '<div class="arrow" aria-hidden="true">&#8646;</div>' +
+      '<div class="side w"><span class="k">For</span><span class="v">' + esc(title) + "</span></div></div>";
+    if (o.msg) h += '<div class="msg">' + esc(o.msg) + "</div>";
+    el.innerHTML = h;
+
+    var acts = document.createElement("div"); acts.className = "acts";
+    if (o.status === "pending" && dir === "in" && it && it.status === "open") {
+      var yes = document.createElement("button");
+      yes.className = "btn ok"; yes.type = "button"; yes.textContent = "Accept";
+      yes.addEventListener("click", function () { call("accept_offer", o.id, "Agreed. Press your dots once you have both received."); });
+      var no = document.createElement("button");
+      no.className = "btn no"; no.type = "button"; no.textContent = "Decline";
+      no.addEventListener("click", function () { call("decline_offer", o.id, "Offer declined."); });
+      acts.appendChild(yes); acts.appendChild(no);
+    } else if (o.status === "pending") {
+      var w = document.createElement("span"); w.className = "tag"; w.textContent = "waiting"; acts.appendChild(w);
+    } else if (o.status === "declined") {
+      var d = document.createElement("span"); d.className = "tag"; d.textContent = "declined"; acts.appendChild(d);
+    }
+
+    if (o.status === "agreed" || o.status === "done") {
+      var minePressed = dir === "in" ? o.confirm_owner : o.confirm_from;
+      var theirs = dir === "in" ? o.confirm_from : o.confirm_owner;
+      if (o.confirm_owner && o.confirm_from) {
+        var t = document.createElement("span"); t.className = "tag ok"; t.textContent = "Trade complete"; acts.appendChild(t);
+      } else if (minePressed) {
+        var wt = document.createElement("span"); wt.className = "tag hold";
+        wt.textContent = "Waiting on " + who(other); acts.appendChild(wt);
+      } else {
+        var press = document.createElement("button");
+        press.className = "btn press"; press.type = "button";
+        press.innerHTML = "<s></s> Press your dot — it arrived";
+        press.title = "Confirms you received your side, and earns " + who(other) + " a dot";
+        press.addEventListener("click", function () { call("press_dot", o.id, null); });
+        acts.appendChild(press);
+        var hint = document.createElement("span"); hint.className = "presshint";
+        hint.textContent = theirs ? who(other) + " has pressed theirs" : "Both of you press to close it";
+        acts.appendChild(hint);
+      }
+    }
+    el.appendChild(acts);
+    return el;
+  }
+
+  function fill(host, emptyEl, list, make) {
+    host.innerHTML = "";
+    list.forEach(function (x) { host.appendChild(make(x)); });
+    emptyEl.hidden = list.length > 0;
+    host.hidden = list.length === 0;
+  }
+
+  function render() {
+    var open = items.filter(function (it) { return it.status === "open"; });
+    var shown = open.filter(function (it) {
+      if (filter.cat && it.cat !== filter.cat) return false;
+      if (!filter.q) return true;
+      return (it.title + " " + (it.descr || "") + " " + (it.want || "")).toLowerCase().indexOf(filter.q) >= 0;
+    });
+    fill($("feed"), $("feedEmpty"), shown, function (it) { return itemCard(it); });
+    $("feedEmpty").innerHTML = !open.length
+      ? "<strong>Nothing on the board yet</strong>Post something you would trade and it shows up here for everyone."
+      : "<strong>No matches</strong>Nothing here fits that search. Try another word, or clear the filter.";
+
+    var myItems = uid ? items.filter(function (it) { return it.owner_id === uid; }) : [];
+    var inc = uid ? offers.filter(function (o) { return o.owner_id === uid; }) : [];
+    var out = uid ? offers.filter(function (o) { return o.from_id === uid; }) : [];
+    var waiting = inc.filter(function (o) { return o.status === "pending"; }).length +
+      inc.concat(out).filter(function (o) {
+        return o.status === "agreed" && !(o.owner_id === uid ? o.confirm_owner : o.confirm_from);
+      }).length;
+
+    fill($("offersIn"), $("offersInEmpty"), inc, function (o) { return offerCard(o, "in"); });
+    fill($("offersOut"), $("offersOutEmpty"), out, function (o) { return offerCard(o, "out"); });
+    fill($("myItems"), $("myItemsEmpty"), myItems, function (it) { return itemCard(it, { manage: true }); });
+
+    var badge = $("mineCount");
+    badge.textContent = String(waiting); badge.hidden = waiting === 0;
+
+    var sc = scoreOf(uid);
+    $("myDots").textContent = sc.dots;
+    $("myDotRow").innerHTML = dotRow(sc.dots).replace(/^<span class="dots"[^>]*>/, "").replace(/<\/span>$/, "");
+    $("myRank").textContent = rankOf(sc.dots);
+    $("myLedger").innerHTML =
+      row(sc.trades * 2, sc.trades + (sc.trades === 1 ? " completed trade" : " completed trades") + " — two dots each") +
+      row(sc.vouches, sc.vouches === 1 ? "partner pressed their dot for you" : "partners pressed their dot for you") +
+      row(sc.profile, "profile filled in");
+  }
+  function row(n, what) {
+    return '<div><span class="amt' + (n ? "" : " zero") + '">' + (n ? "+" + n : "0") + '</span><span class="what">' + esc(what) + "</span></div>";
+  }
+
+  function openOffer(it) {
+    var veil = document.createElement("div"); veil.className = "veil";
+    var form = document.createElement("form"); form.className = "sheet f";
+    form.innerHTML =
+      "<h3>Offer a trade</h3>" +
+      '<div style="font-size:13px;color:var(--muted)">For <b style="color:var(--ink)">' + esc(it.title) +
+        '</b> — they want <b style="color:var(--ink)">' + esc(it.want || "offers") + "</b></div>" +
+      '<div><label for="o-give">What you are offering</label><input id="o-give" maxlength="80" required placeholder="Retro console, boxed"></div>' +
+      '<div><label for="o-msg">Message <span class="hint">— optional</span></label><textarea id="o-msg" maxlength="400" placeholder="Happy to meet halfway this week."></textarea></div>' +
+      '<div class="acts"><button class="btn" type="submit">Send offer</button><button class="btn ghost" type="button" data-x>Cancel</button></div>';
+    veil.appendChild(form); document.body.appendChild(veil);
+    form.querySelector("[data-x]").addEventListener("click", function () { veil.remove(); });
+    veil.addEventListener("click", function (e) { if (e.target === veil) veil.remove(); });
+    setTimeout(function () { var i = form.querySelector("#o-give"); if (i) i.focus(); }, 30);
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var give = form.querySelector("#o-give").value.trim();
+      if (!give) return;
+      var msg = form.querySelector("#o-msg").value.trim();
+      veil.remove();
+      sb.from("offers").insert({ item_id: it.id, owner_id: it.owner_id, from_id: uid, give: give, msg: msg })
+        .then(function (r) { if (r.error) return fail(r.error); toast("Offer sent."); load(); });
+    });
+  }
+
+  function fail(e) {
+    console.error(e);
+    toast(e && e.message ? e.message.slice(0, 90) : "That did not save.");
+  }
+  function call(fn, id, okMsg) {
+    sb.rpc(fn, { p_offer: id }).then(function (r) {
+      if (r.error) return fail(r.error);
+      if (okMsg) toast(okMsg);
+      load();
+    });
+  }
+
+  $("postForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    if (!uid) return;
+    var title = $("f-title").value.trim(); if (!title) return;
+    var btn = $("postBtn"); btn.disabled = true;
+    sb.from("items").insert({
+      owner_id: uid, title: title, descr: $("f-desc").value.trim(),
+      want: $("f-want").value.trim(), cat: $("f-cat").value
+    }).then(function (r) {
+      btn.disabled = false;
+      if (r.error) return fail(r.error);
+      $("postForm").reset(); $("f-cat").value = "Other";
+      toast("Posted to the board."); show("browse"); load();
+    });
+  });
+
+  $("profForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    if (!uid) return;
+    sb.from("profiles").upsert({
+      id: uid, name: $("p-name").value.trim() || null,
+      area: $("p-area").value.trim(), note: $("p-note").value.trim(), updated_at: new Date().toISOString()
+    }).then(function (r) { if (r.error) return fail(r.error); toast("Profile saved."); load(); });
+  });
+
+  function removeItem(it) {
+    sb.from("items").delete().eq("id", it.id).then(function (r) {
+      if (r.error) return fail(r.error);
+      toast("Listing removed."); load();
+    });
+  }
+
+  function load() {
+    return Promise.all([
+      sb.from("items").select("*").order("created_at", { ascending: false }).limit(400),
+      sb.from("offers").select("*").order("created_at", { ascending: false }).limit(800),
+      sb.from("profiles").select("*").limit(800)
+    ]).then(function (r) {
+      if (r[0].error || r[1].error || r[2].error) {
+        note("Could not load the board. If this is the first run, check the schema was applied in Supabase.", "bad");
+        return;
+      }
+      items = r[0].data || []; offers = r[1].data || [];
+      profiles = {}; (r[2].data || []).forEach(function (p) { profiles[p.id] = p; });
+      if (uid && profiles[uid]) {
+        if (!$("p-name").value) $("p-name").value = profiles[uid].name || "";
+        if (!$("p-area").value) $("p-area").value = profiles[uid].area || "";
+        if (!$("p-note").value) $("p-note").value = profiles[uid].note || "";
+      }
+      render();
+    });
+  }
+
+  /* ---- auth ---- */
+  $("authForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var email = $("email").value.trim(); if (!email) return;
+    var btn = $("authBtn"); btn.disabled = true; btn.textContent = "Sending…";
+    sb.auth.signInWithOtp({ email: email, options: { emailRedirectTo: location.origin + "/app" } })
+      .then(function (r) {
+        btn.disabled = false; btn.textContent = "Send me a link";
+        var m = $("authMsg"); m.hidden = false;
+        m.textContent = r.error ? r.error.message : "Check your email — the link signs you straight in.";
+      });
+  });
+  $("signOut").addEventListener("click", function () {
+    sb.auth.signOut().then(function () { location.reload(); });
+  });
+
+  function enter(session) {
+    var signedIn = !!(session && session.user);
+    uid = signedIn ? session.user.id : null;
+    myEmail = signedIn ? (session.user.email || "") : "";
+    $("gate").hidden = signedIn;
+    $("tabs").hidden = !signedIn;
+    $("me").hidden = !signedIn;
+    if (signedIn) {
+      $("meName").textContent = myEmail;
+      show("browse");
+    } else {
+      ["browse", "post", "mine"].forEach(function (k) { $(k).hidden = true; });
+    }
+    load();
+  }
+
+  /* ---- boot ---- */
+  var cfg = window.DTP_CONFIG || {};
+  if (!cfg.url || cfg.url.indexOf("PASTE_") === 0) {
+    note("This board is not connected to its database yet. Paste the Supabase project URL and anon key into <b>site/config.js</b>.", "bad");
+    return;
+  }
+  sb = window.supabase.createClient(cfg.url, cfg.anonKey);
+
+  sb.auth.getSession().then(function (r) { enter(r.data.session); });
+  sb.auth.onAuthStateChange(function (_e, session) { enter(session); });
+
+  // Live: anyone's new listing or offer lands without a refresh.
+  sb.channel("board")
+    .on("postgres_changes", { event: "*", schema: "public", table: "items" }, load)
+    .on("postgres_changes", { event: "*", schema: "public", table: "offers" }, load)
+    .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, load)
+    .subscribe();
+})();
+</script>
+</body>
+</html>
