@@ -14,12 +14,12 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style>
   :root {
-    --paper:#EDEEF0; --card:#F9FAFB; --sunk:#E3E5E9;
-    --ink:#15181C; --muted:#5E646C; --faint:#9AA0A8;
-    --line:#D6D9DE; --line-soft:#E4E7EB;
-    --have:#2B5CE6; --have-soft:rgba(43,92,230,.10);
-    --want:#B06707; --want-soft:rgba(176,103,7,.12);
-    --dot:#1F7A4D; --dot-soft:rgba(31,122,77,.12); --dot-off:#C8CDD3;
+    --paper:#F7F2E8; --card:#FFFFFF; --sunk:#EEE7D9;
+    --ink:#1C1A16; --muted:#625C52; --faint:#9B948A;
+    --line:#E2DACB; --line-soft:#EDE6D8;
+    --have:#2F5BEA; --have-soft:rgba(47,91,234,.10);
+    --want:#E8671B; --want-soft:rgba(232,103,27,.12);
+    --dot:#1FA462; --dot-soft:rgba(31,164,98,.13); --dot-off:#D9D2C4;
     --display:"Bricolage Grotesque","Trebuchet MS",sans-serif;
     --body:"IBM Plex Sans",system-ui,-apple-system,sans-serif;
     --mono:"IBM Plex Mono",ui-monospace,monospace;
@@ -27,12 +27,12 @@
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --paper:#121417; --card:#1A1E23; --sunk:#22272E;
-      --ink:#E8EAED; --muted:#959BA4; --faint:#6B727B;
-      --line:#2C323A; --line-soft:#242A31;
-      --have:#87A4FF; --have-soft:rgba(135,164,255,.14);
-      --want:#E8A33D; --want-soft:rgba(232,163,61,.15);
-      --dot:#5FC68F; --dot-soft:rgba(95,198,143,.15); --dot-off:#39404A;
+      --paper:#15130F; --card:#1F1C17; --sunk:#2A261F;
+      --ink:#F0EAE0; --muted:#A69E90; --faint:#766E62;
+      --line:#352F26; --line-soft:#2B261F;
+      --have:#8EA6FF; --have-soft:rgba(142,166,255,.14);
+      --want:#FF9B4F; --want-soft:rgba(255,155,79,.15);
+      --dot:#4FD48E; --dot-soft:rgba(79,212,142,.15); --dot-off:#3B352C;
       color-scheme: dark;
     }
   }
@@ -57,7 +57,7 @@
   h1 .sw { color:var(--have); } h1 .sw2 { color:var(--want); }
   .lede { color:var(--muted); font-size:17.5px; max-width:48ch; margin:0 0 26px; }
   .cta { display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
-  .btn { display:inline-block; background:var(--ink); color:var(--paper); text-decoration:none; padding:14px 24px; border-radius:10px; font-weight:600; font-size:15.5px; border:1px solid var(--ink); }
+  .btn { display:inline-block; background:var(--dot); color:#fff; text-decoration:none; padding:14px 24px; border-radius:999px; font-weight:600; font-size:15.5px; border:1.5px solid var(--dot); }
   .btn:hover { opacity:.88; }
   .btn.ghost { background:none; color:var(--ink); border-color:var(--line); }
 
@@ -113,7 +113,6 @@
 
   <nav>
     <a class="brand" href="/"><i></i> Dot Trading Post</a>
-    <a class="navlink" href="https://usedot.xyz" target="_blank" rel="noopener">usedot.xyz ↗</a>
     <a class="navlink" href="https://github.com/1800bobrossdotcom-byte/dottrader" target="_blank" rel="noopener">Source ↗</a>
   </nav>
 

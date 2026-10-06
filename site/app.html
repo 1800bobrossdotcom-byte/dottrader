@@ -11,47 +11,60 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style>
   :root {
-    --paper:#EDEEF0; --card:#F9FAFB; --sunk:#E3E5E9;
-    --ink:#15181C; --muted:#5E646C; --faint:#9AA0A8;
-    --line:#D6D9DE; --line-soft:#E4E7EB;
-    --have:#2B5CE6; --have-soft:rgba(43,92,230,.10);
-    --want:#B06707; --want-soft:rgba(176,103,7,.12);
-    --dot:#1F7A4D; --dot-soft:rgba(31,122,77,.12); --dot-off:#C8CDD3;
-    --stop:#C03421;
+    --paper:#F7F2E8; --card:#FFFFFF; --sunk:#EEE7D9;
+    --ink:#1C1A16; --muted:#625C52; --faint:#9B948A;
+    --line:#E2DACB; --line-soft:#EDE6D8;
+    --have:#2F5BEA; --have-soft:rgba(47,91,234,.10);
+    --want:#E8671B; --want-soft:rgba(232,103,27,.12);
+    --dot:#1FA462; --dot-soft:rgba(31,164,98,.13); --dot-off:#D9D2C4;
+    --pop:#F2B41C; --plum:#8B4ED1; --rose:#E0457B; --teal:#139A9A;
+    --stop:#D6382A;
     --display:"Bricolage Grotesque","Trebuchet MS",sans-serif;
     --body:"IBM Plex Sans",system-ui,-apple-system,sans-serif;
     --mono:"IBM Plex Mono",ui-monospace,monospace;
-    --r:10px; color-scheme: light;
+    --r:14px; color-scheme: light;
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --paper:#121417; --card:#1A1E23; --sunk:#22272E;
-      --ink:#E8EAED; --muted:#959BA4; --faint:#6B727B;
-      --line:#2C323A; --line-soft:#242A31;
-      --have:#87A4FF; --have-soft:rgba(135,164,255,.14);
-      --want:#E8A33D; --want-soft:rgba(232,163,61,.15);
-      --dot:#5FC68F; --dot-soft:rgba(95,198,143,.15); --dot-off:#39404A;
+      --paper:#15130F; --card:#1F1C17; --sunk:#2A261F;
+      --ink:#F0EAE0; --muted:#A69E90; --faint:#766E62;
+      --line:#352F26; --line-soft:#2B261F;
+      --have:#8EA6FF; --have-soft:rgba(142,166,255,.14);
+      --want:#FF9B4F; --want-soft:rgba(255,155,79,.15);
+      --dot:#4FD48E; --dot-soft:rgba(79,212,142,.15); --dot-off:#3B352C;
+      --pop:#FFCB47; --plum:#B88CF0; --rose:#FF7AA6; --teal:#3FC9C9;
       --stop:#FF8A75; color-scheme: dark;
     }
   }
   * { box-sizing:border-box; }
+  [hidden] { display:none !important; }
   html { background:var(--paper); }
-  body { margin:0; background:var(--paper); color:var(--ink); font:15px/1.5 var(--body); -webkit-font-smoothing:antialiased; }
+  body { margin:0; background:var(--paper); color:var(--ink); font:15.5px/1.5 var(--body); -webkit-font-smoothing:antialiased; }
   button, input, textarea, select { font:inherit; color:inherit; }
   :focus-visible { outline:2px solid var(--have); outline-offset:2px; }
   img { max-width:100%; }
 
-  .top { position:sticky; top:0; z-index:20; background:var(--paper); border-bottom:1px solid var(--line); }
-  .top-in { max-width:1040px; margin:0 auto; padding-block:12px; padding-inline:16px; display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
-  .brand { font-family:var(--display); font-weight:800; font-size:19px; letter-spacing:-.02em; display:flex; align-items:center; gap:9px; margin-right:auto; text-decoration:none; color:inherit; }
-  .brand i { width:11px; height:11px; border-radius:50%; background:var(--dot); box-shadow:0 0 0 4px var(--dot-soft); }
-  .tabs { display:flex; gap:4px; background:var(--sunk); padding:3px; border-radius:999px; }
-  .tab { border:0; background:none; padding:7px 14px; border-radius:999px; cursor:pointer; font-size:13.5px; font-weight:500; color:var(--muted); white-space:nowrap; }
-  .tab[aria-selected="true"] { background:var(--card); color:var(--ink); box-shadow:0 1px 2px rgba(0,0,0,.08); }
-  .tab .badge { display:inline-block; min-width:17px; padding:0 4px; margin-left:5px; border-radius:999px; background:var(--want); color:var(--paper); font-family:var(--mono); font-size:10.5px; line-height:17px; }
-  .me { display:flex; align-items:center; gap:8px; font-size:13px; color:var(--muted); }
+  .top { position:sticky; top:0; z-index:20; background:var(--paper); }
+  .top::after { content:""; display:block; height:3px; background:linear-gradient(90deg, var(--have), var(--dot) 35%, var(--pop) 65%, var(--want)); }
+  .top-in { max-width:1040px; margin:0 auto; padding-block:10px; padding-inline:16px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .brand { font-family:var(--display); font-weight:800; font-size:20px; letter-spacing:-.02em; display:flex; align-items:center; gap:9px; margin-right:auto; text-decoration:none; color:inherit; }
+  .brand i { width:13px; height:13px; border-radius:50%; background:var(--dot); box-shadow:0 0 0 4px var(--dot-soft); }
+  .tabs { display:flex; gap:3px; background:var(--sunk); padding:4px; border-radius:999px; }
+  .tab { border:0; background:none; padding:8px 16px; border-radius:999px; cursor:pointer; font-size:14px; font-weight:600; color:var(--muted); white-space:nowrap; }
+  .tab[aria-selected="true"] { background:var(--ink); color:var(--paper); }
+  .tab .badge { display:inline-block; min-width:18px; padding:0 5px; margin-left:5px; border-radius:999px; background:var(--want); color:#fff; font-family:var(--mono); font-size:10.5px; line-height:18px; }
+  .me { display:flex; align-items:center; gap:10px; font-size:13px; color:var(--muted); }
+  .wal { display:inline-flex; align-items:center; gap:7px; border:1.5px solid var(--line); background:var(--card); color:var(--ink); padding:7px 12px 7px 10px; border-radius:999px; cursor:pointer; font-size:13px; font-weight:600; font-family:var(--mono); }
+  .wal s { width:8px; height:8px; border-radius:50%; background:var(--faint); display:block; }
+  .wal.on { border-color:var(--dot); background:var(--dot-soft); }
+  .wal.on s { background:var(--dot); box-shadow:0 0 0 3px var(--dot-soft); }
+  .wal:hover { border-color:var(--ink); }
   .linkbtn { background:none; border:0; color:var(--muted); cursor:pointer; text-decoration:underline; font-size:13px; padding:0; }
   .linkbtn:hover { color:var(--ink); }
+  @media (max-width:640px) {
+    .tabs { order:3; flex-basis:100%; }
+    .tab { flex:1; text-align:center; padding-inline:8px; }
+  }
 
   main { max-width:1040px; margin:0 auto; padding-inline:16px; padding-block:20px 72px; }
   .note { border:1px solid var(--line); background:var(--card); border-radius:var(--r); padding:14px 16px; margin-bottom:18px; font-size:14px; color:var(--muted); }
@@ -59,19 +72,29 @@
   .note.warn { border-left:3px solid var(--want); }
   .note.bad { border-left:3px solid var(--stop); }
 
-  .bar { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px; }
-  .search { flex:1 1 220px; min-width:0; display:flex; align-items:center; gap:8px; background:var(--card); border:1px solid var(--line); border-radius:var(--r); padding:0 12px; }
+  .bar { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px; align-items:center; }
+  .search { flex:1 1 220px; min-width:0; display:flex; align-items:center; gap:8px; background:var(--card); border:1.5px solid var(--line); border-radius:999px; padding:0 14px; }
+  .search:focus-within { border-color:var(--have); }
   .search input { flex:1; min-width:0; border:0; background:none; padding:11px 0; outline:none; }
   .search svg { flex:none; color:var(--faint); }
   .chips { display:flex; gap:6px; flex-wrap:wrap; }
-  .chip { border:1px solid var(--line); background:var(--card); color:var(--muted); padding:8px 13px; border-radius:999px; cursor:pointer; font-size:13px; white-space:nowrap; }
-  .chip[aria-pressed="true"] { background:var(--ink); color:var(--paper); border-color:var(--ink); }
-  .catpick { background:var(--card); border:1px solid var(--line); border-radius:999px; padding:8px 12px; font-size:13px; color:var(--muted); max-width:100%; }
+  .chip { border:1.5px solid var(--line); background:var(--card); color:var(--c, var(--muted)); border-color:color-mix(in srgb, var(--c, var(--line)) 45%, transparent); padding:8px 13px; border-radius:999px; cursor:pointer; font-size:13px; font-weight:600; white-space:nowrap; }
+  .chip[aria-pressed="true"] { background:var(--c, var(--ink)); color:#fff; border-color:var(--c, var(--ink)); }
+  .chip.all { --c:var(--ink); }
+  .chip.all[aria-pressed="true"] { color:var(--paper); }
+  .catpick { background:var(--card); border:1.5px solid var(--line); border-radius:999px; padding:8px 12px; font-size:13px; color:var(--muted); max-width:100%; }
+  .catrow { display:flex; gap:8px; align-items:center; margin-bottom:16px; }
+  @media (max-width:640px) {
+    .catrow { overflow-x:auto; scrollbar-width:none; margin-inline:-16px; padding-inline:16px; }
+    .catrow::-webkit-scrollbar { display:none; }
+    .chips { flex-wrap:nowrap; }
+  }
 
-  .grid { display:grid; gap:12px; }
+  .grid { display:grid; gap:14px; align-items:start; }
   @media (min-width:780px){ .grid { grid-template-columns:1fr 1fr; } }
-  .item { background:var(--card); border:1px solid var(--line); border-radius:var(--r); padding:16px; display:flex; flex-direction:column; gap:12px; min-width:0; }
+  .item { background:var(--card); border:1px solid var(--line); border-top:5px solid var(--c, var(--line)); border-radius:var(--r); padding:16px; display:flex; flex-direction:column; gap:12px; min-width:0; box-shadow:0 1px 0 rgba(0,0,0,.03); }
   .item.gone { opacity:.62; }
+  .av { width:26px; height:26px; border-radius:50%; background:var(--c, var(--have)); color:#fff; font-weight:700; font-size:12.5px; display:inline-flex; align-items:center; justify-content:center; flex:none; font-family:var(--display); }
   .item h3 { font-family:var(--display); font-weight:700; font-size:17.5px; letter-spacing:-.012em; margin:0; text-wrap:balance; }
   .desc { margin:0; color:var(--muted); font-size:14px; overflow-wrap:anywhere; }
   .sides { display:grid; grid-template-columns:1fr auto 1fr; gap:10px; }
@@ -104,17 +127,30 @@
   .dots s.on { background:var(--dot); }
   .dots em { font-style:normal; font-family:var(--mono); font-size:11px; color:var(--muted); margin-left:3px; }
 
-  .btn { border:1px solid var(--ink); background:var(--ink); color:var(--paper); padding:9px 15px; border-radius:8px; cursor:pointer; font-size:13.5px; font-weight:500; }
+  .btn { border:1.5px solid var(--ink); background:var(--ink); color:var(--paper); padding:10px 18px; border-radius:999px; cursor:pointer; font-size:14px; font-weight:600; }
   .btn:hover { opacity:.88; }
   .btn.ghost { background:none; color:var(--ink); border-color:var(--line); }
-  .btn.ok { background:var(--dot); border-color:var(--dot); color:var(--paper); }
+  .btn.ghost:hover { border-color:var(--ink); opacity:1; }
+  .btn.ok { background:var(--dot); border-color:var(--dot); color:#fff; }
+  .btn.big { padding:13px 22px; font-size:15.5px; }
   .btn.no { background:none; color:var(--stop); border-color:var(--stop); }
-  .btn.press { background:var(--dot); border-color:var(--dot); color:var(--paper); display:inline-flex; align-items:center; gap:8px; }
-  .btn.press s { width:9px; height:9px; border-radius:50%; background:var(--paper); display:block; }
+  .btn.press { background:var(--dot); border-color:var(--dot); color:#fff; display:inline-flex; align-items:center; gap:8px; }
+  .btn.press s { width:9px; height:9px; border-radius:50%; background:#fff; display:block; }
   .btn:disabled { opacity:.45; cursor:not-allowed; }
   .presshint { font-size:12.5px; color:var(--muted); }
 
-  .form { background:var(--card); border:1px solid var(--line); border-radius:var(--r); padding:18px; display:grid; gap:14px; max-width:620px; }
+  .form { background:var(--card); border:1px solid var(--line); border-radius:var(--r); padding:20px; display:grid; gap:16px; max-width:620px; }
+  details.more { border:1px dashed var(--line); border-radius:10px; padding:0 14px; }
+  details.more summary { cursor:pointer; padding:12px 0; font-weight:600; font-size:14px; color:var(--muted); list-style:none; display:flex; align-items:center; gap:8px; }
+  details.more summary::before { content:"+"; font-family:var(--mono); color:var(--have); font-size:16px; }
+  details.more[open] summary::before { content:"\2212"; }
+  details.more > :not(summary) { margin-bottom:14px; }
+  .steps { display:grid; gap:10px; margin:4px 0 6px; }
+  .step { display:flex; gap:12px; align-items:flex-start; font-size:14.5px; color:var(--muted); }
+  .step i { flex:none; width:28px; height:28px; border-radius:50%; color:#fff; font-style:normal; font-weight:700; font-family:var(--display); display:inline-flex; align-items:center; justify-content:center; font-size:14px; }
+  .step b { color:var(--ink); font-weight:600; }
+  .nudge { display:flex; gap:10px; align-items:center; flex-wrap:wrap; background:var(--pop); color:#1C1A16; border-radius:var(--r); padding:12px 16px; margin-bottom:16px; font-size:14px; font-weight:500; }
+  .nudge .btn { background:#1C1A16; border-color:#1C1A16; color:#fff; padding:7px 14px; font-size:13px; margin-left:auto; }
   .f label { display:block; font-size:13px; font-weight:600; margin-bottom:5px; }
   .f .hint { font-size:12.5px; color:var(--muted); font-weight:400; }
   .f input, .f textarea, .f select { width:100%; background:var(--paper); border:1px solid var(--line); border-radius:8px; padding:10px 12px; outline:none; }
@@ -127,8 +163,9 @@
   .lede { color:var(--muted); font-size:14px; margin:0 0 16px; max-width:62ch; }
   .sub { font-family:var(--mono); font-size:10.5px; letter-spacing:.11em; text-transform:uppercase; color:var(--faint); margin:26px 0 10px; }
   .sub:first-child { margin-top:0; }
-  .empty { border:1px dashed var(--line); border-radius:var(--r); padding:30px 20px; text-align:center; color:var(--muted); font-size:14px; }
-  .empty strong { display:block; font-family:var(--display); font-size:17px; color:var(--ink); font-weight:700; margin-bottom:5px; }
+  .empty { border:1.5px dashed var(--line); border-radius:var(--r); padding:30px 20px; text-align:center; color:var(--muted); font-size:14px; }
+  .empty strong { display:block; font-family:var(--display); font-size:18px; color:var(--ink); font-weight:700; margin-bottom:5px; }
+  .empty .btn { margin-top:14px; }
 
   .offer { background:var(--card); border:1px solid var(--line); border-radius:var(--r); padding:14px 16px; display:grid; gap:10px; }
   .offer .on { font-size:12.5px; color:var(--muted); }
@@ -153,7 +190,8 @@
   .toast { position:fixed; left:50%; transform:translateX(-50%); bottom:18px; background:var(--ink); color:var(--paper); padding:11px 18px; border-radius:999px; font-size:13.5px; z-index:60; box-shadow:0 6px 24px rgba(0,0,0,.28); max-width:calc(100% - 32px); text-align:center; }
 
   /* sign-in gate */
-  .gate { max-width:430px; margin:52px auto; background:var(--card); border:1px solid var(--line); border-radius:14px; padding:26px; display:grid; gap:14px; }
+  .gate { max-width:460px; margin:36px auto; background:var(--card); border:1px solid var(--line); border-radius:18px; padding:28px; display:grid; gap:16px; box-shadow:0 20px 60px -30px rgba(0,0,0,.25); }
+  .gate .f input { padding:13px 14px; font-size:16px; border-radius:12px; }
   .pics { display:grid; grid-template-columns:1fr; gap:4px; border-radius:8px; overflow:hidden; }
   .pics.many { grid-template-columns:1fr 1fr; }
   .pics img { width:100%; aspect-ratio:4/3; object-fit:cover; display:block; background:var(--sunk); }
@@ -161,11 +199,13 @@
   .thumb { position:relative; width:72px; height:72px; border-radius:8px; overflow:hidden; border:1px solid var(--line); background:var(--sunk); }
   .thumb img { width:100%; height:100%; object-fit:cover; display:block; }
   .thumbx { position:absolute; top:2px; right:2px; width:20px; height:20px; border-radius:50%; border:0; background:rgba(21,24,28,.75); color:#fff; font-size:14px; line-height:20px; padding:0; cursor:pointer; }
-  input[type=file] { padding:9px 0; }
+  .filebtn { position:relative; display:inline-flex; align-items:center; gap:8px; border:1.5px dashed var(--have); color:var(--have); background:var(--have-soft); padding:11px 16px; border-radius:999px; cursor:pointer; font-weight:600; font-size:14px; }
+  .filebtn input { position:absolute; inset:0; opacity:0; width:100%; height:100%; cursor:pointer; }
+  .filebtn:has(input:disabled) { opacity:.45; cursor:not-allowed; }
+  .filebtn svg { flex:none; }
   .assetbox { border:1px solid var(--line); border-radius:8px; padding:14px; background:var(--paper); }
   .tick { display:flex; align-items:center; gap:9px; font-size:14px; font-weight:500; cursor:pointer; margin:0; }
   .tick input { width:auto; }
-  .wallet { display:flex; gap:12px; align-items:flex-end; justify-content:space-between; flex-wrap:wrap; border-top:1px solid var(--line-soft); padding-top:14px; }
   .walletstate { font-family:var(--mono); font-size:12.5px; color:var(--muted); }
   .walletstate.on { color:var(--dot); }
   .assetline { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
@@ -174,8 +214,10 @@
   .held { font-family:var(--mono); font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; padding:3px 8px; border-radius:999px; border:1px solid var(--line); color:var(--faint); }
   .held.yes { color:var(--dot); border-color:var(--dot); background:var(--dot-soft); }
   .held.no { color:var(--stop); border-color:var(--stop); }
-  .gate h2 { font-size:23px; }
+  .gate h2 { font-size:26px; line-height:1.15; }
+  .gate h2 em { font-style:normal; color:var(--dot); }
   .gate p { margin:0; color:var(--muted); font-size:14.5px; }
+  .signedas { font-size:12.5px; color:var(--faint); font-family:var(--mono); }
 </style>
 </head>
 <body>
@@ -183,12 +225,15 @@
 <header class="top">
   <div class="top-in">
     <a class="brand" href="/"><i></i> Dot Trading Post</a>
-    <div class="tabs" role="tablist" id="tabs" hidden>
-      <button class="tab" id="t-browse" role="tab" aria-selected="true">Browse</button>
-      <button class="tab" id="t-post" role="tab" aria-selected="false">Post</button>
-      <button class="tab" id="t-mine" role="tab" aria-selected="false">Mine <span class="badge" id="mineCount" hidden>0</span></button>
+    <div class="me" id="me" hidden>
+      <button class="wal" type="button" id="connectBtn" title="Connect a wallet to list or offer digital assets"><s></s><span id="walletState">Connect wallet</span></button>
+      <button class="linkbtn" id="signOut">Sign out</button>
     </div>
-    <div class="me" id="me" hidden><span id="meName"></span><button class="linkbtn" id="signOut">Sign out</button></div>
+    <div class="tabs" role="tablist" id="tabs" hidden>
+      <button class="tab" id="t-browse" role="tab" aria-selected="true">Board</button>
+      <button class="tab" id="t-post" role="tab" aria-selected="false">+ Post</button>
+      <button class="tab" id="t-mine" role="tab" aria-selected="false">My trades <span class="badge" id="mineCount" hidden>0</span></button>
+    </div>
   </div>
 </header>
 
@@ -198,25 +243,34 @@
   <!-- sign in -->
   <section id="gate" hidden>
     <div class="gate">
-      <h2>Sign in to trade</h2>
-      <p>No password. Put in your email and we send a link that signs you straight in.</p>
+      <h2>Swap what you have for <em>what you want.</em></h2>
+      <div class="steps">
+        <div class="step"><i style="background:var(--have)">1</i><span><b>Post an item.</b> A photo and a line about what you'd take for it.</span></div>
+        <div class="step"><i style="background:var(--want)">2</i><span><b>Get offers.</b> Accept one and swap — post it or meet up.</span></div>
+        <div class="step"><i style="background:var(--dot)">3</i><span><b>Press your dot</b> when it arrives. Both press, trade closes, you both earn trust.</span></div>
+      </div>
       <form class="f" id="authForm" style="display:grid;gap:12px">
         <div>
-          <label for="email">Email</label>
+          <label for="email">Your email</label>
           <input id="email" type="email" required autocomplete="email" placeholder="you@example.com">
         </div>
-        <button class="btn" id="authBtn" type="submit">Send me a link</button>
+        <button class="btn ok big" id="authBtn" type="submit">Send me a sign-in link</button>
       </form>
+      <p style="font-size:13px">No password, nothing to install. The link in the email signs you straight in.</p>
       <p id="authMsg" hidden></p>
     </div>
   </section>
 
   <section id="browse" hidden>
+    <div class="nudge" id="nudge" hidden><span>Add your name so traders know who they're dealing with.</span><button class="btn" type="button" id="nudgeGo">Add name</button></div>
     <div class="bar">
       <label class="search">
         <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.6"/><path d="M11 11l4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-        <input id="q" type="search" placeholder="Search items and wants" autocomplete="off">
+        <input id="q" type="search" placeholder="Search the board" autocomplete="off">
       </label>
+      <button class="btn ok" type="button" id="postCta">+ Post an item</button>
+    </div>
+    <div class="catrow">
       <div class="chips" id="cats"></div>
       <select id="catPick" class="catpick" aria-label="Filter by category"></select>
     </div>
@@ -226,19 +280,20 @@
 
   <section id="post" hidden>
     <h2>Post an item</h2>
-    <p class="lede">Say what you have and what you would take for it. No prices and no money — someone offers a swap and you decide.</p>
+    <p class="lede">Say what you have and what you'd take for it. No prices, no money — someone offers a swap and you decide.</p>
     <form class="form f" id="postForm">
       <div>
-        <label for="f-title">What you are offering</label>
+        <label for="f-title">What are you offering?</label>
         <input id="f-title" maxlength="80" required placeholder="Charizard holo, 1999 base set">
       </div>
       <div>
-        <label for="f-desc">Details <span class="hint">— condition, size, anything they would ask</span></label>
-        <textarea id="f-desc" maxlength="600" placeholder="Played condition, one soft corner. Sleeved since forever."></textarea>
+        <label>Photos <span class="hint">— up to 4 · location data is removed before upload</span></label>
+        <label class="filebtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg><span>Add photos</span><input id="f-photos" type="file" accept="image/jpeg,image/png,image/webp" multiple></label>
+        <div class="thumbs" id="f-thumbs"></div>
       </div>
       <div class="rowf">
         <div>
-          <label for="f-want">What you want back</label>
+          <label for="f-want">What do you want for it?</label>
           <input id="f-want" maxlength="80" placeholder="Open to offers">
         </div>
         <div>
@@ -246,36 +301,36 @@
           <select id="f-cat"></select>
         </div>
       </div>
-      <div>
-        <label for="f-photos">Photos <span class="hint">— up to 4 · location data is removed before upload</span></label>
-        <input id="f-photos" type="file" accept="image/jpeg,image/png,image/webp" multiple>
-        <div class="thumbs" id="f-thumbs"></div>
-      </div>
-      <div class="assetbox">
-        <label class="tick"><input type="checkbox" id="f-isasset"> <span>This is a digital asset — an NFT or tokens on a chain</span></label>
-        <div id="f-assetfields" hidden>
-          <p class="hint" style="margin:0 0 12px">Anyone looking at your listing checks the chain themselves and sees whether you still hold it. You don't have to be trusted.</p>
-          <div class="rowf">
-            <div><label for="f-chain">Chain</label><select id="f-chain"></select></div>
-            <div><label for="f-kind">Type</label><select id="f-kind">
-              <option value="erc721">NFT (ERC-721)</option>
-              <option value="erc1155">Multi-edition (ERC-1155)</option>
-              <option value="erc20">Tokens (ERC-20)</option>
-            </select></div>
-          </div>
-          <div class="rowf" style="margin-top:14px">
-            <div><label for="f-contract">Contract address</label><input id="f-contract" maxlength="42" placeholder="0x…"></div>
-            <div id="f-tokidwrap"><label for="f-tokid">Token ID</label><input id="f-tokid" maxlength="78" placeholder="1234"></div>
+      <details class="more">
+        <summary>Add details, or list a digital asset</summary>
+        <div>
+          <label for="f-desc">Details <span class="hint">— condition, size, anything they would ask</span></label>
+          <textarea id="f-desc" maxlength="600" placeholder="Played condition, one soft corner. Sleeved since forever."></textarea>
+        </div>
+        <div class="assetbox">
+          <label class="tick"><input type="checkbox" id="f-isasset"> <span>This is a digital asset — an NFT or tokens on a chain</span></label>
+          <div id="f-assetfields" hidden>
+            <p class="hint" style="margin:0 0 12px">Anyone looking at your listing checks the chain themselves and sees whether you still hold it. You don't have to be trusted.</p>
+            <div class="rowf">
+              <div><label for="f-chain">Chain</label><select id="f-chain"></select></div>
+              <div><label for="f-kind">Type</label><select id="f-kind">
+                <option value="erc721">NFT (ERC-721)</option>
+                <option value="erc1155">Multi-edition (ERC-1155)</option>
+                <option value="erc20">Tokens (ERC-20)</option>
+              </select></div>
+            </div>
+            <div class="rowf" style="margin-top:14px">
+              <div><label for="f-contract">Contract address</label><input id="f-contract" maxlength="42" placeholder="0x…"></div>
+              <div id="f-tokidwrap"><label for="f-tokid">Token ID</label><input id="f-tokid" maxlength="78" placeholder="1234"></div>
+            </div>
           </div>
         </div>
-      </div>
-      <div><button class="btn" id="postBtn" type="submit">Put it on the board</button></div>
+      </details>
+      <div><button class="btn ok big" id="postBtn" type="submit">Put it on the board</button></div>
     </form>
   </section>
 
   <section id="mine" hidden>
-    <h2>Your standing</h2>
-    <p class="lede">Dots are earned by trading and by the other side pressing their dot for you. They cannot be bought, and nobody can hand themselves one.</p>
     <div class="standing">
       <div class="score">
         <span class="n" id="myDots">0</span>
@@ -283,21 +338,18 @@
         <span class="lab" id="myRank">New trader</span>
       </div>
       <div class="ledger" id="myLedger"></div>
-      <form class="f" id="profForm" style="display:grid;gap:12px;border-top:1px solid var(--line-soft);padding-top:14px">
-        <div class="rowf">
-          <div><label for="p-name">Your name <span class="hint">— what traders see</span></label><input id="p-name" maxlength="40" placeholder="Priya"></div>
-          <div><label for="p-area">Where you trade <span class="hint">— earns a dot</span></label><input id="p-area" maxlength="60" placeholder="North Leeds"></div>
-        </div>
-        <div><label for="p-note">How you like to swap</label><input id="p-note" maxlength="80" placeholder="Happy to post, prefer meeting up"></div>
-        <div class="wallet">
-          <div>
-            <label>Wallet <span class="hint">— needed to list digital assets</span></label>
-            <div id="walletState" class="walletstate">Not connected</div>
+      <p class="hint" style="margin:0;font-size:13px;color:var(--muted)">Dots are earned by trading and by the other side pressing their dot for you. Nobody can hand themselves one.</p>
+      <details class="more" id="profWrap">
+        <summary>Your profile <span class="signedas" id="meName"></span></summary>
+        <form class="f" id="profForm" style="display:grid;gap:12px">
+          <div class="rowf">
+            <div><label for="p-name">Your name <span class="hint">— what traders see</span></label><input id="p-name" maxlength="40" placeholder="Priya"></div>
+            <div><label for="p-area">Where you trade <span class="hint">— earns a dot</span></label><input id="p-area" maxlength="60" placeholder="North Leeds"></div>
           </div>
-          <button class="btn ghost" type="button" id="connectBtn">Connect wallet</button>
-        </div>
-        <div><button class="btn ghost" type="submit">Save profile</button></div>
-      </form>
+          <div><label for="p-note">How you like to swap</label><input id="p-note" maxlength="80" placeholder="Happy to post, prefer meeting up"></div>
+          <div><button class="btn" type="submit">Save profile</button></div>
+        </form>
+      </details>
     </div>
 
     <div class="sub">Offers waiting on you</div>
@@ -306,11 +358,11 @@
 
     <div class="sub">Offers you have made</div>
     <div class="grid" id="offersOut"></div>
-    <div class="empty" id="offersOutEmpty">You have not offered on anything yet.</div>
+    <div class="empty" id="offersOutEmpty">You have not offered on anything yet. <br><button class="btn ghost" type="button" data-go="browse">See the board</button></div>
 
     <div class="sub">Your items</div>
     <div class="grid" id="myItems"></div>
-    <div class="empty" id="myItemsEmpty">Nothing posted yet. Head to <b>Post</b>.</div>
+    <div class="empty" id="myItemsEmpty">Nothing posted yet. <br><button class="btn ok" type="button" data-go="post">Post your first item</button></div>
   </section>
 </main>
 
@@ -334,7 +386,13 @@
     ["Vehicles", ["Cars & Parts", "Motorbikes"]],
     ["Everything else", ["Baby & Kids", "Pet Supplies", "Office", "Industrial", "Tickets", "Services & Skills", "Other"]]
   ];
-  var QUICK = ["Trading Cards", "Video Games", "Electronics", "Clothing", "Furniture"];
+  var QUICK = ["Trading Cards", "Video Games", "Electronics", "Clothing", "Furniture", "Books", "Sports Gear"];
+  // One colour per group, so a card tells you its corner of the board before you read it.
+  var HUES = ["var(--rose)", "var(--have)", "var(--plum)", "var(--want)", "var(--teal)", "var(--dot)", "var(--pop)", "#6B7280", "var(--faint)"];
+  var CAT_HUE = {};
+  GROUPS.forEach(function (g, gi) { g[1].forEach(function (c) { CAT_HUE[c] = HUES[gi]; }); });
+  function hueOf(cat) { return CAT_HUE[cat] || "var(--line)"; }
+  function initial(id) { var n = who(id); return n === "You" ? (profiles[id] && profiles[id].name ? profiles[id].name : "Y").charAt(0) : n.charAt(0); }
   var RANKS = [[0, "New trader"], [3, "Known"], [8, "Trusted"], [16, "Well vouched"], [30, "Pillar of the post"]];
 
   // Cross-chain works because nothing is swapped atomically: each side is simply checked on its
@@ -406,6 +464,7 @@
 
   var sb = null, uid = null, myEmail = "";
   var items = [], offers = [], signals = [], profiles = {}, badges = {};
+  var profTouched = false;
   var filter = { q: "", cat: "" };
 
   function esc(s) {
@@ -471,6 +530,18 @@
   ["browse", "post", "mine"].forEach(function (k) {
     $("t-" + k).addEventListener("click", function () { show(k); });
   });
+  $("postCta").addEventListener("click", function () { show("post"); setTimeout(function () { $("f-title").focus(); }, 30); });
+  function openProfile() {
+    show("mine"); $("profWrap").open = true;
+    setTimeout(function () { $("p-name").focus(); $("p-name").scrollIntoView({ block: "center", behavior: "smooth" }); }, 30);
+  }
+  $("nudgeGo").addEventListener("click", openProfile);
+  document.addEventListener("click", function (e) {
+    var go = e.target && e.target.getAttribute && e.target.getAttribute("data-go");
+    if (!go) return;
+    if (go === "clear") { filter.cat = ""; filter.q = ""; $("q").value = ""; syncCats(); render(); return; }
+    show(go);
+  });
 
   function groupedOptions(sel, allLabel) {
     if (allLabel) { var a = document.createElement("option"); a.value = ""; a.textContent = allLabel; sel.appendChild(a); }
@@ -483,13 +554,13 @@
   (function buildCats() {
     var wrap = $("cats");
     var all = document.createElement("button");
-    all.className = "chip"; all.type = "button"; all.textContent = "All";
+    all.className = "chip all"; all.type = "button"; all.textContent = "All";
     all.setAttribute("aria-pressed", "true");
     all.addEventListener("click", function () { filter.cat = ""; syncCats(); render(); });
     wrap.appendChild(all);
     QUICK.forEach(function (c) {
       var b = document.createElement("button");
-      b.className = "chip"; b.type = "button"; b.textContent = c; b.dataset.cat = c;
+      b.className = "chip"; b.type = "button"; b.textContent = c; b.dataset.cat = c; b.style.setProperty("--c", hueOf(c));
       b.setAttribute("aria-pressed", "false");
       b.addEventListener("click", function () { filter.cat = filter.cat === c ? "" : c; syncCats(); render(); });
       wrap.appendChild(b);
@@ -573,10 +644,12 @@
   function myWallet() { return verifiedWallet(profiles[uid]); }
   function paintWallet() {
     var w = myWallet();
-    var el = $("walletState");
-    el.textContent = w ? shortAddr(w) + " · verified" : (profiles[uid] && profiles[uid].wallet_address ? "signature did not verify — reconnect" : "Not connected");
-    el.className = "walletstate" + (w ? " on" : "");
-    $("connectBtn").textContent = w ? "Reconnect" : "Connect wallet";
+    var btn = $("connectBtn"), el = $("walletState");
+    var broken = !w && profiles[uid] && profiles[uid].wallet_address;
+    el.textContent = w ? shortAddr(w) : (broken ? "Reconnect wallet" : "Connect wallet");
+    btn.className = "wal" + (w ? " on" : "");
+    btn.title = w ? "Wallet " + w + " — connected and verified. Click to switch." :
+      (broken ? "The saved signature did not verify — connect again." : "Connect a wallet to list or offer digital assets");
   }
   $("connectBtn").addEventListener("click", function () {
     var eth = window.ethereum;
@@ -653,6 +726,7 @@
 
     var el = document.createElement("article");
     el.className = "item" + (traded || pledged ? " gone" : "");
+    el.style.setProperty("--c", hueOf(it.cat));
     var h = "";
     if (it.photos && it.photos.length) {
       h += '<div class="pics' + (it.photos.length > 1 ? " many" : "") + '">' +
@@ -664,7 +738,7 @@
     h += '<div class="sides"><div class="side h"><span class="k">Offering</span><span class="v">' + esc(it.title) + "</span></div>" +
       '<div class="arrow" aria-hidden="true">&#8646;</div>' +
       '<div class="side w"><span class="k">Wants</span><span class="v">' + esc(it.want || "Open to offers") + "</span></div></div>";
-    h += '<div class="foot"><span class="who"><b>' + esc(who(it.owner_id)) + "</b>" + dotRow(sc.dots) +
+    h += '<div class="foot"><span class="who"><span class="av">' + esc(initial(it.owner_id).toUpperCase()) + '</span><b>' + esc(who(it.owner_id)) + "</b>" + dotRow(sc.dots) +
       "<span>" + esc(ago(it.created_at)) + (prof && prof.area ? " · " + esc(prof.area) : "") + "</span></span>";
     if (it.cat) h += '<span class="tag">' + esc(it.cat) + "</span>";
     var badge = badges[it.id];
@@ -682,7 +756,7 @@
     var foot = el.querySelector(".foot");
     if (!traded && !pledged && !mine && uid) {
       var b = document.createElement("button");
-      b.className = "btn"; b.type = "button"; b.textContent = "Offer a trade";
+      b.className = "btn ok"; b.type = "button"; b.textContent = "Offer a trade";
       b.addEventListener("click", function () { openOffer(it); });
       foot.appendChild(b);
     }
@@ -793,8 +867,9 @@
     });
     fill($("feed"), $("feedEmpty"), shown, function (it) { return itemCard(it); });
     $("feedEmpty").innerHTML = !open.length
-      ? "<strong>Nothing on the board yet</strong>Post something you would trade and it shows up here for everyone."
-      : "<strong>No matches</strong>Nothing here fits that search. Try another word, or clear the filter.";
+      ? '<strong>Nothing on the board yet</strong>Post something you would trade and it shows up here for everyone.<br><button class="btn ok" type="button" data-go="post">Post the first item</button>'
+      : '<strong>No matches</strong>Nothing here fits that search. Try another word, or clear the filter.<br><button class="btn ghost" type="button" data-go="clear">Clear filters</button>';
+    $("nudge").hidden = !(uid && !(profiles[uid] && profiles[uid].name));
 
     var myItems = uid ? items.filter(function (it) { return it.owner_id === uid; }) : [];
     var inc = uid ? offers.filter(function (o) { return o.owner_id === uid; }) : [];
@@ -842,7 +917,7 @@
         '<div class="rowf" style="margin-top:14px"><div><label for="o-contract">Contract address</label><input id="o-contract" maxlength="42" placeholder="0x…"></div>' +
         '<div id="o-tokidwrap"><label for="o-tokid">Token ID</label><input id="o-tokid" maxlength="78" placeholder="1234"></div></div></div></div>' +
       '<div><label for="o-msg">Message <span class="hint">— optional</span></label><textarea id="o-msg" maxlength="400" placeholder="Happy to meet halfway this week."></textarea></div>' +
-      '<div class="acts"><button class="btn" type="submit">Send offer</button><button class="btn ghost" type="button" data-x>Cancel</button></div>';
+      '<div class="acts"><button class="btn ok" type="submit">Send offer</button><button class="btn ghost" type="button" data-x>Cancel</button></div>';
     veil.appendChild(form); document.body.appendChild(veil);
     CHAIN_IDS.forEach(function (id) {
       var o = document.createElement("option"); o.value = id; o.textContent = CHAINS[id].name;
@@ -907,8 +982,8 @@
           esc(it.title) + "</b>. The code is new every time and lasts 24 hours, so it cannot be prepared in advance.</p>" +
         '<ol class="proofnote"><li>Your name: <b>' + esc(me.name) + "</b></li><li>Today\u2019s date: <b>" + esc(today) + "</b></li>" +
           '<li>This code: <div style="margin-top:6px"><span class="code">' + esc(v.code) + "</span></div></li></ol>" +
-        '<div><label for="v-photo">Photo of the note and the item</label>' +
-          '<input id="v-photo" type="file" accept="image/jpeg,image/png,image/webp" capture="environment">' +
+        '<div><label>Photo of the note and the item</label>' +
+          '<label class="filebtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg><span>Take the photo</span><input id="v-photo" type="file" accept="image/jpeg,image/png,image/webp" capture="environment"></label>' +
           '<p class="hint" style="margin:6px 0 0">One original photo from your camera. Screenshots and printed notes do not pass.</p></div>' +
         '<div id="v-out" hidden></div>' +
         '<div class="acts"><button class="btn ghost" type="button" data-x>Close</button></div>';
@@ -1033,6 +1108,7 @@
       // Missing until verify.sql has been run; the board just shows no badges.
       badges = {}; (r[4].error ? [] : (r[4].data || [])).forEach(function (b) { badges[b.item_id] = b; });
       profiles = {}; (r[2].data || []).forEach(function (p) { profiles[p.id] = p; });
+      if (uid && !profTouched) { profTouched = true; $("profWrap").open = !(profiles[uid] && profiles[uid].name); }
       if (uid && profiles[uid]) {
         if (!$("p-name").value) $("p-name").value = profiles[uid].name || "";
         if (!$("p-area").value) $("p-area").value = profiles[uid].area || "";
@@ -1066,7 +1142,7 @@
     $("tabs").hidden = !signedIn;
     $("me").hidden = !signedIn;
     if (signedIn) {
-      $("meName").textContent = myEmail;
+      $("meName").textContent = "· " + myEmail;
       show("browse");
     } else {
       ["browse", "post", "mine"].forEach(function (k) { $(k).hidden = true; });
