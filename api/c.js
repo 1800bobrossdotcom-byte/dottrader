@@ -35,7 +35,7 @@ module.exports = async function handler(req, res) {
   const body =
     '<nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> <span aria-hidden="true">›</span> <a href="/c">All categories</a></nav>' +
     '<section class="head" style="--c:' + L.hueOf(cat) + '"><h1>' + L.esc(cat) + ' up for trade</h1>' +
-      '<p class="lede">' + (rows.length ? "Swap for them — no money, just trades. Each listing says what its owner wants." : "Nothing in " + L.esc(lower) + " right now. Be the first: list something and say what you want for it.") + "</p>" +
+      '<p class="lede">' + (cat === "NFTs" ? "Swap NFTs across " + Object.keys(L.CHAINS).length + " chains, or for physical things. No bridge: each side sends on its own chain and the board checks both. " : "") + (rows.length ? "Swap for them — no money, just trades. Each listing says what its owner wants." : "Nothing in " + L.esc(lower) + " right now. Be the first: list something and say what you want for it.") + "</p>" +
       '<p><a class="btn" href="/app#cat=' + encodeURIComponent(cat) + '">' + (rows.length ? "Open these on the board" : "List something") + "</a></p></section>" +
     (rows.length ? '<div class="grid">' + rows.map((m) => L.miniCard(m)).join("") + "</div>" : "") +
     (pageNo > 1 || next ? '<nav class="pager" aria-label="Pages">' +
@@ -51,7 +51,8 @@ module.exports = async function handler(req, res) {
   ];
   L.send(res, 200, L.page({
     path, title: cat + " up for trade — swap, don't sell | Dot Trading Post",
-    desc: L.clip("Trade " + lower + " with people near you or by post. " + (rows.length ? rows.length + (next ? "+" : "") + " listings, each saying what its owner wants in return. " : "") + "No money — just swaps, and a trade record on every trader.", 158),
+    desc: L.clip((cat === "NFTs" ? "Swap NFTs across chains, or for physical things — no bridge, no money; every NFT transfer is checked on chain. "
+      : "Trade " + lower + " with people near you or by post. ") + (rows.length ? rows.length + (next ? "+" : "") + " listings, each saying what its owner wants in return. " : "") + "No money — just swaps, and a trade record on every trader.", 158),
     image: (rows.find((m) => m.photos && m.photos.length) || { photos: [null] }).photos[0],
     noindex: !rows.length, ld, body,
   }), 300);

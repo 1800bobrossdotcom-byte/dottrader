@@ -97,14 +97,14 @@ function page(o) {
     '<meta name="theme-color" content="#F3EAD3">\n' +
     '<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n' +
     '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">\n' +
-    '<link rel="stylesheet" href="/css/page.css?v=3">\n' +
+    '<link rel="stylesheet" href="/css/page.css?v=4">\n' +
     (o.ld || []).map((x) => '<script type="application/ld+json">' + jsonLd(x) + "</script>\n").join("") +
     "</head>\n<body>\n" +
     '<header class="top"><div class="wrap bar"><a class="brand" href="/">' + LOGO + '<span class="t">Dot Trading Post<small>BARTER BOARD</small></span></a>' +
     '<a class="navbtn" href="/app">Open the board</a></div></header>\n' +
     '<main class="wrap">\n' + o.body + "\n</main>\n" +
-    '<footer class="wrap foot"><a href="/">How it works</a><a href="/app">The board</a><a href="/c/trading-cards">Trading cards</a><a href="/c/video-games">Video games</a><a href="/c/consoles-retro">Consoles &amp; retro</a><a href="/stickers">Stickers</a><a class="makers" href="https://cbuy.ing" target="_blank" rel="noopener"><span>From the makers of</span><img src="/cbuy.png?v=1" alt="cbuy" width="75" height="32"></a></footer>\n' +
-    '<script src="/js/share.js?v=1" defer></script>\n</body>\n</html>\n';
+    '<footer class="wrap foot"><a href="/">How it works</a><a href="/app">The board</a><a href="/c/trading-cards">Trading cards</a><a href="/c/video-games">Video games</a><a href="/c/consoles-retro">Consoles &amp; retro</a><a href="/c/nfts">NFTs</a><a href="/trade">Ways to trade</a><a href="/stickers">Stickers</a><a class="makers" href="https://cbuy.ing" target="_blank" rel="noopener"><span>From the makers of</span><img src="/cbuy.png?v=1" alt="cbuy" width="75" height="32"></a></footer>\n' +
+    '<script src="/js/share.js?v=2" defer></script>\n</body>\n</html>\n';
 }
 
 function send(res, status, html, maxAge) {
@@ -124,9 +124,12 @@ function notFound(res, what) {
 
 // A small card linking to a listing's own page, used on category pages and under a listing.
 function miniCard(it, img) {
-  const pic = img || (it.photos && it.photos[0]);
-  return '<a class="mini" href="' + esc(itemPath(it)) + '" style="--c:' + hueOf(it.cat) + '">' +
-    (pic ? '<img src="' + esc(pic) + '" alt="" loading="lazy">' : '<span class="noimg" aria-hidden="true"></span>') +
+  const photo = img || (it.photos && it.photos[0]);
+  const art = !photo && it.asset_kind && it.asset_kind !== "erc20";
+  const pic = photo ? '<img src="' + esc(photo) + '" alt="' + esc(it.title) + '" loading="lazy">'
+    : art ? '<img src="/og/art/' + esc(it.id) + '.png" alt="' + esc(it.title) + '" loading="lazy" data-art>'
+    : '<span class="noimg" aria-hidden="true"></span>';
+  return '<a class="mini" href="' + esc(itemPath(it)) + '" style="--c:' + hueOf(it.cat) + '">' + pic +
     '<span class="mt">' + esc(it.title) + (it.local_only ? ' <span class="tag local">Local</span>' : "") + '</span><span class="mw"><b>Wants</b> ' + esc(wantText(it)) + "</span></a>";
 }
 

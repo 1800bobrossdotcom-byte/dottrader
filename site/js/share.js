@@ -1,6 +1,11 @@
-// Dot Trading Post — the Share button on public listing pages: the phone's share sheet where there
-// is one, otherwise copy the link.
+// Dot Trading Post — the public pages' one script: the Share button on listing pages (the phone's
+// share sheet where there is one, otherwise copy the link), and NFT tiles that fall back cleanly.
 "use strict";
+// NFT artwork that can't be drawn turns back into the plain tile instead of a broken image.
+Array.prototype.forEach.call(document.querySelectorAll("img[data-art]"), function (img) {
+  var swap = function () { var s = document.createElement("span"); s.className = "noimg"; s.setAttribute("aria-hidden", "true"); img.replaceWith(s); };
+  if (img.complete && !img.naturalWidth) swap(); else img.addEventListener("error", swap);
+});
 (function () {
   var b = document.querySelector("[data-share]");
   if (!b) return;

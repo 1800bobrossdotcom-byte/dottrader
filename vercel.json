@@ -7,6 +7,18 @@
   "cleanUrls": true,
   "rewrites": [
     {
+      "source": "/og/art/:file",
+      "destination": "/api/og?art=1&id=:file"
+    },
+    {
+      "source": "/trade",
+      "destination": "/api/trade"
+    },
+    {
+      "source": "/trade/:page",
+      "destination": "/api/trade?page=:page"
+    },
+    {
       "source": "/og/item/:file",
       "destination": "/api/og?id=:file"
     },

@@ -2,6 +2,7 @@
 // something in it, and every open listing.
 
 const L = require("./_lib.js");
+const T = require("./trade.js");
 
 function u(loc, lastmod, freq, pri) {
   return "  <url><loc>" + L.esc(L.SITE + loc) + "</loc>" + (lastmod ? "<lastmod>" + lastmod.slice(0, 10) + "</lastmod>" : "") +
@@ -14,7 +15,8 @@ module.exports = async function handler(req, res) {
   const cats = {};
   rows.forEach((r) => { if (!cats[r.cat] || r.created_at > cats[r.cat]) cats[r.cat] = r.created_at; });
   let x = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
-    u("/", null, "weekly", "1.0") + u("/app", rows[0] && rows[0].created_at, "hourly", "0.8") + u("/c", rows[0] && rows[0].created_at, "daily", "0.7") + u("/stickers", null, "monthly", "0.4");
+    u("/", null, "weekly", "1.0") + u("/app", rows[0] && rows[0].created_at, "hourly", "0.8") + u("/c", rows[0] && rows[0].created_at, "daily", "0.7") + u("/trade", null, "weekly", "0.8") +
+    T.ORDER.map((s) => u("/trade/" + s, null, "weekly", "0.8")).join("") + u("/stickers", null, "monthly", "0.4");
   L.CATS.forEach((c) => { if (cats[c]) x += u("/c/" + L.slug(c), cats[c], "daily", "0.6"); });
   rows.forEach((r) => { x += u(L.itemPath(r), r.created_at, "weekly", "0.5"); });
   x += "</urlset>\n";

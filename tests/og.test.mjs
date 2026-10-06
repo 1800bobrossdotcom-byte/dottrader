@@ -21,7 +21,7 @@ globalThis.fetch = async (url, init) => {
   return realFetch(url, init);  // the renderer's own emoji / font lookups
 };
 const og = require("../api/og.js");
-const call = (id) => new Promise((resolve) => { const res = { statusCode: 0, h: {}, setHeader(k, v) { this.h[k] = v; }, end(b) { resolve({ status: this.statusCode, h: this.h, body: b }); } }; og({ query: { id }, url: "/" }, res); });
+const call = (id, art) => new Promise((resolve) => { const res = { statusCode: 0, h: {}, setHeader(k, v) { this.h[k] = v; }, end(b) { resolve({ status: this.statusCode, h: this.h, body: b }); } }; og({ query: art ? { id, art: "1" } : { id }, url: "/" }, res); });
 const res = []; const ok = (n, c, x) => res.push((c ? "PASS " : "FAIL ") + n + (c || !x ? "" : "  [" + x + "]"));
 const dims = (b) => b && b.length > 24 && b.slice(1, 4).toString() === "PNG" ? [b.readUInt32BE(16), b.readUInt32BE(20)] : null;
 
@@ -38,6 +38,9 @@ r = await call("bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb");
 ok("artwork that won't load still gets a card", r.status === 200 && JSON.stringify(dims(r.body)) === "[1200,630]");
 ok("a taken-down listing has no card", (await call("cccccccc-cccc-4ccc-8ccc-cccccccccccc")).status === 404);
 ok("a malformed id has no card", (await call("../../etc/passwd")).status === 404);
+r = await call(ID + ".png", true);
+ok("/og/art: just the artwork, as an image, cached for a week", r.status === 200 && r.h["content-type"] === "image/png" && dims(r.body) && dims(r.body)[0] > 0 && /s-maxage=604800/.test(r.h["cache-control"]), r.status + " " + r.h["content-type"]);
+ok("…and nothing for a listing whose artwork won't load", (await call("bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", true)).status === 404);
 console.log(res.join("\n"));
 const failed = res.filter((x) => x.startsWith("FAIL")).length;
 console.log(failed ? failed + " failed" : res.length + " passed");

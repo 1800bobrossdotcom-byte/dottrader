@@ -4,11 +4,13 @@ import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
 
 const A = "11111111-1111-4111-8111-111111111111";
-const I1 = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", I2 = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", I3 = "cccccccc-cccc-4ccc-8ccc-cccccccccccc", I4 = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
+const I1 = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", I2 = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", I3 = "cccccccc-cccc-4ccc-8ccc-cccccccccccc", I4 = "dddddddd-dddd-4ddd-8ddd-dddddddddddd", I5 = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee";
 const items = [
   { id: I1, owner_id: A, title: 'Charizard <script>alert(1)</script> holo', descr: "Base set, \"near mint\".\nNo trades for cash.", want: "N64 games", want_cats: ["Consoles & Retro"], open_to_offers: true, cat: "Trading Cards", status: "open", photos: ["https://x.supabase.co/storage/v1/object/public/photos/a/1.jpg", "https://x.supabase.co/storage/v1/object/public/photos/a/2.jpg"], created_at: "2026-10-01T10:00:00Z" },
   { id: I2, owner_id: A, title: "Pikachu promo", descr: "", want: "", want_cats: [], open_to_offers: true, cat: "Trading Cards", status: "open", photos: [], created_at: "2026-10-02T10:00:00Z" },
   { id: I3, owner_id: A, title: "Old lamp", descr: "", want: "", cat: "Home & Kitchen", status: "traded", photos: [], created_at: "2026-09-01T10:00:00Z" },
+  { id: I5, owner_id: A, title: "Wiiide #8240", descr: "", want: "", want_cats: [], cat: "NFTs", status: "open", photos: [], created_at: "2026-10-03T10:00:00Z",
+    asset_kind: "erc721", asset_chain: 1, asset_contract: "0x72a94e6c51cb06453b84c049ce1e1312f7c05e2c", asset_token_id: "8240", have_terms: ["nft", "ethereum", "wiiide"] },
   { id: I4, owner_id: A, title: "Gone thing", descr: "", want: "", cat: "Other", status: "removed", photos: [], created_at: "2026-09-01T10:00:00Z" },
 ];
 const seen = [];
@@ -23,6 +25,8 @@ globalThis.fetch = async (url) => {
         const [op, val] = [v.slice(0, v.indexOf(".")), v.slice(v.indexOf(".") + 1)];
         if (op === "eq" && String(it[k]) !== val) return false;
         if (op === "neq" && String(it[k]) === val) return false;
+        if (op === "in" && !val.slice(1, -1).split(",").map((x) => decodeURIComponent(x.replace(/^"|"$/g, ""))).includes(String(it[k]))) return false;
+        if (op === "cs" && !val.slice(1, -1).split(",").every((x) => (it[k] || []).includes(x))) return false;
       }
       return true;
     }).sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
@@ -34,7 +38,7 @@ globalThis.fetch = async (url) => {
   return new Response(JSON.stringify(rows), { status: 200, headers: { "content-type": "application/json" } });
 };
 
-const item = require("../api/item.js"), cat = require("../api/c.js"), sitemap = require("../api/sitemap.js");
+const item = require("../api/item.js"), cat = require("../api/c.js"), sitemap = require("../api/sitemap.js"), trade = require("../api/trade.js");
 function call(h, query) {
   return new Promise((resolve) => {
     const res = { statusCode: 0, headers: {}, setHeader(k, v) { this.headers[k.toLowerCase()] = v; }, end(b) { resolve({ status: this.statusCode, headers: this.headers, body: b }); } };
@@ -90,6 +94,24 @@ const lds = (b) => [...b.matchAll(/<script type="application\/ld\+json">([\s\S]*
   ok("the sitemap is XML", r.status === 200 && /application\/xml/.test(r.headers["content-type"]) && r.body.startsWith("<?xml"));
   ok("it lists open listings and their categories, not finished ones", r.body.includes("-" + I1 + "</loc>") && r.body.includes("/item/pikachu-promo-" + I2 + "</loc>") && !r.body.includes(I3) && !r.body.includes(I4) &&
     r.body.includes("/c/trading-cards</loc>") && !r.body.includes("/c/home-kitchen"));
+}
+{
+  const idx = await call(trade, {});
+  ok("/trade lists every way to trade", idx.status === 200 && trade.ORDER.every((s) => idx.body.includes('href="/trade/' + s + '"')));
+  const pages = await Promise.all(trade.ORDER.map((s) => call(trade, { page: s })));
+  const titles = pages.map((r) => (/<title>([^<]*)<\/title>/.exec(r.body) || [])[1]), descs = pages.map((r) => meta(r.body, "description"));
+  ok("each way-to-trade page has its own title, description, h1 and canonical address",
+    pages.every((r, i) => r.status === 200 && /<h1>[^<]+<\/h1>/.test(r.body) && r.body.includes('<link rel="canonical" href="https://www.dottrader.app/trade/' + trade.ORDER[i] + '">')) &&
+    new Set(titles).size === titles.length && new Set(descs).size === descs.length && descs.every((d) => d && d.length <= 200), descs.map((d) => d && d.length).join(","));
+  ok("…with questions marked up for search, and a way to start", pages.every((r) => lds(r.body).some((x) => x["@type"] === "FAQPage" && x.mainEntity.length >= 2) && r.body.includes('href="/app#post"')));
+  const nftPage = pages[trade.ORDER.indexOf("nft-swap-cross-chain")].body, poke = pages[trade.ORDER.indexOf("pokemon-cards")].body;
+  ok("the NFT page shows NFTs up for trade, with their artwork", nftPage.includes("Wiiide #8240") && nftPage.includes('src="/og/art/' + I5 + '.png"') && !nftPage.includes("Pikachu promo"));
+  ok("the Pokémon page shows only cards that are Pokémon", !poke.includes("Wiiide") && !poke.includes("Pikachu promo") && /Be the first/.test(poke));
+  ok("an unknown way to trade is a 404", (await call(trade, { page: "nope" })).status === 404);
+  const r = await call(sitemap, {});
+  ok("the sitemap lists the ways to trade", r.body.includes("/trade</loc>") && trade.ORDER.every((s) => r.body.includes("/trade/" + s + "</loc>")));
+  const n = await call(cat, { cat: "nfts" });
+  ok("the NFTs page talks about NFTs, not posting", /across chains/.test(meta(n.body, "description")) && !/by post/.test(meta(n.body, "description")));
 }
 {
   // The board builds the same addresses as the server.

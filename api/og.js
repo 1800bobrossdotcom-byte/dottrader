@@ -1,4 +1,5 @@
-// Dot Trading Post — a listing's link-preview image: /og/item/<id>.png, 1200×630.
+// Dot Trading Post — a listing's link-preview image: /og/item/<id>.png, 1200×630; and its artwork
+// alone at /og/art/<id>.png.
 //
 // X, Discord, iMessage and the rest only show a real PNG or JPEG at a web address. A listing's
 // artwork may be a photo, an IPFS file, or an NFT whose image lives on chain as an SVG inside the
@@ -113,6 +114,15 @@ module.exports = async function handler(req, res) {
     src = meta && meta.image;
   }
   const art = await artwork(src);
+  // /og/art/<id>.png: just the artwork, for the listing tiles on public pages (NFTs have no photos).
+  if (q.art) {
+    const m = art && /^data:([^;]+);base64,(.*)$/.exec(art);
+    if (!m) return fail(404);
+    res.statusCode = 200;
+    res.setHeader("content-type", m[1]);
+    res.setHeader("cache-control", "public, s-maxage=604800, stale-while-revalidate=2592000");
+    return res.end(Buffer.from(m[2], "base64"));
+  }
   const { ImageResponse } = await import("@vercel/og");
   const draw = async (a) => Buffer.from(await new ImageResponse(card(it, a, owner), { width: W, height: H, fonts: fonts(), emoji: "twemoji" }).arrayBuffer());
   let png;
