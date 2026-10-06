@@ -388,3 +388,39 @@ h2 { font-family:var(--display); font-weight:700; font-size:28px; letter-spacing
 .tag.local { background:var(--orange); color:var(--ink); display:inline-flex; align-items:center; gap:6px; }
 .tag.local s { width:8px; height:8px; border-radius:50% 50% 50% 0; transform:rotate(-45deg); background:var(--ink); display:block; }
 .localnote { margin:0; padding:9px 12px; border:2px solid var(--ink); border-radius:6px; background:#FFE7CF; font-size:13.5px; }
+
+/* profile button in the header, and the profile page */
+.profbtn { display:inline-flex; align-items:center; gap:8px; border:var(--bw) solid var(--ink); background:var(--card); color:var(--ink); padding:4px 13px 4px 4px; border-radius:999px; cursor:pointer; font-size:13px; font-weight:700; box-shadow:3px 3px 0 var(--ink); transition:transform .08s, box-shadow .08s; max-width:200px; }
+.profbtn:hover { transform:translate(-1px,-1px); box-shadow:4px 4px 0 var(--ink); }
+.profbtn[aria-pressed="true"] { background:var(--yellow); }
+.profbtn .av { --c:var(--pink); width:26px; height:26px; }
+.profbtn .pn { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.profhead { display:flex; align-items:center; gap:16px; margin:8px 0 6px; }
+.profhead h2 { font-family:var(--display); font-weight:700; font-size:clamp(24px,4vw,34px); letter-spacing:-.02em; margin:0; overflow-wrap:anywhere; }
+.profhead .signedas { margin:2px 0 0; }
+.av.big { --c:var(--pink); width:64px; height:64px; font-size:28px; border-width:var(--bw); box-shadow:var(--sh); }
+.panel { background:var(--card); border:var(--bw) solid var(--ink); border-radius:var(--r); padding:4px 18px 18px; box-shadow:var(--sh); margin:18px 0; }
+.panel > .sub { margin:16px 0 14px; }
+.kinds { display:grid; gap:10px; padding:12px 14px; border:2px dashed var(--line-soft); border-radius:6px; }
+.kinds .tick input:disabled + span { opacity:.45; }
+.tick.big { font-size:16px; }
+@media (max-width: 640px) { .profbtn .pn { display:none; } .profbtn { padding:4px; } }
+
+/* profile button in the header, and the profile page */
+.profbtn { display:inline-flex; align-items:center; gap:8px; border:var(--bw) solid var(--ink); background:var(--card); color:var(--ink); padding:4px 13px 4px 4px; border-radius:999px; cursor:pointer; font-size:13px; font-weight:700; box-shadow:3px 3px 0 var(--ink); transition:transform .08s, box-shadow .08s; max-width:200px; }
+.profbtn:hover { transform:translate(-1px,-1px); box-shadow:4px 4px 0 var(--ink); }
+.profbtn[aria-pressed="true"] { background:var(--yellow); }
+.profbtn .av { --c:var(--pink); width:26px; height:26px; }
+.profbtn .pn { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.profhead { display:flex; align-items:center; gap:16px; margin:8px 0 6px; }
+.profhead h2 { font-family:var(--display); font-weight:700; font-size:clamp(24px,4vw,34px); letter-spacing:-.02em; margin:0; overflow-wrap:anywhere; }
+.profhead .signedas { margin:2px 0 0; }
+.av.big { --c:var(--pink); width:64px; height:64px; font-size:28px; border-width:var(--bw); box-shadow:var(--sh); }
+.panel { background:var(--card); border:var(--bw) solid var(--ink); border-radius:var(--r); padding:4px 18px 18px; box-shadow:var(--sh); margin:18px 0; }
+.panel > .sub { margin:16px 0 14px; }
+.kinds { display:grid; gap:10px; padding:12px 14px; border:2px dashed var(--line-soft); border-radius:6px; }
+.kinds .tick input:disabled + span { opacity:.45; }
+.tick.big { font-size:16px; }
+@media (max-width: 640px) { .profbtn .pn { display:none; } .profbtn { padding:4px; } }
+.f .kinds .tick, .f .tick.big { font-family:var(--body); text-transform:none; letter-spacing:0; font-size:14.5px; font-weight:600; }
+.f .tick.big { font-size:16px; }

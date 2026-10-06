@@ -1119,6 +1119,12 @@ $$;
 -- prompt an email that was due anyway, and each email is recorded so it can never go twice.
 
 alter table public.profiles add column if not exists email_notify boolean not null default true;
+-- Which kinds of email, under that switch. A kind set to false is off; anything missing is on.
+-- Kinds: offers, trades (accepted, no-shows), messages, matches (saved searches, mutual matches),
+-- reminders (ship-by).
+alter table public.profiles add column if not exists email_prefs jsonb not null default '{}';
+alter table public.profiles drop constraint if exists profiles_email_prefs_object;
+alter table public.profiles add constraint profiles_email_prefs_object check (jsonb_typeof(email_prefs) = 'object');
 
 -- What has been sent. Written only by the notify function (service role); no policies.
 create table if not exists public.notifications_sent (

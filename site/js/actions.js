@@ -57,7 +57,6 @@ $("profForm").addEventListener("submit", function (e) {
     id: uid, name: $("p-name").value.trim() || null,
     area: $("p-area").value.trim(), note: $("p-note").value.trim(), updated_at: new Date().toISOString()
   };
-  if (caps.notify) rec.email_notify = $("p-notify").checked;
   if (pendingLoc !== undefined) { rec.lat = pendingLoc ? pendingLoc.lat : null; rec.lng = pendingLoc ? pendingLoc.lng : null; }
   sb.from("profiles").upsert(rec).then(function (r) {
     if (r.error) {
@@ -67,6 +66,30 @@ $("profForm").addEventListener("submit", function (e) {
     pendingLoc = undefined; toast("Profile saved."); load();
   });
 });
+
+/* ---- email settings: saved as you tick ---- */
+function paintNotify(p) {
+  var prefs = (p && p.email_prefs) || {};
+  $("p-notify").checked = !p || p.email_notify !== false;
+  Array.prototype.forEach.call(document.querySelectorAll("#p-kinds input"), function (c) { c.checked = prefs[c.dataset.pref] !== false; c.disabled = !$("p-notify").checked; });
+}
+function saveNotify() {
+  if (!uid) return;
+  var prefs = {};
+  Array.prototype.forEach.call(document.querySelectorAll("#p-kinds input"), function (c) { prefs[c.dataset.pref] = c.checked; c.disabled = !$("p-notify").checked; });
+  var st = $("notifState"); st.textContent = "Saving\u2026";
+  sb.from("profiles").upsert({ id: uid, email_notify: $("p-notify").checked, email_prefs: prefs, updated_at: new Date().toISOString() }).then(function (r) {
+    if (r.error && /email_prefs/.test(r.error.message || "")) {
+      // An older project has only the one switch.
+      return sb.from("profiles").upsert({ id: uid, email_notify: $("p-notify").checked, updated_at: new Date().toISOString() }).then(function (r2) {
+        st.textContent = r2.error ? "Couldn\u2019t save \u2014 try again." : "Saved."; });
+    }
+    st.textContent = r.error ? "Couldn\u2019t save \u2014 try again." : "Saved.";
+    if (!r.error && profiles[uid]) { profiles[uid].email_notify = $("p-notify").checked; profiles[uid].email_prefs = prefs; }
+  });
+}
+$("p-notify").addEventListener("change", saveNotify);
+Array.prototype.forEach.call(document.querySelectorAll("#p-kinds input"), function (c) { c.addEventListener("change", saveNotify); });
 
 function openEdit(it) {
   var veil = document.createElement("div"); veil.className = "veil";
@@ -171,13 +194,12 @@ function load() {
     bondsBy = {}; (r[6].error ? [] : (r[6].data || [])).forEach(function (b) { (bondsBy[b.offer_id] = bondsBy[b.offer_id] || []).push(b); });
     payouts = r[7].error ? [] : (r[7].data || []);
     profiles = {}; (r[2].data || []).forEach(function (p) { profiles[p.id] = p; });
-    if (uid && !profTouched) { profTouched = true; $("profWrap").open = !(profiles[uid] && profiles[uid].name); }
     if (uid) paintLoc();
     if (uid && profiles[uid]) {
       if (!$("p-name").value) $("p-name").value = profiles[uid].name || "";
       if (!$("p-area").value) $("p-area").value = profiles[uid].area || "";
       if (!$("p-note").value) $("p-note").value = profiles[uid].note || "";
-      if (!profNotifySet) { profNotifySet = true; $("p-notify").checked = profiles[uid].email_notify !== false; }
+      if (!profNotifySet) { profNotifySet = true; paintNotify(profiles[uid]); }
     }
     render();
     loadMatches();
@@ -189,14 +211,19 @@ function load() {
 /* ---- arriving from a listing's own page: /app#item=<id> or /app#cat=<category> ---- */
 var linkTo = (function () {
   // Read now: this file loads before the sign-in client, which may tidy the address once it starts.
-  var h = location.hash || "", m = /[#&]item=([0-9a-f-]{36})/.exec(h), c = /[#&]cat=([^&]+)/.exec(h);
+  var h = location.hash || "", m = /[#&]item=([0-9a-f-]{36})/.exec(h), c = /[#&]cat=([^&]+)/.exec(h), t = /^#(mine|activity|profile|post)$/.exec(h);
   var cat = null; try { cat = c ? decodeURIComponent(c[1]) : null; } catch (e) {}
-  return m || cat ? { item: m ? m[1] : null, cat: cat } : null;
+  return m || cat || t ? { item: m ? m[1] : null, cat: cat, tab: t ? t[1] : null } : null;
 })();
 function followLink() {
   if (!linkTo) return;
   var l = linkTo; linkTo = null;
   try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {}
+  // Links in emails open a tab: /app#mine, /app#profile, /app#activity.
+  if (l.tab) {
+    if (l.tab === "activity") return show("activity");
+    return uid ? show(l.tab) : needAccount("Sign in to see that.", function () { show(l.tab); });
+  }
   if (l.cat && CAT_HUE[l.cat]) { filter.cat = l.cat; syncCats(); show("browse"); render(); }
   if (!l.item) return;
   var have = items.filter(function (x) { return x.id === l.item; })[0];

@@ -188,10 +188,10 @@ function enter(session) {
   if (signedIn) {
     try { localStorage.setItem("dtp-has-account", "1"); } catch (e) {}
     loadSeen();
-    $("meName").textContent = "· " + myEmail;
+    $("meName").textContent = "Signed in as " + myEmail;
     show("browse");
   } else {
-    $("post").hidden = true; $("mine").hidden = true; $("activity").hidden = true; $("browse").hidden = false;
+    $("post").hidden = true; $("mine").hidden = true; $("activity").hidden = true; $("profile").hidden = true; $("browse").hidden = false;
   }
   var then = signedIn ? afterAuth : null; afterAuth = null;
   load().then(function () {

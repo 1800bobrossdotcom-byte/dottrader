@@ -28,7 +28,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="css/board.css?v=5">
+<link rel="stylesheet" href="css/board.css?v=7">
 </head>
 <body>
 
@@ -36,6 +36,7 @@
   <div class="top-in">
     <a class="brand" href="/"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M9 5h11a15 15 0 0 1 0 30H9z" fill="#FFD23F" stroke="#121212" stroke-width="3" stroke-linejoin="round"/><circle cx="20" cy="20" r="5.5" fill="#E8392B" stroke="#121212" stroke-width="3"/></svg><span class="t">Dot Trading Post<small>BARTER BOARD</small></span></a>
     <div class="me" id="me" hidden>
+      <button class="profbtn" type="button" id="profBtn" title="Your profile and email settings"><span class="av" id="profAv" aria-hidden="true">?</span><span class="pn" id="profName">Profile</span></button>
       <button class="wal" type="button" id="connectBtn" title="Connect a wallet to list or offer digital assets"><s></s><span id="walletState">Connect wallet</span></button>
       <button class="linkbtn" id="signOut" title="Signs out of your Dot Trading Post account on this device. Your wallet link is separate — click the wallet pill to unlink it.">Sign out of account</button>
     </div>
@@ -164,26 +165,7 @@
       </div>
       <div class="ledger" id="myLedger"></div>
       <p class="hint" style="margin:0;font-size:13px;color:var(--muted)">Dots are earned by trading and by the other side pressing their dot for you. Nobody can hand themselves one.</p>
-      <details class="more" id="profWrap">
-        <summary>Your profile <span class="signedas" id="meName"></span></summary>
-        <form class="f" id="profForm" style="display:grid;gap:12px">
-          <div class="rowf">
-            <div><label for="p-name">Your name <span class="hint">— what traders see</span></label><input id="p-name" maxlength="40" placeholder="Priya"></div>
-            <div><label for="p-area">Where you trade <span class="hint">— earns a dot</span></label><input id="p-area" maxlength="60" placeholder="North Leeds"></div>
-          </div>
-          <div><label for="p-note">How you like to swap</label><input id="p-note" maxlength="80" placeholder="Happy to post, prefer meeting up"></div>
-          <div id="p-locwrap"><label>Location <span class="hint">— for “near me” and the map · rounded to about a kilometre, never your address</span></label>
-            <div class="acts"><button class="btn ghost" type="button" id="locBtn">Use my location</button>
-              <button class="btn ghost" type="button" id="locFind">Find from the area above</button>
-              <span class="hint" id="locState">Not set</span><button class="linkbtn" type="button" id="locClear" hidden>clear</button></div></div>
-          <label class="tick" id="p-notifywrap" hidden><input type="checkbox" id="p-notify" checked> <span>Email me about offers, messages, matches and ship-by reminders</span></label>
-          <div><button class="btn" type="submit">Save profile</button></div>
-        </form>
-        <div class="f" style="border-top:2px dashed var(--line-soft);padding-top:14px;margin-top:4px">
-          <label for="np-pass">Password <span class="hint">— optional · lets you sign back in without waiting for an email link</span></label>
-          <div class="acts"><input id="np-pass" type="password" autocomplete="new-password" minlength="8" placeholder="At least 8 characters" style="flex:1 1 220px;width:auto"><button class="btn ghost" type="button" id="npBtn">Set password</button></div>
-        </div>
-      </details>
+      <div class="acts"><button class="btn ghost" type="button" data-go="profile">Edit profile &amp; email settings</button></div>
     </div>
 
     <div id="lookWrap" hidden>
@@ -209,6 +191,49 @@
     <div class="empty" id="myItemsEmpty">Nothing posted yet. <br><button class="btn ok" type="button" data-go="post">Post your first item</button></div>
   </section>
 
+  <section id="profile" hidden>
+    <div class="profhead">
+      <span class="av big" id="profAvBig" aria-hidden="true">?</span>
+      <div><h2 id="profTitle">Your profile</h2><p class="signedas" id="meName"></p></div>
+    </div>
+    <div class="panel">
+      <div class="sub">About you</div>
+        <form class="f" id="profForm" style="display:grid;gap:12px">
+          <div class="rowf">
+            <div><label for="p-name">Your name <span class="hint">— what traders see</span></label><input id="p-name" maxlength="40" placeholder="Priya"></div>
+            <div><label for="p-area">Where you trade <span class="hint">— earns a dot</span></label><input id="p-area" maxlength="60" placeholder="North Leeds"></div>
+          </div>
+          <div><label for="p-note">How you like to swap</label><input id="p-note" maxlength="80" placeholder="Happy to post, prefer meeting up"></div>
+          <div id="p-locwrap"><label>Location <span class="hint">— for “near me” and the map · rounded to about a kilometre, never your address</span></label>
+            <div class="acts"><button class="btn ghost" type="button" id="locBtn">Use my location</button>
+              <button class="btn ghost" type="button" id="locFind">Find from the area above</button>
+              <span class="hint" id="locState">Not set</span><button class="linkbtn" type="button" id="locClear" hidden>clear</button></div></div>
+          <div><button class="btn" type="submit">Save profile</button></div>
+        </form>
+    </div>
+    <div class="panel" id="p-notifywrap" hidden>
+      <div class="sub">Email notifications</div>
+      <div class="f" id="notifForm" style="display:grid;gap:10px">
+        <label class="tick big"><input type="checkbox" id="p-notify" checked> <span>Send me emails</span></label>
+        <div class="kinds" id="p-kinds">
+          <label class="tick"><input type="checkbox" data-pref="offers" checked> <span>New offers on my listings</span></label>
+          <label class="tick"><input type="checkbox" data-pref="trades" checked> <span>Trade updates <span class="hint">— an offer accepted, a trade closed</span></span></label>
+          <label class="tick"><input type="checkbox" data-pref="messages" checked> <span>Messages from traders <span class="hint">— at most one an hour per trade</span></span></label>
+          <label class="tick"><input type="checkbox" data-pref="matches" checked> <span>Matches <span class="hint">— new listings that fit what I'm looking for</span></span></label>
+          <label class="tick"><input type="checkbox" data-pref="reminders" checked> <span>Ship-by reminders <span class="hint">— the day before a trade is due</span></span></label>
+        </div>
+        <p class="hint" style="margin:0" id="notifState">Changes save as you tick.</p>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="sub">Sign-in</div>
+        <div class="f" >
+          <label for="np-pass">Password <span class="hint">— optional · lets you sign back in without waiting for an email link</span></label>
+          <div class="acts"><input id="np-pass" type="password" autocomplete="new-password" minlength="8" placeholder="At least 8 characters" style="flex:1 1 220px;width:auto"><button class="btn ghost" type="button" id="npBtn">Set password</button></div>
+        </div>
+    </div>
+  </section>
+
   <section id="activity" hidden>
     <p class="actstats" id="actStats"></p>
     <div id="myHistWrap" hidden>
@@ -228,22 +253,22 @@
 <!-- Pinned by hash: if a CDN ever served a different file, the browser would refuse to run it. -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js" integrity="sha384-Rj26LVGvoeRVR6+mwQmFfcR3QOBEwT+ZmuCWpuiqeTzJpCs0ER4ITAWGb4Hiy3Ok" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js" integrity="sha384-Htz1SE4Sl5aitpvFgr2j0sfsGUIuSXI6t8hEyrlQ93zflEF3a29bH2AvkUROUw7J" crossorigin="anonymous"></script>
-<script src="js/core.js?v=5"></script>
-<script src="js/assets.js?v=5"></script>
-<script src="js/state.js?v=5"></script>
-<script src="js/ui.js?v=5"></script>
-<script src="js/post.js?v=5"></script>
-<script src="js/wallet.js?v=5"></script>
-<script src="js/cards.js?v=5"></script>
-<script src="js/protect.js?v=5"></script>
-<script src="js/messages.js?v=5"></script>
-<script src="js/board.js?v=5"></script>
-<script src="js/history.js?v=5"></script>
-<script src="js/match.js?v=5"></script>
-<script src="js/map.js?v=5"></script>
-<script src="js/verify.js?v=5"></script>
-<script src="js/actions.js?v=5"></script>
-<script src="js/auth.js?v=5"></script>
-<script src="js/boot.js?v=5"></script>
+<script src="js/core.js?v=6"></script>
+<script src="js/assets.js?v=6"></script>
+<script src="js/state.js?v=6"></script>
+<script src="js/ui.js?v=6"></script>
+<script src="js/post.js?v=6"></script>
+<script src="js/wallet.js?v=6"></script>
+<script src="js/cards.js?v=6"></script>
+<script src="js/protect.js?v=6"></script>
+<script src="js/messages.js?v=6"></script>
+<script src="js/board.js?v=6"></script>
+<script src="js/history.js?v=6"></script>
+<script src="js/match.js?v=6"></script>
+<script src="js/map.js?v=6"></script>
+<script src="js/verify.js?v=6"></script>
+<script src="js/actions.js?v=6"></script>
+<script src="js/auth.js?v=6"></script>
+<script src="js/boot.js?v=6"></script>
 </body>
 </html>

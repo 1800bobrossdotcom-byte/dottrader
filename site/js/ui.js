@@ -43,10 +43,11 @@ function dotRow(n) {
 }
 
 function show(which) {
-  ["browse", "post", "mine", "activity"].forEach(function (k) {
+  ["browse", "post", "mine", "activity", "profile"].forEach(function (k) {
     $(k).hidden = k !== which;
-    $("t-" + k).setAttribute("aria-selected", String(k === which));
+    if ($("t-" + k)) $("t-" + k).setAttribute("aria-selected", String(k === which));
   });
+  $("profBtn").setAttribute("aria-pressed", String(which === "profile"));
   render();
 }
 ["browse", "post", "mine", "activity"].forEach(function (k) {
@@ -60,16 +61,17 @@ $("postCta").addEventListener("click", function () {
   show("post"); setTimeout(function () { $("f-title").focus(); }, 30);
 });
 function openProfile() {
-  show("mine"); $("profWrap").open = true;
+  show("profile");
   setTimeout(function () { $("p-name").focus(); $("p-name").scrollIntoView({ block: "center", behavior: "smooth" }); }, 30);
 }
 $("nudgeGo").addEventListener("click", openProfile);
+$("profBtn").addEventListener("click", function () { show("profile"); window.scrollTo(0, 0); });
 document.addEventListener("click", function (e) {
   var go = e.target && e.target.getAttribute && e.target.getAttribute("data-go");
   if (!go) return;
   if (go === "clear") { filter.cat = ""; filter.q = ""; filter.radius = 0; $("q").value = ""; $("radius").value = "0"; syncCats(); render(); return; }
-  if (!uid && (go === "post" || go === "loc" || go === "mine")) return needAccount("Make an account to post. It takes a minute.", function () { show(go === "loc" ? "mine" : go); });
-  if (go === "loc") { show("mine"); $("profWrap").open = true; setTimeout(function () { $("locBtn").scrollIntoView({ block: "center", behavior: "smooth" }); }, 30); return; }
+  if (!uid && (go === "post" || go === "loc" || go === "mine" || go === "profile")) return needAccount("Make an account to post. It takes a minute.", function () { show(go === "loc" ? "profile" : go); });
+  if (go === "loc") { show("profile"); setTimeout(function () { $("locBtn").scrollIntoView({ block: "center", behavior: "smooth" }); }, 30); return; }
   show(go);
 });
 

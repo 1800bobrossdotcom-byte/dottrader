@@ -39,6 +39,12 @@ function renderInner() {
         : '<strong>No matches</strong>Nothing here fits that search. Try another word, widen the distance, or clear the filter.<br><button class="btn ghost" type="button" data-go="clear">Clear filters</button>');
   var myName = profiles[uid] && profiles[uid].name;
   $("nudge").hidden = !(uid && (!myName || /^Trader [0-9A-F]{4}$/.test(myName)));
+  if (uid) {
+    var ini = (myName || myEmail || "?").charAt(0).toUpperCase();
+    $("profAv").textContent = ini; $("profAvBig").textContent = ini;
+    $("profName").textContent = myName || "Profile";
+    $("profTitle").textContent = myName || "Your profile";
+  }
 
   var myItems = uid ? items.filter(function (it) { return it.owner_id === uid && it.status !== "removed"; }) : [];
   var inc = uid ? offers.filter(function (o) { return o.owner_id === uid; }) : [];

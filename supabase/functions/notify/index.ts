@@ -41,9 +41,14 @@ async function claim(key: string, userId: string, kind: string) {
   return Array.isArray(rows) && rows.length > 0;
 }
 
-async function recipient(userId: string) {
-  const p = await one(`profiles?id=eq.${userId}&select=name,email_notify`);
+// Each kind of email answers to one of the settings a trader can switch off in their profile.
+const PREF: Record<string, string> = { offer: "offers", accepted: "trades", noshow: "trades", message: "messages", search: "matches", mutual: "matches", shipby: "reminders" };
+
+async function recipient(userId: string, kind: string) {
+  const p = await one(`profiles?id=eq.${userId}&select=name,email_notify,email_prefs`);
   if (p && p.email_notify === false) return null;
+  const prefs = (p?.email_prefs ?? {}) as Record<string, unknown>;
+  if (PREF[kind] && prefs[PREF[kind]] === false) return null;
   const r = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${userId}`, { headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` } });
   if (!r.ok) return null;
   const u = await r.json();
@@ -61,7 +66,7 @@ function page(headline: string, lines: string[], cta: string, href: string) {
 ${lines.map((l) => `<tr><td style="padding:10px 26px 0;font-family:Helvetica,Arial,sans-serif;font-size:15px;line-height:1.5;color:#4b4740;">${l}</td></tr>`).join("")}
 <tr><td style="padding:20px 26px 0;"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td style="background:#ffd23f;border:3px solid #121212;border-radius:999px;">
 <a href="${href}" style="display:inline-block;padding:11px 22px;font-family:Helvetica,Arial,sans-serif;font-size:12.5px;font-weight:bold;letter-spacing:1.5px;text-transform:uppercase;color:#121212;text-decoration:none;">${esc(cta)}</a></td></tr></table></td></tr>
-<tr><td style="padding:20px 26px 22px;font-family:Helvetica,Arial,sans-serif;font-size:12px;line-height:1.5;color:#8c867a;">You get these because you trade on Dot Trading Post. Turn them off under My trades → Your profile.</td></tr>
+<tr><td style="padding:20px 26px 22px;font-family:Helvetica,Arial,sans-serif;font-size:12px;line-height:1.5;color:#8c867a;">You get these because you trade on Dot Trading Post. <a href="${SITE}/app#profile" style="color:#8c867a;">Choose which emails you get</a>.</td></tr>
 </table></td></tr></table>`;
 }
 
@@ -75,14 +80,14 @@ async function send(to: { email: string }, subject: string, html: string, text: 
 
 // One email: claim the key first, so two racing calls can't both send.
 async function tell(userId: string, key: string, kind: string, subject: string, headline: string, lines: string[], cta: string, href: string) {
-  const to = await recipient(userId);
+  const to = await recipient(userId, kind);
   if (!to) return 0;
   if (!(await claim(key, userId, kind))) return 0;
-  await send(to, subject, page(headline, lines, cta, href), [headline, ...lines.map((l) => l.replace(/<[^>]+>/g, ""))].join("\n\n") + `\n\n${cta}: ${href}`);
+  await send(to, subject, page(headline, lines, cta, href), [headline, ...lines.map((l) => l.replace(/<[^>]+>/g, ""))].join("\n\n") + `\n\n${cta}: ${href}\n\nChoose which emails you get: ${SITE}/app#profile`);
   return 1;
 }
 
-const board = `${SITE}/app`;
+const board = `${SITE}/app#mine`;
 const item = (id: string) => `${SITE}/item/${id}`;
 const day = (iso: string) => new Date(iso).toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric", timeZone: "UTC" });
 

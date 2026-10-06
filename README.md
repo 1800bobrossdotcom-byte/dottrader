@@ -114,8 +114,9 @@ supabase/functions/verify-item/index.ts   Edge Function that scores a proof phot
    `supabase/functions/notify/index.ts`, and turn **Verify JWT off** for it. Add the secret
    `RESEND_API_KEY`. Optional: `NOTIFY_FROM` (default `Dot Trading Post <hello@dottrader.app>`) and
    `SITE_URL`. Database → Extensions: turn on `pg_net` and `pg_cron`, then run `setup.sql` again so
-   the triggers and the daily ship-by reminder can find them. Each trader can switch emails off
-   in their profile.
+   the triggers and the daily ship-by reminder can find them. Each trader chooses which emails
+   they get on their profile page (new offers, trade updates, messages, matches, ship-by
+   reminders), and every email links straight there.
 9. For the swap fee: put the wallet that should receive it in `swapFee.recipient` in
    `site/config.js`. Empty means swaps are free. Per-chain amounts are in the same place.
 

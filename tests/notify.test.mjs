@@ -66,5 +66,15 @@ ok("an unknown id sends nothing", j.sent === 0);
 ok("a malformed id sends nothing", j.sent === 0);
 [s, j] = await call({ kind: "drop-tables", id: null });
 ok("an unknown kind sends nothing", j.sent === 0);
-ok("every email has a plain-text part and the opt-out line", emails.every(e => e.text && /Turn them off/.test(e.html)));
+ok("every email has a plain-text part and a link to the email settings", emails.every(e => e.text && /app#profile/.test(e.html) && /app#profile/.test(e.text)));
+ok("emails about a trade open My trades", emails.filter(e => /offer|message|accepted/i.test(e.subject)).every(e => /app#mine/.test(e.html)));
+// Per-kind settings: Alice turns off message emails but keeps offers.
+T.profiles[0].email_prefs = { messages: false };
+T.messages.push({ id: "66666666-6666-6666-6666-666666666666", offer_id: "33333333-3333-3333-3333-333333333333", from_id: B, body: "Next hour" });
+const hourAgo = T.notifications_sent.filter(r => !/^message:/.test(r.key)); T.notifications_sent.length = 0; T.notifications_sent.push(...hourAgo);
+[s, j] = await call({ kind: "message", id: "66666666-6666-6666-6666-666666666666" });
+ok("a kind switched off isn't sent", j.sent === 0);
+T.offers.push({ id: "77777777-7777-7777-7777-777777777777", item_id: "11111111-1111-1111-1111-111111111111", owner_id: A, from_id: B, give: "Game Boy", msg: "", status: "pending" });
+[s, j] = await call({ kind: "offer", id: "77777777-7777-7777-7777-777777777777" });
+ok("…while the others still are", j.sent === 1 && last().to[0] === "alice@x.com");
 console.log(res.join("\n")); if (res.some(r => !r.startsWith("PASS"))) process.exitCode = 1;
