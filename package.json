@@ -1,37 +1,7 @@
 {
-  "name": "dottrader",
-  "version": "0.1.0",
-  "description": "A multi-agent trading swarm whose only objective is to end every cycle holding more $DOT (Base) than it started with.",
-  "type": "module",
+  "name": "dot-trading-post",
+  "version": "1.0.0",
   "private": true,
-  "engines": {
-    "node": ">=22"
-  },
-  "scripts": {
-    "setup": "node scripts/setup.mjs",
-    "check": "node scripts/check.mjs",
-    "rpc": "node scripts/rpc.mjs",
-    "swarm": "tsx src/main.ts",
-    "swarm:once": "tsx src/main.ts --once",
-    "snapshot": "tsx src/cli/snapshot.ts",
-    "report": "tsx src/cli/report.ts",
-    "site": "tsx src/cli/report.ts && npx -y serve site",
-    "typecheck": "tsc --noEmit",
-    "test": "vitest run",
-    "close-lots": "tsx src/cli/close-lots.ts",
-    "repair-ledger": "tsx src/cli/repair-ledger.ts",
-    "swing:paper": "tsx src/cli/swing-paper.ts",
-    "wallets": "tsx src/cli/watch-wallets.ts",
-    "probe-pools": "tsx src/cli/probe-pools.ts"
-  },
-  "dependencies": {
-    "viem": "^2.31.0",
-    "zod": "^3.24.0"
-  },
-  "devDependencies": {
-    "@types/node": "^22.10.0",
-    "tsx": "^4.19.0",
-    "typescript": "^5.7.0",
-    "vitest": "^3.0.0"
-  }
+  "description": "A barter board. Post what you have, say what you want, swap.",
+  "license": "MIT"
 }
