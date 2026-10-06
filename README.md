@@ -65,19 +65,53 @@ supabase/schema.sql    tables, row-level security, the two transition functions
 supabase/wallets.sql   wallet + cross-chain asset columns
 supabase/privacy.sql   offers readable only by their two parties
 supabase/storage.sql   photo bucket and upload policies
+supabase/verify.sql    proof-of-item table, badge view, withdraw + cancel
+supabase/functions/verify-item/index.ts   Edge Function that scores a proof photo
 ```
 
 **Setup**
 
 1. Create a Supabase project.
-2. Run `supabase/schema.sql` first, then `wallets.sql`, `privacy.sql` and `storage.sql`, in the SQL editor.
+2. Run `supabase/schema.sql` first, then `wallets.sql`, `privacy.sql`, `storage.sql`
+   and `verify.sql`, in the SQL editor.
 3. Under Authentication → URL Configuration, set the Site URL to your domain and
    add `/app` to the redirect URLs.
 4. Put the project URL and the **anon public** key into `site/config.js`.
+5. For Proof of item: Edge Functions → Deploy a new function, name it
+   `verify-item`, paste `supabase/functions/verify-item/index.ts`. Then Edge
+   Functions → Secrets → add `ANTHROPIC_API_KEY`. The function reads
+   `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` from the environment Supabase
+   gives it; nothing needs pasting for those.
+
+Without step 5 the board still works; the "Prove you have it" button simply
+reports that the checker is unavailable.
 
 The anon key belongs in the page — that's what it's for. Row-level security in
 the schema is what protects the data, which is why the `service_role` key must
 never appear in this repository.
+
+## Proof of item
+
+Lifted from cbay. The board hands the lister a one-time four-character code
+from an alphabet with no look-alikes. They write their name, today's date and
+the code on paper by hand, photograph it next to the item, and a vision model
+scores six things: name, date, code character by character, item in frame,
+real pen on real paper, original photo rather than a screenshot. The code is
+the part that cannot be prepared in advance; the handwriting is the part that
+cannot be copied from a listing elsewhere.
+
+The code is readable only by its owner, and only the Edge Function — holding the
+service role — can mark a row verified. The page can ask; it cannot award.
+Everyone else sees the public half through the `verification_badges` view: the
+proof photo and a one-line read, never the code.
+
+## Leaving a trade
+
+An offer you made can be withdrawn while it is pending. An agreed trade can be
+cancelled by either side, but only while that side has not yet pressed their
+dot — pressing says "mine arrived", and you do not get to say that and then
+walk away. The item goes back on the board and the cancellation stays on the
+record, visible to the other party.
 
 ## A note on the schema
 

@@ -88,6 +88,16 @@
   .tag.ok { color:var(--dot); border-color:var(--dot); background:var(--dot-soft); }
   .tag.mine { color:var(--have); border-color:var(--have); background:var(--have-soft); }
   .tag.hold { color:var(--want); border-color:var(--want); background:var(--want-soft); }
+  .tag.proof { color:var(--dot); border-color:var(--dot); background:var(--dot-soft); text-decoration:none; display:inline-flex; align-items:center; gap:5px; }
+  .tag.proof s { width:6px; height:6px; border-radius:50%; background:var(--dot); display:block; text-decoration:none; }
+  .tag.off { color:var(--faint); border-style:dashed; }
+  .proofnote { margin:0; padding:0 0 0 20px; display:grid; gap:8px; font-size:14px; color:var(--muted); }
+  .proofnote b { color:var(--ink); font-weight:600; }
+  .code { font-family:var(--mono); font-size:30px; letter-spacing:.32em; font-weight:700; color:var(--ink); background:var(--paper); border:1px dashed var(--line); border-radius:10px; padding:10px 14px 10px 20px; display:inline-block; }
+  .verdict { border-radius:8px; padding:10px 12px; font-size:13.5px; }
+  .verdict.ok { background:var(--dot-soft); color:var(--dot); }
+  .verdict.bad { background:var(--want-soft); color:var(--want); }
+  .verdict ul { margin:6px 0 0; padding-left:18px; }
 
   .dots { display:inline-flex; align-items:center; gap:3px; }
   .dots s { width:7px; height:7px; border-radius:50%; background:var(--dot-off); display:block; }
@@ -395,7 +405,7 @@
   function shortAddr(a) { return a ? a.slice(0, 6) + "…" + a.slice(-4) : ""; }
 
   var sb = null, uid = null, myEmail = "";
-  var items = [], offers = [], signals = [], profiles = {};
+  var items = [], offers = [], signals = [], profiles = {}, badges = {};
   var filter = { q: "", cat: "" };
 
   function esc(s) {
@@ -657,6 +667,12 @@
     h += '<div class="foot"><span class="who"><b>' + esc(who(it.owner_id)) + "</b>" + dotRow(sc.dots) +
       "<span>" + esc(ago(it.created_at)) + (prof && prof.area ? " · " + esc(prof.area) : "") + "</span></span>";
     if (it.cat) h += '<span class="tag">' + esc(it.cat) + "</span>";
+    var badge = badges[it.id];
+    if (badge) {
+      h += '<a class="tag proof" href="' + esc(badge.proof_url) + '" target="_blank" rel="noopener" title="' +
+        esc(badge.summary || "The lister photographed a handwritten note with a one-time code next to this item.") +
+        '"><s></s>Proof of item</a>';
+    }
     if (traded) h += '<span class="tag ok">Traded</span>';
     else if (pledged) h += '<span class="tag hold">Agreed — awaiting delivery</span>';
     else if (mine) h += '<span class="tag mine">' + (pending ? pending + (pending === 1 ? " offer" : " offers") : "Yours") + "</span>";
@@ -669,6 +685,13 @@
       b.className = "btn"; b.type = "button"; b.textContent = "Offer a trade";
       b.addEventListener("click", function () { openOffer(it); });
       foot.appendChild(b);
+    }
+    if (mine && opts.manage && !traded && !pledged && !badge) {
+      var ver = document.createElement("button");
+      ver.className = "btn ghost"; ver.type = "button"; ver.textContent = "Prove you have it";
+      ver.title = "Photograph a handwritten note with a one-time code next to the item. Verified listings carry a badge.";
+      ver.addEventListener("click", function () { openVerify(it); });
+      foot.appendChild(ver);
     }
     if (mine && opts.manage && !traded && !pledged) {
       var del = document.createElement("button");
@@ -707,8 +730,17 @@
       acts.appendChild(yes); acts.appendChild(no);
     } else if (o.status === "pending") {
       var w = document.createElement("span"); w.className = "tag"; w.textContent = "waiting"; acts.appendChild(w);
+      if (dir === "out") {
+        var wd = document.createElement("button");
+        wd.className = "btn ghost"; wd.type = "button"; wd.textContent = "Withdraw";
+        wd.addEventListener("click", function () { call("withdraw_offer", o.id, "Offer withdrawn."); });
+        acts.appendChild(wd);
+      }
     } else if (o.status === "declined") {
       var d = document.createElement("span"); d.className = "tag"; d.textContent = "declined"; acts.appendChild(d);
+    } else if (o.status === "cancelled") {
+      var c = document.createElement("span"); c.className = "tag off";
+      c.textContent = "cancelled by " + (o.cancelled_by === uid ? "you" : who(o.cancelled_by)); acts.appendChild(c);
     }
 
     if (o.status === "agreed" || o.status === "done") {
@@ -729,6 +761,16 @@
         var hint = document.createElement("span"); hint.className = "presshint";
         hint.textContent = theirs ? who(other) + " has pressed theirs" : "Both of you press to close it";
         acts.appendChild(hint);
+        if (o.status === "agreed") {
+          var cx = document.createElement("button");
+          cx.className = "btn ghost"; cx.type = "button"; cx.textContent = "Cancel trade";
+          cx.title = "Walk away before anything has arrived. The item goes back on the board; the cancellation stays on record.";
+          cx.addEventListener("click", function () {
+            if (!confirm("Cancel this trade? " + who(other) + " will see that you did, and the item goes back on the board.")) return;
+            call("cancel_trade", o.id, "Trade cancelled. The item is back on the board.");
+          });
+          acts.appendChild(cx);
+        }
       }
     }
     el.appendChild(acts);
@@ -838,6 +880,83 @@
     });
   }
 
+  /* ---- proof of item ----
+     The board hands out a one-time code; the owner writes name + date + code by hand and photographs
+     it beside the item; an Edge Function has a vision model read it and writes the verdict. Nothing
+     in this page can mark anything verified — it can only ask. */
+  function openVerify(it) {
+    var me = profiles[uid] || {};
+    if (!me.name) { toast("Set your name in Your standing first — the note has to carry it."); return; }
+    var veil = document.createElement("div"); veil.className = "veil";
+    var box = document.createElement("div"); box.className = "sheet f";
+    box.innerHTML = '<h3>Prove you have it</h3><p class="hint" style="margin:0">Getting you a code…</p>' +
+      '<div class="acts"><button class="btn ghost" type="button" data-x>Close</button></div>';
+    veil.appendChild(box); document.body.appendChild(veil);
+    var close = function () { veil.remove(); };
+    box.querySelector("[data-x]").addEventListener("click", close);
+    veil.addEventListener("click", function (e) { if (e.target === veil) close(); });
+
+    sb.rpc("start_verification", { p_item: it.id }).then(function (r) {
+      if (r.error) { close(); return fail(r.error); }
+      var v = (r.data || [])[0];
+      if (!v) { close(); return toast("Could not start a proof."); }
+      var today = new Date().toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+      box.innerHTML =
+        "<h3>Prove you have it</h3>" +
+        '<p class="hint" style="margin:0">Write these three lines on a piece of paper, <b>by hand</b>, and photograph the note sitting next to <b style="color:var(--ink)">' +
+          esc(it.title) + "</b>. The code is new every time and lasts 24 hours, so it cannot be prepared in advance.</p>" +
+        '<ol class="proofnote"><li>Your name: <b>' + esc(me.name) + "</b></li><li>Today\u2019s date: <b>" + esc(today) + "</b></li>" +
+          '<li>This code: <div style="margin-top:6px"><span class="code">' + esc(v.code) + "</span></div></li></ol>" +
+        '<div><label for="v-photo">Photo of the note and the item</label>' +
+          '<input id="v-photo" type="file" accept="image/jpeg,image/png,image/webp" capture="environment">' +
+          '<p class="hint" style="margin:6px 0 0">One original photo from your camera. Screenshots and printed notes do not pass.</p></div>' +
+        '<div id="v-out" hidden></div>' +
+        '<div class="acts"><button class="btn ghost" type="button" data-x>Close</button></div>';
+      box.querySelector("[data-x]").addEventListener("click", close);
+      var out = box.querySelector("#v-out"), input = box.querySelector("#v-photo");
+      var say = function (html, kind) { out.hidden = false; out.className = "verdict" + (kind ? " " + kind : ""); out.innerHTML = html; };
+
+      input.addEventListener("change", function (e) {
+        var f = (e.target.files || [])[0]; e.target.value = "";
+        if (!f) return;
+        input.disabled = true;
+        say("Uploading the photo…");
+        var url;
+        window.DTP_PHOTOS.upload(sb, uid, f).then(function (u) {
+          url = u;
+          say("Reading the note… this takes about ten seconds.");
+          return sb.auth.getSession();
+        }).then(function (sr) {
+          var token = sr.data && sr.data.session && sr.data.session.access_token;
+          if (!token) throw new Error("Your session expired — sign in again.");
+          return fetch(cfg.url + "/functions/v1/verify-item", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token, "apikey": cfg.anonKey },
+            body: JSON.stringify({ verification_id: v.id, proof_url: url })
+          });
+        }).then(function (res) {
+          return res.json().then(function (j) { return { status: res.status, body: j || {} }; });
+        }).then(function (r) {
+          if (r.status >= 400) throw new Error(r.body.error || "The check did not go through.");
+          var b = r.body;
+          if (b.passed) {
+            say("<b>Verified.</b> " + esc(b.summary || "") + " Your listing now carries a Proof of item badge.", "ok");
+            toast("Proof of item — verified.");
+            load();
+            return;
+          }
+          var why = (b.flags || []).slice(0, 4).map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("");
+          say("<b>Not verified this time.</b> " + esc(b.summary || "") + (why ? "<ul>" + why + "</ul>" : "") +
+            '<div class="acts" style="margin-top:10px"><button class="btn" type="button" data-again>New code, try again</button></div>', "bad");
+          out.querySelector("[data-again]").addEventListener("click", function () { close(); openVerify(it); });
+        }).catch(function (err) {
+          say(esc(err && err.message ? err.message : "That did not go through."), "bad");
+          input.disabled = false;
+        });
+      });
+    });
+  }
+
   function fail(e) {
     console.error(e);
     toast(e && e.message ? e.message.slice(0, 90) : "That did not save.");
@@ -899,7 +1018,9 @@
       sb.from("offers").select("*").order("created_at", { ascending: false }).limit(800),
       sb.from("profiles").select("*").limit(800),
       // The public half of every offer: enough to count dots, nothing anyone said.
-      sb.from("offer_signals").select("*").limit(2000)
+      sb.from("offer_signals").select("*").limit(2000),
+      // Which items carry a proof: the photo and the one-line read, never the code.
+      sb.from("verification_badges").select("*").limit(2000)
     ]).then(function (r) {
       if (r[0].error || r[1].error || r[2].error) {
         note("Could not load the board. If this is the first run, check the schema was applied in Supabase.", "bad");
@@ -909,6 +1030,8 @@
       // If privacy.sql has not been run yet the view is missing; fall back to what we can see so
       // the board still works, just with dots counted only from the viewer's own trades.
       signals = r[3].error ? offers : (r[3].data || []);
+      // Missing until verify.sql has been run; the board just shows no badges.
+      badges = {}; (r[4].error ? [] : (r[4].data || [])).forEach(function (b) { badges[b.item_id] = b; });
       profiles = {}; (r[2].data || []).forEach(function (p) { profiles[p.id] = p; });
       if (uid && profiles[uid]) {
         if (!$("p-name").value) $("p-name").value = profiles[uid].name || "";
