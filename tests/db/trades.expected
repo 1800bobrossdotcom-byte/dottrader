@@ -5,7 +5,7 @@ S4 mark sent twice: refused: you already marked your side sent
 S5 cancel after sending: refused: you already marked your side sent
 S6 claim before deadline: refused: the ship-by date has not passed yet
 S7 outsider claims: refused: you are not part of this trade
-S8 non-sender claims against sender: refused: mark your own side sent first
+S8 non-sender claims against sender: refused: mark your own side sent first (an NFT send counts once the chain confirms it)
 S9 sender claims after deadline: ok
 S10 result: cancelled, no-show recorded against bob: true
 S11 item back on board: open

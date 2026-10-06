@@ -10,6 +10,15 @@
 // with a person counts in full, the second half, and the rest not at all; a vouch counts once per
 // person; a trade earns more when it was tracked both ways or swapped on chain; and walking away
 // from an agreed trade costs three. Farming needs many genuinely different, finished partners.
+// The same rules as side_proven and trade_verified in trades.sql: a side is proven when it was
+// posted with tracking or moved on chain and confirmed there (sends from before checking existed
+// count as before); a trade is verified when it was a confirmed swap or both sides were proven.
+function sideProven(how, st) { return how === "post" || (how === "onchain" && (st || "verified") === "verified"); }
+function tradeVerified(o) {
+  if (typeof o.verified === "boolean") return o.verified;
+  var swap = !!(o.swap_tx || o.swapped) && (o.owner_tx_status || "verified") === "verified" && (o.from_tx_status || "verified") === "verified";
+  return swap || (sideProven(o.owner_sent_how, o.owner_tx_status) && sideProven(o.from_sent_how, o.from_tx_status));
+}
 function scoreOf(id) {
   if (!id) return { dots: 0, trades: 0, partners: 0, verified: 0, vouches: 0, profile: 0, noShows: 0, tradePts: 0, verifiedPts: 0 };
   // Other traders: the database adds up their record (scale.sql) by these same rules. The viewer's
@@ -25,7 +34,7 @@ function scoreOf(id) {
     if (o.status === "done") {
       trades++;
       var k = per[partner] = (per[partner] || 0) + 1, w = k === 1 ? 1 : k === 2 ? 0.5 : 0;
-      var ver = !!(o.swapped || (o.owner_sent_how === "post" && o.from_sent_how === "post"));
+      var ver = tradeVerified(o);
       if (ver) verified++;
       tradePts += 2 * w; if (ver) verifiedPts += w;
     }

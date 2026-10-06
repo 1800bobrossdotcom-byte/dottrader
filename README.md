@@ -168,6 +168,16 @@ an order that offers anything but the listed item or asks for anything but the o
 the filler's browser checks the order again before the wallet opens. Approvals go to OpenSea's
 conduit, which most holders have already approved.
 
+**Checked on chain.** Marking an NFT side "sent on chain" is a claim until the chain confirms
+it. The notify Edge Function reads the transaction from that NFT's own chain and checks that it
+succeeded, happened after the trade was agreed, and moved exactly that NFT (contract and token)
+to the other side's linked wallet — for a swap, both NFTs in the one transaction. Until then the
+side shows "checking"; confirmed, it shows "NFT delivered on chain"; otherwise the send is undone
+with the reason, so it can be marked again. A transaction can't be used for two trades, an
+unchecked send can't close someone out as a no-show, and only a confirmed one counts toward a
+verified trade (a tracked parcel one way and a confirmed NFT the other counts, too). No bridge is
+involved: each NFT stays on its own chain.
+
 **Bonds.** Either side can put a hold on their card through Stripe. A completed trade releases
 the hold and keeps the fee; a called-off trade releases it in full; a no-show forfeits theirs to
 the other side. Stripe holds the money, never this database. Card holds last about a week, which
@@ -217,10 +227,11 @@ record, visible to the other party.
 ```
 npm run test:bond   # the bond Edge Function, with Stripe, the database and sign-in faked
 npm run test:notify # the notify Edge Function, with Resend and the database faked
+npm run test:delivery # checking on-chain deliveries, with the chains' RPCs faked
 npm run test:pages  # listing, category and sitemap pages, with the database faked
 npm run test:browser # the board in headless Chromium under the live security policy: posting,
                     # offers, matching, protected trades and swaps, activity, local pickup
-npm run test:db     # 128 checks on a throwaway Postgres: the trade state machine, permissions,
+npm run test:db     # 141 checks on a throwaway Postgres: the trade state machine, permissions,
                     # forged requests, and accepts racing on the same listings (needs PGHOST etc.)
 ```
 

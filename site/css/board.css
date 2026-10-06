@@ -440,3 +440,5 @@ h2 { font-family:var(--display); font-weight:700; font-size:28px; letter-spacing
 .who .rec { font-family:var(--mono); font-size:10.5px; letter-spacing:.04em; color:var(--muted); background:var(--sunk); border-radius:4px; padding:1px 6px; white-space:nowrap; }
 .morewrap { display:flex; justify-content:center; margin:22px 0 6px; }
 .morewrap .btn { min-width:200px; }
+.sideline .ok { color:var(--green); font-weight:700; }
+.sideline .ok a { color:inherit; }

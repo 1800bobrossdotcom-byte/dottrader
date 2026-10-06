@@ -32,7 +32,7 @@ function myFinished() {
   return offers.filter(function (o) { return o.status === "done"; }).map(function (o) {
     return { id: o.id, item_id: o.item_id, owner_id: o.owner_id, from_id: o.from_id, give: o.give, give_items: o.give_items || [],
       asset_kind: o.asset_kind, asset_chain: o.asset_chain, asset_contract: o.asset_contract, asset_token_id: o.asset_token_id,
-      done_at: o.done_at || o.created_at, swapped: !!o.swap_tx, tracked: o.owner_sent_how === "post" && o.from_sent_how === "post" };
+      done_at: o.done_at || o.created_at, swapped: !!o.swap_tx, tracked: tradeVerified(o) };
   }).sort(function (x, y) { return x.done_at < y.done_at ? 1 : -1; });
 }
 
@@ -61,7 +61,7 @@ function tradeRow(t) {
     '<div class="tpair"><span class="tp">' + (mineFrom ? right : left) + '</span><span class="arrow" aria-hidden="true"></span><span class="tp">' + (mineFrom ? left : right) + "</span></div>" +
     '<div class="tbody"><p class="tline"><b>' + esc(who(a)) + "</b> swapped " + aGave + " with <b>" + esc(who(b)) + "</b> for " + bGave + "</p>" +
       '<p class="tmeta"><time datetime="' + esc(t.done_at) + '" title="' + esc(when.toLocaleString()) + '">' + esc(ago(t.done_at)) + "</time>" +
-      (t.swapped ? '<span class="tag ok">Swapped on chain</span>' : t.tracked ? '<span class="tag ok">Tracked both ways</span>' : "") + "</p></div>";
+      (t.swapped ? '<span class="tag ok">Swapped on chain</span>' : t.tracked ? '<span class="tag ok">Verified both ways</span>' : "") + "</p></div>";
   return el;
 }
 

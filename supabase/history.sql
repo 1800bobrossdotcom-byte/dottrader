@@ -14,7 +14,7 @@ create view public.trade_history with (security_invoker = off) as
          o.asset_kind, o.asset_chain, o.asset_contract, o.asset_token_id,
          coalesce(o.done_at, o.created_at) as done_at,
          (o.swap_tx is not null) as swapped,
-         (o.owner_sent_how = 'post' and o.from_sent_how = 'post') as tracked
+         public.trade_verified(o.swap_tx, o.owner_sent_how, o.owner_tx_status, o.from_sent_how, o.from_tx_status) as tracked
   from public.offers o
   where o.status = 'done';
 grant select on public.trade_history to anon, authenticated;

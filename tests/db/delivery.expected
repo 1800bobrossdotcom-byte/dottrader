@@ -1,0 +1,13 @@
+D1 Alice marks her physical card "sent on chain": refused: your side of this trade isn't an NFT — mark it posted or handed over
+D2 Bob's NFT send is recorded as: checking, hash stored lowercase: true
+D3 the same transaction for another trade: refused: that transaction is already recorded for another trade
+D4 Bob records the verdict himself: refused: permission denied for function record_delivery
+D5 Bob closes Alice out on an unchecked send: refused: mark your own side sent first (an NFT send counts once the chain confirms it)
+D6 a rejected send is undone, with the reason: not sent / rejected / no transfer of this NFT to Alice's wallet in that transaction
+D7 Bob marks it again with the right transaction: ok
+D8 Alice can't close Bob out while his send is being checked: refused: they marked their side sent — this is not a no-show
+D9 the chain confirmed it: verified — NFT #7 reached 0xa1b2…c3d4 on Base
+D10 tracked card + confirmed NFT = a verified trade: true
+D11 and it counts in both records: 1,1
+D12 a send that's still being checked doesn't verify a trade: false
+D13 a trade from before checking existed still counts: true

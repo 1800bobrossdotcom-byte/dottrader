@@ -699,7 +699,40 @@ alter table public.offers
   add column if not exists defaulted_by     uuid,
   add column if not exists swap_order       jsonb,
   add column if not exists swap_sig         text,
-  add column if not exists swap_tx          text;
+  add column if not exists swap_tx          text,
+  -- An on-chain send is a claim until the chain confirms it. The notify Edge Function reads the
+  -- transaction and records here whether it really moved that NFT to the other side's wallet.
+  add column if not exists owner_tx_status  text,
+  add column if not exists owner_tx_note    text,
+  add column if not exists from_tx_status   text,
+  add column if not exists from_tx_note     text;
+alter table public.offers drop constraint if exists offers_tx_status;
+alter table public.offers add constraint offers_tx_status check (
+  (owner_tx_status is null or owner_tx_status in ('checking', 'verified', 'rejected')) and
+  (from_tx_status  is null or from_tx_status  in ('checking', 'verified', 'rejected')));
+create index if not exists offers_owner_ref_idx on public.offers (lower(owner_ref)) where owner_sent_how = 'onchain';
+create index if not exists offers_from_ref_idx on public.offers (lower(from_ref)) where from_sent_how = 'onchain';
+
+-- Whether a side's sending can be checked by someone other than the sender: posted with tracking,
+-- or moved on chain and confirmed there. (Sends from before checking existed have no status and
+-- keep counting as they did.) A finished trade is "verified" when it was a confirmed on-chain swap
+-- or both sides were proven this way — what earns the extra dot.
+create or replace function public.side_proven(how text, tx_status text) returns boolean
+language sql immutable as $$ select how = 'post' or (how = 'onchain' and coalesce(tx_status, 'verified') = 'verified') $$;
+create or replace function public.trade_verified(swap_tx text, owner_how text, owner_status text, from_how text, from_status text) returns boolean
+language sql immutable as $$
+  select (swap_tx is not null and coalesce(owner_status, 'verified') = 'verified' and coalesce(from_status, 'verified') = 'verified')
+      or (coalesce(public.side_proven(owner_how, owner_status), false) and coalesce(public.side_proven(from_how, from_status), false))
+$$;
+-- Whether a side counts as sent for closing a trade as a no-show: an on-chain send counts while it
+-- is being checked (it may be fine) but never once the chain says otherwise. For the person making
+-- the claim, only a confirmed one counts — you can't close someone out with an unchecked hash.
+create or replace function public.side_sent(sent_at timestamptz, how text, tx_status text, for_claimant boolean) returns boolean
+language sql immutable as $$
+  select sent_at is not null and (how is distinct from 'onchain'
+    or coalesce(tx_status, 'verified') = 'verified'
+    or (not for_claimant and tx_status = 'checking'))
+$$;
 
 alter table public.offers drop constraint if exists offers_sent_how;
 alter table public.offers add constraint offers_sent_how check (
@@ -733,13 +766,28 @@ begin
   end if;
   if p_how = 'post' and coalesce(btrim(p_ref), '') = '' then raise exception 'add the tracking number'; end if;
   if p_how = 'onchain' and coalesce(p_ref, '') !~ '^0x[0-9a-fA-F]{64}$' then raise exception 'add the transaction hash'; end if;
+  if p_how = 'onchain' then
+    -- Only an NFT can be sent on chain: the listing's for its owner, the offer's for the offerer.
+    if not exists (
+      select 1 from public.items it where it.id = o.item_id and (
+        (auth.uid() = o.owner_id and it.asset_kind in ('erc721', 'erc1155')) or
+        (auth.uid() = o.from_id and o.asset_kind in ('erc721', 'erc1155'))))
+    then raise exception 'your side of this trade isn''t an NFT — mark it posted or handed over'; end if;
+    if exists (select 1 from public.offers x where x.id <> p_offer and (
+         (x.owner_sent_how = 'onchain' and lower(x.owner_ref) = lower(p_ref)) or (x.from_sent_how = 'onchain' and lower(x.from_ref) = lower(p_ref))))
+    then raise exception 'that transaction is already recorded for another trade'; end if;
+  end if;
   if char_length(coalesce(p_ref, '')) > 80 or char_length(coalesce(p_carrier, '')) > 40 then raise exception 'too long'; end if;
   if auth.uid() = o.owner_id then
     if o.owner_sent_at is not null then raise exception 'you already marked your side sent'; end if;
-    update public.offers set owner_sent_at = now(), owner_sent_how = p_how, owner_carrier = nullif(btrim(p_carrier), ''), owner_ref = nullif(btrim(p_ref), '') where id = p_offer;
+    update public.offers set owner_sent_at = now(), owner_sent_how = p_how, owner_carrier = nullif(btrim(p_carrier), ''),
+      owner_ref = case when p_how = 'onchain' then lower(p_ref) else nullif(btrim(p_ref), '') end,
+      owner_tx_status = case when p_how = 'onchain' then 'checking' end, owner_tx_note = null where id = p_offer;
   elsif auth.uid() = o.from_id then
     if o.from_sent_at is not null then raise exception 'you already marked your side sent'; end if;
-    update public.offers set from_sent_at = now(), from_sent_how = p_how, from_carrier = nullif(btrim(p_carrier), ''), from_ref = nullif(btrim(p_ref), '') where id = p_offer;
+    update public.offers set from_sent_at = now(), from_sent_how = p_how, from_carrier = nullif(btrim(p_carrier), ''),
+      from_ref = case when p_how = 'onchain' then lower(p_ref) else nullif(btrim(p_ref), '') end,
+      from_tx_status = case when p_how = 'onchain' then 'checking' end, from_tx_note = null where id = p_offer;
   else
     raise exception 'you are not part of this trade';
   end if;
@@ -757,13 +805,15 @@ begin
   if o.status <> 'agreed' then raise exception 'only an agreed trade can be claimed'; end if;
   if o.ship_by is null or now() <= o.ship_by then raise exception 'the ship-by date has not passed yet'; end if;
   if auth.uid() = o.owner_id then
-    me_done := o.owner_sent_at is not null or o.confirm_owner; them_done := o.from_sent_at is not null or o.confirm_from; them := o.from_id;
+    me_done := public.side_sent(o.owner_sent_at, o.owner_sent_how, o.owner_tx_status, true) or o.confirm_owner;
+    them_done := public.side_sent(o.from_sent_at, o.from_sent_how, o.from_tx_status, false) or o.confirm_from; them := o.from_id;
   elsif auth.uid() = o.from_id then
-    me_done := o.from_sent_at is not null or o.confirm_from; them_done := o.owner_sent_at is not null or o.confirm_owner; them := o.owner_id;
+    me_done := public.side_sent(o.from_sent_at, o.from_sent_how, o.from_tx_status, true) or o.confirm_from;
+    them_done := public.side_sent(o.owner_sent_at, o.owner_sent_how, o.owner_tx_status, false) or o.confirm_owner; them := o.owner_id;
   else
     raise exception 'you are not part of this trade';
   end if;
-  if not me_done then raise exception 'mark your own side sent first'; end if;
+  if not me_done then raise exception 'mark your own side sent first (an NFT send counts once the chain confirms it)'; end if;
   if them_done then raise exception 'they marked their side sent — this is not a no-show'; end if;
   update public.offers set status = 'cancelled', cancelled_by = auth.uid(), defaulted_by = them where id = p_offer;
   update public.items set status = 'open' where (id = o.item_id or id = any (o.give_items)) and status = 'pledged';
@@ -819,6 +869,7 @@ begin
   new.owner_sent_at := null; new.owner_sent_how := null; new.owner_carrier := null; new.owner_ref := null;
   new.from_sent_at := null;  new.from_sent_how := null;  new.from_carrier := null;  new.from_ref := null;
   new.swap_order := null; new.swap_sig := null; new.swap_tx := null; new.done_at := null;
+  new.owner_tx_status := null; new.owner_tx_note := null; new.from_tx_status := null; new.from_tx_note := null;
   new.created_at := now();
   return new;
 end $$;
@@ -832,7 +883,9 @@ create view public.offer_signals with (security_invoker = off) as
   select id, item_id, owner_id, from_id, status, confirm_owner, confirm_from, defaulted_by,
          -- how each side sent (not the tracking numbers) and whether it was an on-chain swap: what
          -- makes a finished trade "verified" when dots are counted
-         owner_sent_how, from_sent_how, (swap_tx is not null) as swapped, created_at
+         owner_sent_how, from_sent_how, (swap_tx is not null) as swapped, created_at,
+         owner_tx_status, from_tx_status,
+         public.trade_verified(swap_tx, owner_sent_how, owner_tx_status, from_sent_how, from_tx_status) as verified
   from public.offers;
 grant select on public.offer_signals to anon, authenticated;
 
@@ -880,10 +933,46 @@ begin
   if auth.uid() <> o.from_id then raise exception 'the person filling the swap records it'; end if;
   if o.status <> 'agreed' or o.swap_order is null then raise exception 'there is no swap to record'; end if;
   if coalesce(p_tx, '') !~ '^0x[0-9a-fA-F]{64}$' then raise exception 'bad transaction hash'; end if;
-  update public.offers set swap_tx = lower(p_tx),
+  if exists (select 1 from public.offers x where x.id <> p_offer and (lower(x.swap_tx) = lower(p_tx)
+       or (x.owner_sent_how = 'onchain' and lower(x.owner_ref) = lower(p_tx)) or (x.from_sent_how = 'onchain' and lower(x.from_ref) = lower(p_tx))))
+  then raise exception 'that transaction is already recorded for another trade'; end if;
+  -- Both NFTs should move in this one transaction; the chain is checked for each before either counts.
+  update public.offers set swap_tx = lower(p_tx), owner_tx_status = 'checking', from_tx_status = 'checking', owner_tx_note = null, from_tx_note = null,
     owner_sent_at = coalesce(owner_sent_at, now()), owner_sent_how = coalesce(owner_sent_how, 'onchain'), owner_ref = coalesce(owner_ref, lower(p_tx)),
     from_sent_at  = coalesce(from_sent_at, now()),  from_sent_how  = coalesce(from_sent_how, 'onchain'),  from_ref  = coalesce(from_ref, lower(p_tx))
   where id = p_offer;
+end $$;
+
+-- What the chain said about an on-chain send. Only the notify Edge Function (service role) calls
+-- this. A rejected send is undone, so the person can mark it again with the right transaction; if
+-- it was a swap, the swap record goes too.
+create or replace function public.record_delivery(p_offer uuid, p_side text, p_ok boolean, p_note text)
+returns void language plpgsql security definer set search_path = public as $$
+declare o public.offers;
+begin
+  select * into o from public.offers where id = p_offer for update;
+  if not found or p_side not in ('owner', 'from') then return; end if;
+  if p_side = 'owner' then
+    if o.owner_tx_status is distinct from 'checking' then return; end if;
+    if p_ok then update public.offers set owner_tx_status = 'verified', owner_tx_note = left(p_note, 200) where id = p_offer;
+    else update public.offers set owner_tx_status = 'rejected', owner_tx_note = left(p_note, 200),
+      owner_sent_at = null, owner_sent_how = null, owner_ref = null,
+      swap_tx = case when swap_tx = o.owner_ref then null else swap_tx end where id = p_offer;
+    end if;
+  else
+    if o.from_tx_status is distinct from 'checking' then return; end if;
+    if p_ok then update public.offers set from_tx_status = 'verified', from_tx_note = left(p_note, 200) where id = p_offer;
+    else update public.offers set from_tx_status = 'rejected', from_tx_note = left(p_note, 200),
+      from_sent_at = null, from_sent_how = null, from_ref = null,
+      swap_tx = case when swap_tx = o.from_ref then null else swap_tx end where id = p_offer;
+    end if;
+  end if;
+end $$;
+revoke execute on function public.record_delivery(uuid, text, boolean, text) from public, anon, authenticated;
+do $$ begin
+  if exists (select 1 from pg_roles where rolname = 'service_role') then
+    grant execute on function public.record_delivery(uuid, text, boolean, text) to service_role;
+  end if;
 end $$;
 
 -- ---------------------------------------------------------------- bonds
@@ -1461,6 +1550,20 @@ drop trigger if exists notify_offers on public.offers;
 create trigger notify_offers after insert or update of status on public.offers
   for each row execute function public.notify_offers();
 
+-- An on-chain send waiting to be checked: ask the function to read the chain now.
+create or replace function public.notify_delivery() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if (new.owner_tx_status = 'checking' and old.owner_tx_status is distinct from 'checking')
+     or (new.from_tx_status = 'checking' and old.from_tx_status is distinct from 'checking') then
+    perform public.notify_event('verify_tx', new.id);
+  end if;
+  return null;
+end $$;
+drop trigger if exists notify_delivery on public.offers;
+create trigger notify_delivery after update of owner_tx_status, from_tx_status on public.offers
+  for each row execute function public.notify_delivery();
+
 create or replace function public.notify_messages() returns trigger
 language plpgsql security definer set search_path = public as $$
 begin perform public.notify_event('message', new.id); return null; end $$;
@@ -1499,6 +1602,9 @@ do $$ begin
   create extension if not exists pg_cron;
   perform cron.unschedule(jobid) from cron.job where jobname = 'dtp-shipby';
   perform cron.schedule('dtp-shipby', '7 14 * * *', $job$ select public.notify_event('shipby_sweep', null) $job$);
+  -- Transactions the chain hadn't confirmed yet when they were first checked: look again.
+  perform cron.unschedule(jobid) from cron.job where jobname = 'dtp-verify';
+  perform cron.schedule('dtp-verify', '*/10 * * * *', $job$ select public.notify_event('verify_sweep', null) where exists (select 1 from public.offers where owner_tx_status = 'checking' or from_tx_status = 'checking') $job$);
 exception when others then raise notice 'pg_cron not available here: no ship-by reminders';
 end $$;
 
@@ -1522,7 +1628,7 @@ create view public.trade_history with (security_invoker = off) as
          o.asset_kind, o.asset_chain, o.asset_contract, o.asset_token_id,
          coalesce(o.done_at, o.created_at) as done_at,
          (o.swap_tx is not null) as swapped,
-         (o.owner_sent_how = 'post' and o.from_sent_how = 'post') as tracked
+         public.trade_verified(o.swap_tx, o.owner_sent_how, o.owner_tx_status, o.from_sent_how, o.from_tx_status) as tracked
   from public.offers o
   where o.status = 'done';
 grant select on public.trade_history to anon, authenticated;
@@ -1555,7 +1661,7 @@ language sql stable security definer set search_path = public as $$
     select i.id, o.id as offer_id, o.status, o.created_at,
            case when o.from_id = i.id then o.owner_id else o.from_id end as partner,
            case when o.from_id = i.id then o.confirm_owner else o.confirm_from end as vouched_me,
-           (o.swap_tx is not null or (o.owner_sent_how = 'post' and o.from_sent_how = 'post')) as ver
+           public.trade_verified(o.swap_tx, o.owner_sent_how, o.owner_tx_status, o.from_sent_how, o.from_tx_status) as ver
     from ids i join public.offers o on o.from_id = i.id or o.owner_id = i.id
   ),
   done as (

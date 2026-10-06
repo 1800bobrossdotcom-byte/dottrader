@@ -45,7 +45,7 @@ async function run(signedIn, noHistory) {
   ok("Activity lists finished trades, newest first", all.length === 2 && all[0] === "Bob swapped Charizard holo with Cara for N64 + 4 games", all.join(" | "));
   ok("…told from my side when it was mine", all[1] === "You swapped Switch OLED with Bob for Steam Deck", all[1]);
   ok("…with both sides' pictures, fetched when not on the board", (await p.$$eval("#allHist .trow:first-child .tp img", x => x.length)) === 2);
-  ok("…and how it was verified", /Tracked both ways/.test(await p.textContent("#allHist .trow:first-child .tmeta")));
+  ok("…and how it was verified", /Verified both ways/.test(await p.textContent("#allHist .trow:first-child .tmeta")));
   const mine = await p.$$eval("#myHist .tline", x => x.map(e => e.textContent));
   ok("Your finished trades: only mine", mine.length === 1 && /^You swapped Switch OLED/.test(mine[0]), mine.join(" | "));
   ok("stats line counts trades and traders", /2 trades finished between 3 traders/.test(await p.textContent("#actStats")), await p.textContent("#actStats"));

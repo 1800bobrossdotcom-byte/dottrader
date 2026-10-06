@@ -23,12 +23,18 @@ function money(c) { return "$" + (c / 100).toFixed(c % 100 ? 2 : 0); }
 function sentLine(o, side, label) {
   var at = o[side + "_sent_at"], how = o[side + "_sent_how"], car = o[side + "_carrier"], ref = o[side + "_ref"];
   var pressed = side === "owner" ? o.confirm_owner : o.confirm_from;
+  var st = o[side + "_tx_status"], note = o[side + "_tx_note"];
   var h = '<div class="sideline"><b>' + esc(label) + "</b>";
-  if (!at) h += '<span class="no">' + (pressed ? "received theirs" : "not sent yet") + "</span>";
+  if (!at && st === "rejected") h += '<span class="no">couldn\u2019t confirm on chain \u2014 ' + esc(note || "") + ". Mark it sent again with the right transaction.</span>";
+  else if (!at) h += '<span class="no">' + (pressed ? "received theirs" : "not sent yet") + "</span>";
   else if (how === "in_person") h += "<span>handed over in person</span>";
   else if (how === "onchain") {
-    var it = itemById(o.item_id), ch = CHAINS[(it && it.asset_chain) || o.asset_chain];
-    h += "<span>sent on chain · " + (ch ? '<a href="' + ch.scan + "/tx/" + esc(ref) + '" target="_blank" rel="noopener">view transaction</a>' : esc(shortAddr(ref))) + "</span>";
+    // The owner sends the listed NFT, the offerer the offered one — each on its own chain.
+    var it = itemById(o.item_id), ch = CHAINS[side === "owner" ? it && it.asset_chain : o.asset_chain];
+    var link = ch ? '<a href="' + ch.scan + "/tx/" + esc(ref) + '" target="_blank" rel="noopener">view transaction</a>' : esc(shortAddr(ref));
+    h += st === "verified" ? '<span class="ok" title="' + esc(note || "") + '">\u2713 NFT delivered on chain · ' + link + "</span>"
+      : st === "checking" ? "<span>sent on chain · checking the chain\u2026 · " + link + "</span>"
+      : "<span>sent on chain · " + link + "</span>";
   } else {
     var base = (CARRIERS.filter(function (c) { return c[0] === car; })[0] || [])[1];
     h += "<span>posted" + (car ? " · " + esc(car) : "") + " · " + (base ? '<a href="' + base + encodeURIComponent(ref) + '" target="_blank" rel="noopener">' + esc(ref) + "</a>" : esc(ref)) + "</span>";
@@ -93,18 +99,22 @@ function protectEl(o, dir, other) {
 }
 
 function openSent(o) {
-  var local = !!(itemById(o.item_id) || {}).local_only;
+  var it0 = itemById(o.item_id) || {}, local = !!it0.local_only;
+  // Only an NFT can be sent on chain: the listing's if you listed it, the offer's if you offered it.
+  var mine = o.owner_id === uid ? it0 : o, nft = isNft(mine.asset_kind), ch = CHAINS[mine.asset_chain];
+  var them = who(o.owner_id === uid ? o.from_id : o.owner_id);
   var veil = document.createElement("div"); veil.className = "veil";
   var form = document.createElement("form"); form.className = "sheet f";
   form.innerHTML = "<h3>Mark your side sent</h3>" +
     '<div class="radios">' +
-      (local ? "" : '<label><input type="radio" name="how" value="post" checked> Posted, with tracking</label>') +
-      '<label><input type="radio" name="how" value="in_person"' + (local ? " checked" : "") + '> Handed over in person</label>' +
-      '<label><input type="radio" name="how" value="onchain"> Sent on chain</label></div>' +
+      (nft ? '<label><input type="radio" name="how" value="onchain" checked> Sent on chain</label>' : "") +
+      (local || nft ? "" : '<label><input type="radio" name="how" value="post" checked> Posted, with tracking</label>') +
+      (nft ? "" : '<label><input type="radio" name="how" value="in_person"' + (local ? " checked" : "") + '> Handed over in person</label>') + "</div>" +
     (local ? '<p class="localnote">Local pickup only \u2014 this trade is a meet-up, so there\u2019s no posting.</p>' : "") +
-    '<div id="s-post" class="rowf"' + (local ? " hidden" : "") + '><div><label for="s-car">Carrier</label><select id="s-car">' + CARRIERS.map(function (c) { return "<option>" + c[0] + "</option>"; }).join("") + "</select></div>" +
+    '<div id="s-post" class="rowf"' + (local || nft ? " hidden" : "") + '><div><label for="s-car">Carrier</label><select id="s-car">' + CARRIERS.map(function (c) { return "<option>" + c[0] + "</option>"; }).join("") + "</select></div>" +
       '<div><label for="s-ref">Tracking number</label><input id="s-ref" maxlength="80" autocomplete="off"></div></div>' +
-    '<div id="s-chain" hidden><label for="s-tx">Transaction hash</label><input id="s-tx" maxlength="66" placeholder="0x…" autocomplete="off"></div>' +
+    '<div id="s-chain"' + (nft ? "" : " hidden") + '><label for="s-tx">Transaction hash</label><input id="s-tx" maxlength="66" placeholder="0x…" autocomplete="off">' +
+      (nft ? '<p class="hint" style="margin:8px 0 0">Send the NFT to ' + esc(them) + "\u2019s linked wallet on " + esc(ch ? ch.name : "its chain") + ", then paste the transaction. Dot reads it on chain and confirms that exact NFT reached them. No bridge needed \u2014 each NFT stays on its own chain.</p>" : "") + "</div>" +
     '<p class="hint" style="margin:0">' + esc(who(o.owner_id === uid ? o.from_id : o.owner_id)) + " sees this straight away. Once it’s marked, you can’t cancel the trade — and if they never send theirs, you can close it as a no-show after the ship-by date.</p>" +
     '<div class="acts"><button class="btn ok" type="submit">Mark sent</button><button class="btn ghost" type="button" data-x>Cancel</button></div>';
   veil.appendChild(form); document.body.appendChild(veil);
@@ -122,7 +132,7 @@ function openSent(o) {
     if (h === "onchain" && !/^0x[0-9a-fA-F]{64}$/.test(ref)) return toast("That doesn’t look like a transaction hash.");
     sb.rpc("mark_sent", { p_offer: o.id, p_how: h, p_carrier: h === "post" ? form.querySelector("#s-car").value : "", p_ref: ref }).then(function (r) {
       if (r.error) return fail(r.error);
-      close(); toast("Marked sent."); load();
+      close(); toast(h === "onchain" ? "Marked sent \u2014 checking the chain now." : "Marked sent."); load();
     });
   });
 }

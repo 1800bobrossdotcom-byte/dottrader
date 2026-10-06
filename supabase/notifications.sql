@@ -75,6 +75,20 @@ drop trigger if exists notify_offers on public.offers;
 create trigger notify_offers after insert or update of status on public.offers
   for each row execute function public.notify_offers();
 
+-- An on-chain send waiting to be checked: ask the function to read the chain now.
+create or replace function public.notify_delivery() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if (new.owner_tx_status = 'checking' and old.owner_tx_status is distinct from 'checking')
+     or (new.from_tx_status = 'checking' and old.from_tx_status is distinct from 'checking') then
+    perform public.notify_event('verify_tx', new.id);
+  end if;
+  return null;
+end $$;
+drop trigger if exists notify_delivery on public.offers;
+create trigger notify_delivery after update of owner_tx_status, from_tx_status on public.offers
+  for each row execute function public.notify_delivery();
+
 create or replace function public.notify_messages() returns trigger
 language plpgsql security definer set search_path = public as $$
 begin perform public.notify_event('message', new.id); return null; end $$;
@@ -113,5 +127,8 @@ do $$ begin
   create extension if not exists pg_cron;
   perform cron.unschedule(jobid) from cron.job where jobname = 'dtp-shipby';
   perform cron.schedule('dtp-shipby', '7 14 * * *', $job$ select public.notify_event('shipby_sweep', null) $job$);
+  -- Transactions the chain hadn't confirmed yet when they were first checked: look again.
+  perform cron.unschedule(jobid) from cron.job where jobname = 'dtp-verify';
+  perform cron.schedule('dtp-verify', '*/10 * * * *', $job$ select public.notify_event('verify_sweep', null) where exists (select 1 from public.offers where owner_tx_status = 'checking' or from_tx_status = 'checking') $job$);
 exception when others then raise notice 'pg_cron not available here: no ship-by reminders';
 end $$;

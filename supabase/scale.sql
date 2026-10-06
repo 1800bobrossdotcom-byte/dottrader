@@ -20,7 +20,7 @@ language sql stable security definer set search_path = public as $$
     select i.id, o.id as offer_id, o.status, o.created_at,
            case when o.from_id = i.id then o.owner_id else o.from_id end as partner,
            case when o.from_id = i.id then o.confirm_owner else o.confirm_from end as vouched_me,
-           (o.swap_tx is not null or (o.owner_sent_how = 'post' and o.from_sent_how = 'post')) as ver
+           public.trade_verified(o.swap_tx, o.owner_sent_how, o.owner_tx_status, o.from_sent_how, o.from_tx_status) as ver
     from ids i join public.offers o on o.from_id = i.id or o.owner_id = i.id
   ),
   done as (

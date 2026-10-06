@@ -1,4 +1,4 @@
-// Dot Trading Post — email notifications.
+// Dot Trading Post — email notifications, and checking on-chain deliveries.
 //
 // Deploy: Supabase dashboard → Edge Functions → Deploy a new function → name it `notify`, paste this
 // file, and turn "Verify JWT" OFF (the database calls it, not a signed-in person). Then Edge
@@ -147,11 +147,120 @@ async function handle(kind: string, id: string | null) {
   return 0;
 }
 
+// ---------------------------------------------------------------- on-chain delivery
+//
+// "Sent on chain" is a claim until the chain confirms it. For each side marked that way and still
+// "checking", read the transaction from that chain's public RPC and confirm it succeeded, happened
+// after the trade was agreed, and moved exactly that NFT (contract + token id) to the OTHER side's
+// linked wallet. It doesn't insist the NFT came from the sender's linked wallet: if the right token
+// reached the right person, the side was delivered. The verdict goes to record_delivery, which only
+// the service role may call; a rejected send is undone so the person can mark it again.
+
+const RPC: Record<number, string> = {
+  1: "https://ethereum-rpc.publicnode.com", 8453: "https://mainnet.base.org", 42161: "https://arbitrum-one-rpc.publicnode.com",
+  10: "https://optimism-rpc.publicnode.com", 137: "https://polygon-bor-rpc.publicnode.com", 56: "https://bsc-rpc.publicnode.com",
+  43114: "https://avalanche-c-chain-rpc.publicnode.com", 7777777: "https://rpc.zora.energy",
+};
+const CHAIN_NAME: Record<number, string> = { 1: "Ethereum", 8453: "Base", 42161: "Arbitrum", 10: "Optimism", 137: "Polygon", 56: "BNB Chain", 43114: "Avalanche", 7777777: "Zora" };
+const T721 = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";   // Transfer(from, to, id)
+const T1155 = "0xc3d58168c5ae7397731d063d5bbf3d657854427343f4c083240f7aacaa2d0f62";  // TransferSingle(op, from, to, id, value)
+const T1155B = "0x4a39dc06d4c0dbc64b70af90fd698a233a518aa5d07e595d983b8c0526c8f7fb"; // TransferBatch(op, from, to, ids, values)
+const STALE_MS = 24 * 3600e3;  // a transaction the chain still doesn't know after a day isn't coming
+
+async function rpc(chain: number, method: string, params: unknown[]) {
+  const r = await fetch(RPC[chain], { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }) });
+  const j = await r.json();
+  if (j.error) throw new Error(`rpc ${method}: ${j.error.message ?? "error"}`);
+  return j.result;
+}
+const addrOf = (topic: string) => "0x" + String(topic).slice(-40).toLowerCase();
+const short = (a: string) => a.slice(0, 6) + "…" + a.slice(-4);
+function words(data: string) { const h = String(data || "0x").slice(2); const w: bigint[] = []; for (let i = 0; i + 64 <= h.length; i += 64) w.push(BigInt("0x" + h.slice(i, i + 64))); return w; }
+// TransferBatch data: offset(ids), offset(values), then each array as length + items.
+function batch(data: string) {
+  const w = words(data); if (w.length < 2) return { ids: [] as bigint[], values: [] as bigint[] };
+  const arr = (off: bigint) => { const i = Number(off / 32n), n = Number(w[i] ?? 0n); return w.slice(i + 1, i + 1 + n); };
+  return { ids: arr(w[0]), values: arr(w[1]) };
+}
+
+type Verdict = { state: "verified" | "rejected" | "pending"; note: string };
+export async function checkTransfer(a: { chain: number; contract: string; tokenId: string; kind: string }, tx: string, to: string, notBefore: number, whoTo: string): Promise<Verdict> {
+  if (!RPC[a.chain]) return { state: "rejected", note: "that chain isn't one the board can check" };
+  const receipt = await rpc(a.chain, "eth_getTransactionReceipt", [tx]);
+  if (!receipt) return { state: "pending", note: `not on ${CHAIN_NAME[a.chain]} yet` };
+  if (receipt.status !== "0x1") return { state: "rejected", note: "that transaction failed on chain, so nothing moved" };
+  const block = await rpc(a.chain, "eth_getBlockByNumber", [receipt.blockNumber, false]);
+  if (block && Number(BigInt(block.timestamp)) * 1000 < notBefore) return { state: "rejected", note: "that transaction happened before this trade was agreed" };
+  const contract = a.contract.toLowerCase(), id = BigInt(a.tokenId), want = to.toLowerCase();
+  let elsewhere = "", otherToken = false;
+  for (const l of receipt.logs ?? []) {
+    const t = (l.topics ?? []).map((x: string) => String(x).toLowerCase()), here = String(l.address).toLowerCase() === contract;
+    let rcpt = "", ids: bigint[] = [], amounts: bigint[] = [];
+    if (t[0] === T721 && t.length === 4) { rcpt = addrOf(t[2]); ids = [BigInt(t[3])]; amounts = [1n]; }
+    else if (t[0] === T1155 && t.length === 4) { const w = words(l.data); rcpt = addrOf(t[3]); ids = [w[0]]; amounts = [w[1] ?? 0n]; }
+    else if (t[0] === T1155B && t.length === 4) { const b = batch(l.data); rcpt = addrOf(t[3]); ids = b.ids; amounts = b.values; }
+    else continue;
+    const i = ids.findIndex((x) => x === id);
+    if (here && i >= 0 && amounts[i] > 0n) {
+      if (rcpt === want) return { state: "verified", note: `NFT #${a.tokenId.length > 12 ? short(a.tokenId) : a.tokenId} reached ${whoTo}'s wallet ${short(want)} on ${CHAIN_NAME[a.chain]}` };
+      elsewhere = rcpt;
+    } else if (rcpt === want) otherToken = true;
+  }
+  if (elsewhere) return { state: "rejected", note: `that NFT went to ${short(elsewhere)}, not ${whoTo}'s linked wallet` };
+  if (otherToken) return { state: "rejected", note: `a different token was sent to ${whoTo} — not the one in this trade` };
+  return { state: "rejected", note: `no transfer of this NFT to ${whoTo}'s linked wallet in that transaction` };
+}
+
+async function verifyOffer(offerId: string) {
+  const o = await one(`offers?id=eq.${offerId}&select=*`); if (!o || o.status !== "agreed" && o.status !== "done") return 0;
+  const it = await one(`items?id=eq.${o.item_id}&select=title,asset_kind,asset_chain,asset_contract,asset_token_id`);
+  const people = await db(`profiles?id=in.(${o.owner_id},${o.from_id})&select=id,name,wallet_address`) as Array<Record<string, any>>;
+  const p = (uid: string) => people.find((x) => x.id === uid) ?? {};
+  // Agreeing set the ship-by date four days out; a send can't be older than the agreement.
+  const agreedAt = o.ship_by ? new Date(o.ship_by).getTime() - 4 * 86400e3 - 10 * 60e3 : 0;
+  let n = 0;
+  for (const side of ["owner", "from"] as const) {
+    if (o[`${side}_sent_how`] !== "onchain" || o[`${side}_tx_status`] !== "checking") continue;
+    const asset = side === "owner" ? it : o, recipient = side === "owner" ? o.from_id : o.owner_id;
+    const to = String(p(recipient).wallet_address ?? ""), whoTo = String(p(recipient).name || "the other trader");
+    let v: Verdict;
+    if (!asset || !asset.asset_contract || !["erc721", "erc1155"].includes(asset.asset_kind)) v = { state: "rejected", note: "this side of the trade isn't an NFT" };
+    else if (!/^0x[0-9a-fA-F]{40}$/.test(to)) v = { state: "rejected", note: `${whoTo} has no wallet linked, so there's nowhere to check it arrived` };
+    else {
+      try { v = await checkTransfer({ chain: Number(asset.asset_chain), contract: asset.asset_contract, tokenId: String(asset.asset_token_id), kind: asset.asset_kind }, o[`${side}_ref`], to, agreedAt, whoTo); }
+      catch (e) { console.error("[verify]", (e as Error).message); continue; }  // the RPC hiccupped: the next sweep tries again
+    }
+    if (v.state === "pending") {
+      if (Date.now() - new Date(o[`${side}_sent_at`]).getTime() < STALE_MS) continue;
+      v = { state: "rejected", note: `that transaction isn't on ${CHAIN_NAME[Number(asset.asset_chain)] ?? "that chain"} — check the hash and the chain` };
+    }
+    await db("rpc/record_delivery", { method: "POST", body: { p_offer: o.id, p_side: side, p_ok: v.state === "verified", p_note: v.note } });
+    n++;
+    if (v.state === "verified" && RESEND_KEY) {
+      const sender = await nameOf(o[`${side}_id`]);
+      await tell(recipient, `delivered:${o.id}:${side}`, "accepted", `${sender}'s NFT arrived`, `${sender}'s NFT is in your wallet`,
+        [`Checked on chain: ${esc(v.note)}.`, "Once you've received everything, press your dot to finish the trade."], "Open the trade", board).catch(() => 0);
+    }
+  }
+  return n;
+}
+
+async function verifySweep() {
+  const rows = await db(`offers?or=(owner_tx_status.eq.checking,from_tx_status.eq.checking)&select=id&limit=50`) as Array<{ id: string }>;
+  let n = 0; for (const r of rows ?? []) n += await verifyOffer(r.id);
+  return n;
+}
+
 Deno.serve(async (req: Request) => {
-  if (req.method !== "POST") return json({ ok: true, live: !!RESEND_KEY });
-  if (!RESEND_KEY) return json({ error: "notifications are not switched on yet" }, 503);
+  if (req.method !== "POST") return json({ ok: true, live: !!RESEND_KEY, checks: true });
   let body: { kind?: string; id?: string | null };
   try { body = await req.json(); } catch { return json({ error: "bad request" }, 400); }
+  // Checking the chain doesn't need email switched on.
+  if (body.kind === "verify_tx" || body.kind === "verify_sweep") {
+    try { return json({ checked: body.kind === "verify_sweep" ? await verifySweep() : isId(body.id) ? await verifyOffer(String(body.id)) : 0 }); }
+    catch (e) { console.error("[verify]", (e as Error).message); return json({ error: "check failed" }, 502); }
+  }
+  if (!RESEND_KEY) return json({ error: "notifications are not switched on yet" }, 503);
   try { return json({ sent: await handle(String(body.kind ?? ""), body.id ?? null) }); }
   catch (e) { console.error("[notify]", (e as Error).message); return json({ error: "notify failed" }, 502); }
 });
