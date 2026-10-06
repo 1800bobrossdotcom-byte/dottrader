@@ -138,6 +138,18 @@
   .desc { margin:0; color:var(--muted); font-size:14px; overflow-wrap:anywhere; }
   .pics { display:grid; grid-template-columns:1fr; gap:4px; border:2px solid var(--ink); border-radius:6px; overflow:hidden; background:var(--ink); }
   .pics.many { grid-template-columns:1fr 1fr; }
+  .gallery { position:relative; border:2px solid var(--ink); border-radius:6px; overflow:hidden; background:var(--sunk); }
+  .gallery .track { display:flex; overflow-x:auto; scroll-snap-type:x mandatory; scrollbar-width:none; overscroll-behavior-x:contain; outline:none; }
+  .gallery .track::-webkit-scrollbar { display:none; }
+  .gallery .track:focus-visible { box-shadow:inset 0 0 0 3px var(--blue); }
+  .gallery img { flex:0 0 100%; width:100%; aspect-ratio:4/3; object-fit:cover; display:block; scroll-snap-align:center; scroll-snap-stop:always; background:var(--sunk); }
+  .gnav { position:absolute; top:50%; transform:translateY(-50%); width:34px; height:34px; border-radius:50%; border:2px solid var(--ink); background:var(--card); color:var(--ink); font-size:22px; line-height:26px; cursor:pointer; box-shadow:2px 2px 0 var(--ink); padding:0; }
+  .gnav.prev { left:8px; } .gnav.next { right:8px; }
+  .gnav:hover { background:var(--yellow); }
+  @media (hover:none) { .gnav { display:none; } }
+  .gdots { position:absolute; left:0; right:0; bottom:8px; display:flex; justify-content:center; gap:6px; pointer-events:none; }
+  .gdots s { width:8px; height:8px; border-radius:50%; background:rgba(255,252,244,.75); border:1.5px solid var(--ink); display:block; }
+  .gdots s.on { background:var(--yellow); }
   .pics img { width:100%; aspect-ratio:4/3; object-fit:cover; display:block; background:var(--sunk); }
   .sides { display:grid; grid-template-columns:1fr auto 1fr; gap:10px; align-items:stretch; }
   .side { min-width:0; border-radius:6px; padding:9px 11px; border:2px solid var(--ink); background:var(--card); }
@@ -1227,8 +1239,12 @@
     el.style.setProperty("--c", hueOf(it.cat));
     var h = "";
     if (it.photos && it.photos.length) {
-      h += '<div class="pics' + (it.photos.length > 1 ? " many" : "") + '">' +
-        it.photos.slice(0, 4).map(function (u, i) { return '<img src="' + esc(u) + '" alt="' + esc(it.title + (it.photos.length > 1 ? " \u2014 photo " + (i + 1) : "")) + '" loading="lazy">'; }).join("") + "</div>";
+      // One photo at a time: the first is the cover, the rest a swipe (or an arrow) away.
+      var ph = it.photos.slice(0, 4), many = ph.length > 1;
+      h += '<div class="gallery" role="group" aria-roledescription="carousel" aria-label="' + esc(it.title + " photos") + '"><div class="track" tabindex="0">' +
+        ph.map(function (u, i) { return '<img src="' + esc(u) + '" alt="' + esc(it.title + (many ? " \u2014 photo " + (i + 1) + " of " + ph.length : "")) + '"' + (i ? ' loading="lazy"' : "") + ">"; }).join("") + "</div>" +
+        (many ? '<button type="button" class="gnav prev" aria-label="Previous photo" hidden>&#8249;</button><button type="button" class="gnav next" aria-label="Next photo">&#8250;</button>' +
+          '<div class="gdots" aria-hidden="true">' + ph.map(function (_, i) { return "<s" + (i ? "" : ' class="on"') + "></s>"; }).join("") + "</div>" : "") + "</div>";
     } else if (it.asset_kind && it.asset_kind !== "erc20") {
       var artId = "art-" + Math.random().toString(36).slice(2, 10);
       pendingMeta.push({ id: artId, asset: it });
@@ -1258,6 +1274,8 @@
     h += "</div>";
     el.innerHTML = h;
 
+    var gal = el.querySelector(".gallery");
+    if (gal && gal.querySelector(".gnav")) wireGallery(gal);
     var foot = el.querySelector(".foot");
     var sentMine = uid && offers.some(function (o) { return o.item_id === it.id && o.from_id === uid && (o.status === "pending" || o.status === "agreed"); });
     if (!traded && !pledged && !mine && sentMine) {
@@ -1291,6 +1309,21 @@
       foot.appendChild(del);
     }
     return el;
+  }
+
+  function wireGallery(g) {
+    var track = g.querySelector(".track"), dots = g.querySelectorAll(".gdots s"), prev = g.querySelector(".prev"), next = g.querySelector(".next");
+    var at = function () { return Math.round(track.scrollLeft / Math.max(1, track.clientWidth)); };
+    var paint = function () {
+      var i = at();
+      Array.prototype.forEach.call(dots, function (d, k) { d.className = k === i ? "on" : ""; });
+      prev.hidden = i <= 0; next.hidden = i >= dots.length - 1;
+    };
+    var go = function (d) { track.scrollTo({ left: (at() + d) * track.clientWidth, behavior: "smooth" }); };
+    prev.addEventListener("click", function () { go(-1); });
+    next.addEventListener("click", function () { go(1); });
+    track.addEventListener("scroll", function () { requestAnimationFrame(paint); }, { passive: true });
+    track.addEventListener("keydown", function (e) { if (e.key === "ArrowRight") { e.preventDefault(); go(1); } if (e.key === "ArrowLeft") { e.preventDefault(); go(-1); } });
   }
 
   function offerCard(o, dir) {
