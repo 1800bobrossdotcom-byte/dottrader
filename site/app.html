@@ -287,6 +287,7 @@
   @media (max-width:560px){ .gateform { border-radius:16px; } .gateform .btn { flex-basis:100%; } }
   .gate .fine { margin:0; color:var(--muted); font-size:13px; }
   #authMsg { margin:0; color:var(--ink); font-weight:600; background:var(--dot-soft); border:2px solid var(--ink); padding:10px 14px; border-radius:6px; }
+  #authMsg.bad { background:var(--want-soft); }
 
   @media (prefers-reduced-motion: reduce) { .item, .btn, .chip, .wal { transition:none; } }
 </style>
@@ -1664,7 +1665,9 @@
       .then(function (r) {
         btn.disabled = false; btn.textContent = "Send me a sign-in link";
         var m = $("authMsg"); m.hidden = false;
-        m.textContent = r.error ? r.error.message : "Check your email — the link signs you straight in.";
+        var msg = r.error ? r.error.message : "Check your email — the link signs you straight in.";
+        if (r.error && /rate limit/i.test(msg)) msg = "Too many sign-in emails in the last hour — the mail service caps them. Wait a while and try again, or sign in with a password below if you have set one.";
+        m.textContent = msg; m.className = r.error ? "bad" : "";
       });
   });
   $("pwForm").addEventListener("submit", function (e) {
