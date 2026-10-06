@@ -216,6 +216,8 @@ record, visible to the other party.
 npm run test:bond   # the bond Edge Function, with Stripe, the database and sign-in faked
 npm run test:notify # the notify Edge Function, with Resend and the database faked
 npm run test:pages  # listing, category and sitemap pages, with the database faked
+npm run test:browser # the board in headless Chromium under the live security policy: posting,
+                    # offers, matching, protected trades and swaps, activity, local pickup
 npm run test:db     # 108 checks on a throwaway Postgres: the trade state machine, permissions,
                     # forged requests, and accepts racing on the same listings (needs PGHOST etc.)
 ```

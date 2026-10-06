@@ -86,13 +86,13 @@ function page(o) {
     '<meta name="theme-color" content="#F3EAD3">\n' +
     '<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n' +
     '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">\n' +
-    '<link rel="stylesheet" href="/css/page.css?v=2">\n' +
+    '<link rel="stylesheet" href="/css/page.css?v=3">\n' +
     (o.ld || []).map((x) => '<script type="application/ld+json">' + jsonLd(x) + "</script>\n").join("") +
     "</head>\n<body>\n" +
     '<header class="top"><div class="wrap bar"><a class="brand" href="/">' + LOGO + '<span class="t">Dot Trading Post<small>BARTER BOARD</small></span></a>' +
     '<a class="navbtn" href="/app">Open the board</a></div></header>\n' +
     '<main class="wrap">\n' + o.body + "\n</main>\n" +
-    '<footer class="wrap foot"><a href="/">How it works</a><a href="/app">The board</a><a href="/c/trading-cards">Trading cards</a><a href="/c/video-games">Video games</a><a href="/c/consoles-retro">Consoles &amp; retro</a></footer>\n' +
+    '<footer class="wrap foot"><a href="/">How it works</a><a href="/app">The board</a><a href="/c/trading-cards">Trading cards</a><a href="/c/video-games">Video games</a><a href="/c/consoles-retro">Consoles &amp; retro</a><a class="makers" href="https://cbuy.ing" target="_blank" rel="noopener"><span>From the makers of</span><img src="/cbuy.png?v=1" alt="cbuy" width="75" height="32"></a></footer>\n' +
     '<script src="/js/share.js?v=1" defer></script>\n</body>\n</html>\n';
 }
 

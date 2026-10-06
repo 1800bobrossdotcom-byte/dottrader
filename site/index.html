@@ -147,6 +147,10 @@
 
   footer { border-top:3px solid var(--ink); padding-block:30px 60px; color:var(--muted); font-size:13px; display:grid; gap:10px; }
   footer a { color:var(--ink); }
+  .makers { display:inline-flex; align-items:center; gap:10px; text-decoration:none; color:var(--muted); font-family:var(--mono); font-size:10.5px; letter-spacing:.16em; text-transform:uppercase; font-weight:600; }
+  .makers img { height:32px; width:auto; display:block; transition:transform .15s; }
+  .makers:hover img { transform:rotate(-4deg) scale(1.06); }
+  .makers:hover span { color:var(--ink); }
 </style>
 </head>
 <body>
@@ -257,8 +261,8 @@
   </section>
 
   <footer>
-    <div>Sign in with your email — no password, no app to install.</div>
-    <div><a href="https://github.com/1800bobrossdotcom-byte/dottrader" target="_blank" rel="noopener">Source on GitHub</a></div>
+    <div>Free to use. Nothing to install — it works in your phone's browser.</div>
+    <div><a class="makers" href="https://cbuy.ing" target="_blank" rel="noopener"><span>From the makers of</span><img src="/cbuy.png?v=1" alt="cbuy" width="75" height="32"></a></div>
   </footer>
 
 </div>
