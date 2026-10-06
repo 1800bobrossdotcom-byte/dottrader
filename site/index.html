@@ -70,6 +70,12 @@
   h1 .sw { background:var(--yellow); padding:0 .12em; box-shadow:5px 5px 0 var(--ink); }
   h1 .sw2 { background:var(--red); color:#fff; padding:0 .12em; box-shadow:5px 5px 0 var(--ink); }
   .lede { color:var(--muted); font-size:18px; max-width:50ch; margin:0 0 28px; }
+  .modes { display:flex; flex-wrap:wrap; gap:10px; margin:0 0 26px; }
+  .mode { display:inline-flex; align-items:center; gap:5px; text-decoration:none; color:var(--ink); background:var(--card); border:2px solid var(--ink); border-radius:999px; padding:5px 14px 5px 8px; box-shadow:3px 3px 0 var(--ink); font-weight:700; font-size:13.5px; transition:transform .08s, box-shadow .08s; }
+  .mode:hover { transform:translate(-1px,-1px); box-shadow:4px 4px 0 var(--ink); }
+  .mode .ic { width:22px; height:22px; display:block; }
+  .mode .swp { font-weight:700; font-size:15px; margin:0 1px; }
+  .mode span:last-child { margin-left:6px; }
   .cta { display:flex; gap:14px; flex-wrap:wrap; align-items:center; }
   .btn { display:inline-block; background:var(--yellow); color:var(--ink); text-decoration:none; padding:14px 26px; border-radius:999px; font-family:var(--display); font-weight:700; font-size:13.5px; letter-spacing:.1em; text-transform:uppercase; border:var(--bw) solid var(--ink); box-shadow:var(--sh); transition:transform .08s, box-shadow .08s; }
   .btn:hover { transform:translate(-2px,-2px); box-shadow:6px 6px 0 var(--ink); }
@@ -185,12 +191,17 @@
 
   <div class="hero">
     <div>
-      <div class="eyebrow">Cards · games · retro · no money changes hands</div>
-      <h1>You have something.<br>Someone wants it.<br><span class="sw">Swap</span> <span class="sw2">it</span>.</h1>
-      <p class="lede">Trading cards, video games, retro consoles, collectibles — post what you have and what you'd take for it, and Dot finds people who want it. No prices, no fees, no money: just two people who both end up with something they wanted more.</p>
+      <div class="eyebrow">Physical · NFTs · across chains · no cash</div>
+      <h1>Trade <span class="sw">anything</span><br>for <span class="sw2">anything</span>.</h1>
+      <p class="lede">A card for a console. An NFT for an NFT on another chain. Something in your wallet for something in the real world. Dot finds the people who have what you want — no prices, no bridge, no cash required.</p>
+      <div class="modes" role="list">
+        <a role="listitem" class="mode" href="#ways"><svg viewBox="0 0 24 24" aria-hidden="true" class="ic"><path d="M3 7l9-4 9 4v10l-9 4-9-4z" fill="#FFD23F" stroke="#121212" stroke-width="2" stroke-linejoin="round"/><path d="M3 7l9 4 9-4M12 11v10" fill="none" stroke="#121212" stroke-width="2" stroke-linejoin="round"/></svg><span class="swp" aria-hidden="true">⇄</span><svg viewBox="0 0 24 24" aria-hidden="true" class="ic"><path d="M3 7l9-4 9 4v10l-9 4-9-4z" fill="#FFD23F" stroke="#121212" stroke-width="2" stroke-linejoin="round"/><path d="M3 7l9 4 9-4M12 11v10" fill="none" stroke="#121212" stroke-width="2" stroke-linejoin="round"/></svg><span>Physical for physical</span></a>
+        <a role="listitem" class="mode" href="#ways"><svg viewBox="0 0 24 24" aria-hidden="true" class="ic"><path d="M12 2l9 5v10l-9 5-9-5V7z" fill="#7B4FD6" stroke="#121212" stroke-width="2" stroke-linejoin="round"/><path d="M12 7l4 5-4 5-4-5z" fill="#fff" stroke="#121212" stroke-width="1.6" stroke-linejoin="round"/></svg><span class="swp" aria-hidden="true">⇄</span><svg viewBox="0 0 24 24" aria-hidden="true" class="ic"><path d="M12 2l9 5v10l-9 5-9-5V7z" fill="#7B4FD6" stroke="#121212" stroke-width="2" stroke-linejoin="round"/><path d="M12 7l4 5-4 5-4-5z" fill="#fff" stroke="#121212" stroke-width="1.6" stroke-linejoin="round"/></svg><span>NFT for NFT, any chain</span></a>
+        <a role="listitem" class="mode" href="#ways"><svg viewBox="0 0 24 24" aria-hidden="true" class="ic"><path d="M3 7l9-4 9 4v10l-9 4-9-4z" fill="#FFD23F" stroke="#121212" stroke-width="2" stroke-linejoin="round"/><path d="M3 7l9 4 9-4M12 11v10" fill="none" stroke="#121212" stroke-width="2" stroke-linejoin="round"/></svg><span class="swp" aria-hidden="true">⇄</span><svg viewBox="0 0 24 24" aria-hidden="true" class="ic"><path d="M12 2l9 5v10l-9 5-9-5V7z" fill="#7B4FD6" stroke="#121212" stroke-width="2" stroke-linejoin="round"/><path d="M12 7l4 5-4 5-4-5z" fill="#fff" stroke="#121212" stroke-width="1.6" stroke-linejoin="round"/></svg><span>Physical for NFT</span></a>
+      </div>
       <div class="cta">
-        <a class="btn" href="/app">Open the board</a>
-        <a class="btn ghost" href="#dots">How dots work</a>
+        <a class="btn" href="/app">Start trading — free</a>
+        <a class="btn ghost" href="#safe">How trades stay safe</a>
       </div>
     </div>
 
@@ -201,7 +212,7 @@
       <div class="sides">
         <div class="side h"><span class="k">Offering</span><span class="v">Charizard holo</span></div>
         <div class="arrow" aria-hidden="true"></div>
-        <div class="side w"><span class="k">Wants</span><span class="v">Retro console or N64 games</span></div>
+        <div class="side w"><span class="k">Wants</span><span class="v">An NFT on Base, or a retro console</span></div>
       </div>
       <div class="meta">
         <span class="av">P</span><b>Priya</b>
