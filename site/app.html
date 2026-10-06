@@ -5,7 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>The board — Dot Trading Post</title>
 <meta name="description" content="Post what you have, say what you want, swap with someone who has it.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg viewBox='0 0 40 40' aria-hidden='true'%3E%3Cdefs%3E%3Cpattern id='ht' width='4' height='4' patternUnits='userSpaceOnUse'%3E%3Ccircle cx='2' cy='2' r='1.1' fill='%23121212' opacity='.35'/%3E%3C/pattern%3E%3C/defs%3E%3Cpath d='M9 5h11a15 15 0 0 1 0 30H9z' fill='%23FFD23F' stroke='%23121212' stroke-width='3' stroke-linejoin='round'/%3E%3Cpath d='M14 11h6a9 9 0 0 1 0 18h-6z' fill='url(%23ht)' stroke='none'/%3E%3Ccircle cx='20' cy='20' r='5.5' fill='%23E8392B' stroke='%23121212' stroke-width='3'/%3E%3C/svg%3E">
+<link rel="icon" href="/favicon.svg?v=3" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png?v=3" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png?v=3">
+<link rel="manifest" href="/manifest.webmanifest">
 <meta name="theme-color" content="#F3EAD3">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -187,6 +190,14 @@
   .tick { display:flex; align-items:center; gap:10px; font-size:14px; font-weight:600; cursor:pointer; margin:0; }
   .tick input { width:auto; accent-color:var(--ink); }
   .assetline { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .nftname { font-family:var(--mono); font-size:11.5px; color:var(--muted); letter-spacing:.04em; }
+  .pics.nft img { aspect-ratio:1/1; object-fit:contain; background:var(--sunk); }
+  .artph { aspect-ratio:4/3; display:flex; align-items:center; justify-content:center; text-align:center; padding:16px; color:var(--faint); font-family:var(--mono); font-size:12px; background:var(--sunk); }
+  .artph.small { aspect-ratio:auto; padding:10px; background:none; }
+  .nftpreview { display:flex; gap:12px; align-items:center; margin-top:14px; padding:10px; border:2px solid var(--ink); border-radius:6px; background:var(--card); }
+  .nftpreview img { width:76px; height:76px; border-radius:4px; object-fit:cover; border:2px solid var(--ink); background:var(--sunk); flex:none; }
+  .nftpreview b { display:block; font-size:14px; }
+  .nftpreview span { font-family:var(--mono); font-size:11px; color:var(--muted); }
   .assetmeta { font-family:var(--mono); font-size:11px; color:var(--faint); }
   .chain { font-family:var(--mono); font-size:10.5px; letter-spacing:.06em; padding:3px 8px; border-radius:4px; border:2px solid var(--ink); color:#fff; background:var(--blue); text-decoration:none; font-weight:600; }
   .held { font-family:var(--mono); font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; padding:3px 8px; border-radius:4px; border:2px solid var(--ink); color:var(--muted); }
@@ -336,7 +347,7 @@
         <input id="f-title" maxlength="80" required placeholder="Charizard holo, 1999 base set">
       </div>
       <div>
-        <label>Photos <span class="hint">— up to 4 · location data is removed before upload</span></label>
+        <label>Photos <span class="hint" id="f-photohint">— up to 4 · location data is removed before upload</span></label>
         <label class="filebtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg><span>Add photos</span><input id="f-photos" type="file" accept="image/jpeg,image/png,image/webp" multiple></label>
         <div class="thumbs" id="f-thumbs"></div>
       </div>
@@ -372,6 +383,7 @@
               <div><label for="f-contract">Contract address</label><input id="f-contract" maxlength="42" placeholder="0x…"></div>
               <div id="f-tokidwrap"><label for="f-tokid">Token ID</label><input id="f-tokid" maxlength="78" placeholder="1234"></div>
             </div>
+            <div id="f-preview" class="nftpreview" hidden></div>
           </div>
         </div>
       </details>
@@ -467,8 +479,24 @@
       body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_call", params: [{ to: to, data: data }, "latest"] })
     }).then(function (r) { return r.json(); }).then(function (j) {
       if (j.error || !j.result) throw new Error((j.error && j.error.message) || "read failed");
+      if (j.result === "0x") { var e = new Error("no contract at that address on this chain"); e.nocontract = true; throw e; }
       return j.result;
     });
+  }
+  // Which of our chains actually has code at this address. Used to catch "wrong chain" before it
+  // turns into a false "no longer held".
+  var codeCache = {};
+  function chainsWithCode(contract) {
+    var key = contract.toLowerCase();
+    if (codeCache[key]) return codeCache[key];
+    codeCache[key] = Promise.all(CHAIN_IDS.map(function (id) {
+      return fetch(CHAINS[id].rpc, { method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_getCode", params: [contract, "latest"] }) })
+        .then(function (r) { return r.json(); })
+        .then(function (j) { return j.result && j.result !== "0x" ? id : null; })
+        .catch(function () { return null; });
+    })).then(function (r) { return r.filter(Boolean); });
+    return codeCache[key];
   }
 
   // Does `holder` still hold this asset? Answered by the chain, in the viewer's own browser, so
@@ -491,7 +519,89 @@
         .then(function (res) { return BigInt(res) > 0n; });
     }
     return p.then(function (v) { ownCache[key] = v; return v; })
-            .catch(function () { return null; });
+            .catch(function (e) { return e && e.nocontract ? "nocontract" : null; });
+  }
+
+  /* ---- what a digital asset looks like, read from the chain ----
+     tokenURI / uri → metadata JSON → image. IPFS and Arweave go through public gateways; data: URIs
+     are decoded in place. Nothing here is trusted for ownership — that is checkOwnership's job. */
+  var metaCache = {};
+  function abiString(hex) {
+    try {
+      var h = hex.slice(2);
+      var off = parseInt(h.slice(0, 64), 16) * 2;
+      var len = parseInt(h.slice(off, off + 64), 16);
+      var data = h.slice(off + 64, off + 64 + len * 2);
+      var bytes = new Uint8Array(len);
+      for (var i = 0; i < len; i++) bytes[i] = parseInt(data.substr(i * 2, 2), 16);
+      return new TextDecoder().decode(bytes);
+    } catch (e) { return ""; }
+  }
+  function gateway(u) {
+    if (!u || typeof u !== "string") return null;
+    if (u.indexOf("ipfs://") === 0) return "https://ipfs.io/ipfs/" + u.slice(7).replace(/^ipfs\//, "");
+    if (u.indexOf("ar://") === 0) return "https://arweave.net/" + u.slice(5);
+    return u;
+  }
+  function readJsonUri(u) {
+    var m = /^data:application\/json(;[^,]*)?,([\s\S]*)$/.exec(u);
+    if (m) return Promise.resolve(JSON.parse(/base64/.test(m[1] || "") ? atob(m[2]) : decodeURIComponent(m[2])));
+    return fetch(gateway(u)).then(function (r) { if (!r.ok) throw new Error("metadata " + r.status); return r.json(); });
+  }
+  function assetMeta(a) {
+    if (!a || !a.asset_kind || !a.asset_contract || !CHAINS[a.asset_chain]) return Promise.resolve(null);
+    var key = [a.asset_chain, a.asset_contract, a.asset_kind, a.asset_token_id].join("|").toLowerCase();
+    if (metaCache[key]) return metaCache[key];
+    var collection = rpc(a.asset_chain, a.asset_contract, "0x06fdde03").then(abiString).catch(function () { return ""; });
+    var p;
+    if (a.asset_kind === "erc20") {
+      p = Promise.all([
+        rpc(a.asset_chain, a.asset_contract, "0x95d89b41").then(abiString).catch(function () { return ""; }),
+        collection
+      ]).then(function (r) { return { kind: "erc20", symbol: r[0], name: r[1], collection: r[1], image: null }; });
+    } else {
+      var idHex = pad32(BigInt(a.asset_token_id).toString(16));
+      var sel = a.asset_kind === "erc721" ? "0xc87b56dd" : "0x0e89341c";
+      p = rpc(a.asset_chain, a.asset_contract, sel + idHex).then(abiString).then(function (uri) {
+        uri = (uri || "").replace(/\{id\}/g, idHex);
+        if (!uri) throw new Error("no uri");
+        return readJsonUri(uri);
+      }).then(function (j) {
+        return collection.then(function (cn) {
+          var img = j.image || j.image_url || j.imageUrl || j.animation_url || (j.properties && j.properties.image);
+          return { kind: a.asset_kind, name: j.name || "", image: gateway(img), description: j.description || "", collection: cn };
+        });
+      }, function () {
+        return collection.then(function (cn) { return { kind: a.asset_kind, name: "", image: null, description: "", collection: cn, partial: true }; });
+      });
+    }
+    metaCache[key] = p.catch(function () { return null; });
+    return metaCache[key];
+  }
+  var pendingMeta = [];
+  function runMeta() {
+    var jobs = pendingMeta; pendingMeta = [];
+    jobs.forEach(function (j) {
+      assetMeta(j.asset).then(function (m) {
+        var art = document.querySelector('[data-art="' + j.id + '"]');
+        var nm = document.querySelector('[data-nftname="' + j.id + '"]');
+        if (nm) {
+          var bits = [];
+          if (m && m.collection) bits.push(m.collection);
+          if (m && m.name) bits.push(m.name);
+          if (m && m.kind === "erc20" && m.symbol) bits.push(m.symbol);
+          nm.textContent = bits.join(" · ");
+          nm.hidden = !bits.length;
+        }
+        if (art) {
+          if (m && m.image) {
+            art.innerHTML = '<img src="' + esc(m.image) + '" alt="' + esc(m.name || "") + '" loading="lazy">';
+          } else {
+            art.innerHTML = '<div class="artph">' + (m && m.partial ? "Artwork not reachable from here" : "No artwork on chain") + "</div>";
+          }
+        }
+      });
+    });
   }
 
   // The signature is public, so each viewer recovers the address themselves rather than taking
@@ -635,9 +745,47 @@
       });
       sel.value = "8453";
     });
-    $("f-isasset").addEventListener("change", function (e) { $("f-assetfields").hidden = !e.target.checked; });
+    $("f-isasset").addEventListener("change", function (e) {
+      $("f-assetfields").hidden = !e.target.checked;
+      $("f-photohint").textContent = e.target.checked ? "— optional for a digital asset: the artwork comes from the chain" : "— up to 4 · location data is removed before upload";
+      if (e.target.checked) previewAsset();
+    });
+    ["f-chain", "f-kind", "f-contract", "f-tokid"].forEach(function (id) { $(id).addEventListener("input", previewAsset); $(id).addEventListener("change", previewAsset); });
     $("f-kind").addEventListener("change", function (e) { $("f-tokidwrap").hidden = e.target.value === "erc20"; });
   })();
+
+  // Live preview while listing a digital asset: find which chain the contract is on (people pick
+  // the wrong one constantly), then show the artwork and name, and fill the title if it is empty.
+  var previewT = null, previewSeq = 0;
+  function previewAsset() {
+    clearTimeout(previewT);
+    previewT = setTimeout(function () {
+      var box = $("f-preview"), kind = $("f-kind").value, contract = $("f-contract").value.trim(), tok = $("f-tokid").value.trim();
+      if (!/^0x[0-9a-fA-F]{40}$/.test(contract) || (kind !== "erc20" && !/^\d+$/.test(tok))) { box.hidden = true; return; }
+      var seq = ++previewSeq;
+      box.hidden = false; box.innerHTML = '<div class="artph small">Looking it up…</div>';
+      chainsWithCode(contract).then(function (found) {
+        if (seq !== previewSeq) return;
+        var chosen = Number($("f-chain").value);
+        if (found.length && found.indexOf(chosen) < 0) {
+          $("f-chain").value = String(found[0]);
+          toast("That contract lives on " + CHAINS[found[0]].name + " — switched the chain for you.");
+        } else if (!found.length) {
+          box.innerHTML = '<div class="artph small">No contract at that address on any chain we know. Check the address.</div>';
+          return;
+        }
+        var a = { asset_kind: kind, asset_chain: Number($("f-chain").value), asset_contract: contract.toLowerCase(), asset_token_id: kind === "erc20" ? null : tok };
+        return assetMeta(a).then(function (m) {
+          if (seq !== previewSeq) return;
+          if (!m) { box.innerHTML = '<div class="artph small">Found the contract, but could not read this token.</div>'; return; }
+          var title = [m.collection, m.name].filter(Boolean).join(" · ");
+          box.innerHTML = (m.image ? '<img src="' + esc(m.image) + '" alt="">' : '<span class="wi">&#9679;</span>') +
+            "<div><b>" + esc(m.name || m.symbol || "Found it") + "</b><span>" + esc(m.collection || "") + " · " + esc(CHAINS[a.asset_chain].name) + "</span></div>";
+          if (!$("f-title").value.trim() && (m.name || m.symbol)) $("f-title").value = (m.name || m.symbol).slice(0, 80);
+        });
+      });
+    }, 450);
+  }
 
   // Reading the asset fields is the same job on the post form and in the offer sheet.
   function readAsset(scope, on) {
@@ -847,7 +995,8 @@
     var label = a.asset_kind === "erc20" ? "Tokens" : (a.asset_kind === "erc1155" ? "Edition #" + esc(a.asset_token_id) : "#" + esc(a.asset_token_id));
     var href = c ? c.scan + "/address/" + a.asset_contract : null;
     var id = "held-" + Math.random().toString(36).slice(2, 10);
-    var h = '<div class="assetline">';
+    pendingMeta.push({ id: id, asset: a });
+    var h = '<div class="nftname" data-nftname="' + id + '" hidden></div><div class="assetline">';
     h += href ? '<a class="chain" href="' + href + '" target="_blank" rel="noopener">' + esc(c.name) + "</a>"
               : '<span class="chain">chain ' + esc(String(a.asset_chain)) + "</span>";
     h += '<span class="held" data-held="' + id + '">checking…</span>';
@@ -866,6 +1015,7 @@
         var e2 = document.querySelector('[data-held="' + j.id + '"]');
         if (!e2) return;
         if (ok === null) { e2.textContent = "could not check"; e2.className = "held"; return; }
+        if (ok === "nocontract") { e2.textContent = "not on " + (CHAINS[j.asset.asset_chain] || {}).name; e2.className = "held no"; e2.title = "Nothing lives at that address on this chain. The listing probably picked the wrong chain — edit it."; return; }
         e2.textContent = ok ? "held by lister" : "no longer held";
         e2.className = "held " + (ok ? "yes" : "no");
       });
@@ -886,6 +1036,10 @@
     if (it.photos && it.photos.length) {
       h += '<div class="pics' + (it.photos.length > 1 ? " many" : "") + '">' +
         it.photos.slice(0, 4).map(function (u) { return '<img src="' + esc(u) + '" alt="" loading="lazy">'; }).join("") + "</div>";
+    } else if (it.asset_kind && it.asset_kind !== "erc20") {
+      var artId = "art-" + Math.random().toString(36).slice(2, 10);
+      pendingMeta.push({ id: artId, asset: it });
+      h += '<div class="pics nft" data-art="' + artId + '"><div class="artph">Fetching artwork from ' + esc((CHAINS[it.asset_chain] || {}).name || "chain") + "…</div></div>";
     }
     h += "<h3>" + esc(it.title) + "</h3>";
     if (it.descr) h += '<p class="desc">' + esc(it.descr) + "</p>";
@@ -1055,6 +1209,7 @@
       row(sc.profile, "profile filled in");
     paintWallet();
     runChecks();
+    runMeta();
   }
   function row(n, what) {
     return '<div><span class="amt' + (n ? "" : " zero") + '">' + (n ? "+" + n : "0") + '</span><span class="what">' + esc(what) + "</span></div>";
