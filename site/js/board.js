@@ -104,13 +104,15 @@ function openOffer(it, give) {
     (mineOpen.length ? '<div><span class="lbl" id="o-minelbl">Offer something you have posted <span class="hint">— tap one or more</span></span>' +
       '<div class="pickmine" id="o-mine" role="group" aria-labelledby="o-minelbl"></div></div>' : "") +
     '<div><label for="o-give">' + (mineOpen.length ? "Or describe what you are offering" : "What you are offering") + '</label><input id="o-give" maxlength="80" required placeholder="Retro console, boxed"></div>' +
-    '<div class="assetbox"><label class="tick"><input type="checkbox" id="o-isasset"> <span>Offering a digital asset</span></label>' +
-      '<div id="o-assetfields" hidden><p class="hint" style="margin:0 0 12px">It can be on any chain — it does not have to match theirs.</p>' +
+    '<div class="assetbox"><label class="tick"><input type="checkbox" id="o-isasset"> <span>I\u2019m offering an NFT</span></label>' +
+      '<div id="o-assetfields" hidden><p class="bridgenote"><b>Any chain works \u2014 no bridge.</b> ' + (it.asset_kind && CHAINS[it.asset_chain]
+        ? "Theirs is on " + esc(CHAINS[it.asset_chain].name) + "; yours can be on any chain. "
+        : "") + "Each of you sends on your own chain, and the board checks both transfers on chain.</p>" +
       '<div class="rowf"><div><label for="o-chain">Chain</label><select id="o-chain"></select></div>' +
-      '<div><label for="o-kind">Type</label><select id="o-kind"><option value="erc721">NFT (ERC-721)</option>' +
-      '<option value="erc1155">Multi-edition (ERC-1155)</option><option value="erc20">Tokens (ERC-20)</option></select></div></div>' +
-      '<div class="rowf" style="margin-top:14px"><div><label for="o-contract">Contract address</label><input id="o-contract" maxlength="42" placeholder="0x…"></div>' +
-      '<div id="o-tokidwrap"><label for="o-tokid">Token ID</label><input id="o-tokid" maxlength="78" placeholder="1234"></div></div></div></div>' +
+      '<div><label for="o-kind">Type</label><select id="o-kind"><option value="erc721">Single (ERC-721)</option>' +
+      '<option value="erc1155">Edition (ERC-1155)</option></select></div></div>' +
+      '<div class="rowf" style="margin-top:14px"><div><label for="o-contract">Contract address</label><input id="o-contract" maxlength="42" placeholder="0x\u2026" autocomplete="off" spellcheck="false"></div>' +
+      '<div id="o-tokidwrap"><label for="o-tokid">Token ID</label><input id="o-tokid" maxlength="78" placeholder="1234" inputmode="numeric" autocomplete="off"></div></div></div></div>' +
     '<div><label for="o-msg">Message <span class="hint">— optional</span></label><textarea id="o-msg" maxlength="400" placeholder="Happy to meet halfway this week."></textarea></div>' +
     '<div class="acts"><button class="btn ok" type="submit">Send offer</button><button class="btn ghost" type="button" data-x>Cancel</button></div>';
   veil.appendChild(form); document.body.appendChild(veil);
@@ -121,9 +123,6 @@ function openOffer(it, give) {
   form.querySelector("#o-chain").value = "8453";
   form.querySelector("#o-isasset").addEventListener("change", function (e) {
     form.querySelector("#o-assetfields").hidden = !e.target.checked;
-  });
-  form.querySelector("#o-kind").addEventListener("change", function (e) {
-    form.querySelector("#o-tokidwrap").hidden = e.target.value === "erc20";
   });
   form.querySelector("[data-x]").addEventListener("click", function () { veil.remove(); });
   veil.addEventListener("click", function (e) { if (e.target === veil) veil.remove(); });

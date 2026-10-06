@@ -21,7 +21,7 @@ function fnUrl(k) {
 }
 
 var GROUPS = [
-  ["Collectables", ["Trading Cards", "Comics", "Collectibles", "Coins & Stamps", "Memorabilia", "Antiques"]],
+  ["Collectables", ["Trading Cards", "NFTs", "Comics", "Collectibles", "Coins & Stamps", "Memorabilia", "Antiques"]],
   ["Games & Tech", ["Video Games", "Consoles & Retro", "Computers", "Phones", "Electronics", "Cameras", "Audio & Hi-Fi"]],
   ["Media", ["Books", "Music & Vinyl", "Film & TV", "Board Games & Puzzles"]],
   ["Home", ["Furniture", "Home & Kitchen", "Tools & DIY", "Garden", "Appliances"]],
@@ -32,7 +32,7 @@ var GROUPS = [
   ["Everything else", ["Baby & Kids", "Pet Supplies", "Office", "Industrial", "Tickets", "Services & Skills", "Other"]]
 ];
 // The quick buttons lead with where the board is liveliest: cards, games, retro and collectibles.
-var QUICK = ["Trading Cards", "Video Games", "Consoles & Retro", "Collectibles", "Comics", "Toys & Figures", "Electronics"];
+var QUICK = ["Trading Cards", "NFTs", "Video Games", "Consoles & Retro", "Collectibles", "Comics", "Toys & Figures", "Electronics"];
 // One colour per group, so a card tells you its corner of the board before you read it.
 var HUES = ["var(--rose)", "var(--have)", "var(--plum)", "var(--want)", "var(--teal)", "var(--dot)", "var(--pop)", "#6B7280", "var(--faint)"];
 var CAT_HUE = {};

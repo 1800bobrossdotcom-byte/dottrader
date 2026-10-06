@@ -1,0 +1,13 @@
+N1 an NFT files under NFTs whatever it was given: Based Punk #12=NFTs, Wiiide #8240=NFTs
+N2 a Base NFT's keywords: basechain,based,nft,punk
+N3 an Ethereum NFT's keywords: ethereum,nft,wiiide
+N4 a thing is physical: true
+N4b tokens are neither: true
+N5 "an NFT on Base" wants: base,basechain,nft
+N6 listings that want the Base NFT: Game Boy Color, Vintage camera
+N7 listings that want the Ethereum NFT: Game Boy Color, Vintage camera
+N8 "anything IRL" wants the Game Boy: true
+N9 Pokemon "base set" doesn't want a Base NFT: true
+N10 the owner can't move an NFT out of NFTs: NFTs, keywords kept: true
+N11 the Base NFT's owner is matched with the Game Boy both ways: Charizard holo false; Game Boy Color true; Vintage camera true
+N12 keywords are at version 3

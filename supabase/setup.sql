@@ -1267,7 +1267,32 @@ insert into public.match_aliases (phrase, terms) values
   ('laptops', '{laptop}'),
   ('notebook computer', '{laptop}'),
   ('headphones', '{headphones}'),
-  ('earbuds', '{headphones}')
+  ('earbuds', '{headphones}'),
+  -- NFTs, and the chains they live on (a listed NFT gets nft and its chain as keywords).
+  ('nft', '{nft}'),
+  ('nfts', '{nft}'),
+  ('digital art', '{nft}'),
+  ('digital collectible', '{nft}'),
+  ('digital collectibles', '{nft}'),
+  ('jpeg', '{nft}'),
+  ('jpegs', '{nft}'),
+  ('pfp', '{pfp,nft}'),
+  ('pfps', '{pfp,nft}'),
+  ('on base', '{basechain}'),
+  ('base chain', '{basechain}'),
+  ('base nft', '{basechain}'),
+  ('base nfts', '{basechain}'),
+  ('eth', '{ethereum}'),
+  ('mainnet', '{ethereum}'),
+  ('matic', '{polygon}'),
+  ('avax', '{avalanche}'),
+  ('bsc', '{bnb}'),
+  ('bnb chain', '{bnb}'),
+  ('arb', '{arbitrum}'),
+  ('physical', '{physical}'),
+  ('irl', '{physical}'),
+  ('in real life', '{physical}'),
+  ('real life', '{physical}')
 on conflict (phrase) do update set terms = excluded.terms;
 
 -- ============================================================================================
@@ -1323,24 +1348,39 @@ alter table public.items
 alter table public.items drop constraint if exists items_want_cats_max;
 alter table public.items add constraint items_want_cats_max check (coalesce(array_length(want_cats, 1), 0) <= 8);
 
+-- What a listing is, as keywords, beyond its words: an NFT is an nft and is on a chain, so
+-- "any NFT" or "something on Base" finds it; a thing is physical, so "anything physical" or "IRL"
+-- finds every thing. (Tokens, the old ERC-20 listings, are neither.)
+create or replace function public.asset_terms(kind text, chain bigint) returns text[]
+language sql immutable as $$
+  select case
+    when kind is null then '{physical}'::text[]
+    when kind in ('erc721', 'erc1155') then array_remove(array['nft', case chain
+      when 1 then 'ethereum' when 8453 then 'basechain' when 42161 then 'arbitrum' when 10 then 'optimism'
+      when 137 then 'polygon' when 56 then 'bnb' when 43114 then 'avalanche' when 7777777 then 'zora' end], null)
+    else '{}'::text[] end
+$$;
+
 create or replace function public.items_terms() returns trigger
 language plpgsql as $$
 begin
-  new.have_terms := public.match_terms(coalesce(new.title, '') || ' ' || coalesce(new.descr, ''), 'have');
+  new.have_terms := array(select distinct w from unnest(
+    public.match_terms(coalesce(new.title, '') || ' ' || coalesce(new.descr, ''), 'have') || public.asset_terms(new.asset_kind, new.asset_chain)) w order by w);
   new.want_terms := public.match_terms(new.want, 'want');
+  -- An NFT always files under NFTs, so the category and the "I'd take NFTs" chip mean one thing.
+  if new.asset_kind in ('erc721', 'erc1155') then new.cat := 'NFTs'; end if;
   return new;
 end $$;
 drop trigger if exists items_terms on public.items;
-create trigger items_terms before insert or update of title, descr, want on public.items
+create trigger items_terms before insert or update of title, descr, want, cat, asset_kind, asset_chain on public.items
   for each row execute function public.items_terms();
 -- Re-read every listing and saved search when the way keywords are made changes. Bump the
--- version whenever match_terms or the alias list changes meaningfully.
+-- version whenever match_terms, asset_terms or the alias list changes meaningfully.
 do $$
 begin
-  if coalesce((select value from public.app_config where key = 'match_terms_version'), '') <> '2' then
-    update public.items set have_terms = public.match_terms(coalesce(title, '') || ' ' || coalesce(descr, ''), 'have'),
-                            want_terms = public.match_terms(want, 'want');
-    insert into public.app_config (key, value) values ('match_terms_version', '2')
+  if coalesce((select value from public.app_config where key = 'match_terms_version'), '') <> '3' then
+    update public.items set title = title;  -- runs items_terms on every listing
+    insert into public.app_config (key, value) values ('match_terms_version', '3')
       on conflict (key) do update set value = excluded.value;
   end if;
 end $$;

@@ -28,7 +28,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="css/board.css?v=13">
+<link rel="stylesheet" href="css/board.css?v=14">
 </head>
 <body>
 
@@ -101,8 +101,27 @@
     <h2>Post an item</h2>
     <p class="lede">Say what you have and what you'd take for it. No prices, no money — someone offers a swap and you decide.</p>
     <form class="form f" id="postForm">
+      <div class="kindpick" role="radiogroup" aria-label="What are you listing?">
+        <label><input type="radio" name="f-what" id="f-isthing" value="thing" checked><span><svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M3 7l9-4 9 4v10l-9 4-9-4z" fill="#FFD23F" stroke="#121212" stroke-width="2" stroke-linejoin="round"/><path d="M3 7l9 4 9-4M12 11v10" fill="none" stroke="#121212" stroke-width="2" stroke-linejoin="round"/></svg><b>A physical thing</b><small>Cards, games, gear — posted or met up</small></span></label>
+        <label><input type="radio" name="f-what" id="f-isasset" value="nft"><span><svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M12 2l9 5v10l-9 5-9-5V7z" fill="#7B4FD6" stroke="#121212" stroke-width="2" stroke-linejoin="round"/><path d="M12 7l4 5-4 5-4-5z" fill="#fff" stroke="#121212" stroke-width="1.6" stroke-linejoin="round"/></svg><b>An NFT</b><small>On any of 8 chains — checked on chain</small></span></label>
+      </div>
+      <div class="assetbox" id="f-assetfields" hidden>
+        <p class="hint" style="margin:0 0 12px">Paste the contract and token ID — from OpenSea, your wallet or the explorer. We find the chain, show the artwork and fill in the name. Anyone can check on chain that you still hold it.</p>
+        <div class="rowf">
+          <div><label for="f-chain">Chain</label><select id="f-chain"></select></div>
+          <div><label for="f-kind">Type</label><select id="f-kind">
+            <option value="erc721">Single (ERC-721)</option>
+            <option value="erc1155">Edition (ERC-1155)</option>
+          </select></div>
+        </div>
+        <div class="rowf" style="margin-top:14px">
+          <div><label for="f-contract">Contract address</label><input id="f-contract" maxlength="42" placeholder="0x…" autocomplete="off" spellcheck="false"></div>
+          <div id="f-tokidwrap"><label for="f-tokid">Token ID</label><input id="f-tokid" maxlength="78" placeholder="1234" inputmode="numeric" autocomplete="off"></div>
+        </div>
+        <div id="f-preview" class="nftpreview" hidden></div>
+      </div>
       <div>
-        <label for="f-title">What are you offering?</label>
+        <label for="f-title" id="f-titlelbl">What are you offering?</label>
         <input id="f-title" maxlength="80" required placeholder="Charizard holo, 1999 base set">
       </div>
       <div id="f-photowrap">
@@ -127,29 +146,10 @@
       </div>
       <label class="tick" id="f-localwrap" hidden><input type="checkbox" id="f-local"> <span>Local pickup only <span class="hint">— no shipping; you'll meet up to swap</span></span></label>
       <details class="more">
-        <summary>Add details, or list a digital asset</summary>
+        <summary>Add details</summary>
         <div>
           <label for="f-desc">Details <span class="hint">— condition, size, anything they would ask</span></label>
           <textarea id="f-desc" maxlength="600" placeholder="Played condition, one soft corner. Sleeved since forever."></textarea>
-        </div>
-        <div class="assetbox">
-          <label class="tick"><input type="checkbox" id="f-isasset"> <span>This is a digital asset — an NFT or tokens on a chain</span></label>
-          <div id="f-assetfields" hidden>
-            <p class="hint" style="margin:0 0 12px">Anyone looking at your listing checks the chain themselves and sees whether you still hold it. You don't have to be trusted.</p>
-            <div class="rowf">
-              <div><label for="f-chain">Chain</label><select id="f-chain"></select></div>
-              <div><label for="f-kind">Type</label><select id="f-kind">
-                <option value="erc721">NFT (ERC-721)</option>
-                <option value="erc1155">Multi-edition (ERC-1155)</option>
-                <option value="erc20">Tokens (ERC-20)</option>
-              </select></div>
-            </div>
-            <div class="rowf" style="margin-top:14px">
-              <div><label for="f-contract">Contract address</label><input id="f-contract" maxlength="42" placeholder="0x…"></div>
-              <div id="f-tokidwrap"><label for="f-tokid">Token ID</label><input id="f-tokid" maxlength="78" placeholder="1234"></div>
-            </div>
-            <div id="f-preview" class="nftpreview" hidden></div>
-          </div>
         </div>
       </details>
       <div><button class="btn ok big" id="postBtn" type="submit">Put it on the board</button></div>
@@ -256,21 +256,21 @@
 <!-- Pinned by hash: if a CDN ever served a different file, the browser would refuse to run it. -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js" integrity="sha384-Rj26LVGvoeRVR6+mwQmFfcR3QOBEwT+ZmuCWpuiqeTzJpCs0ER4ITAWGb4Hiy3Ok" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js" integrity="sha384-Htz1SE4Sl5aitpvFgr2j0sfsGUIuSXI6t8hEyrlQ93zflEF3a29bH2AvkUROUw7J" crossorigin="anonymous"></script>
-<script src="js/core.js?v=12"></script>
+<script src="js/core.js?v=13"></script>
 <script src="js/assets.js?v=12"></script>
 <script src="js/state.js?v=12"></script>
-<script src="js/ui.js?v=14"></script>
+<script src="js/ui.js?v=15"></script>
 <script src="js/post.js?v=12"></script>
 <script src="js/wallet.js?v=12"></script>
 <script src="js/cards.js?v=12"></script>
 <script src="js/protect.js?v=14"></script>
 <script src="js/messages.js?v=12"></script>
-<script src="js/board.js?v=13"></script>
+<script src="js/board.js?v=14"></script>
 <script src="js/history.js?v=14"></script>
 <script src="js/match.js?v=12"></script>
 <script src="js/map.js?v=12"></script>
 <script src="js/verify.js?v=12"></script>
-<script src="js/actions.js?v=12"></script>
+<script src="js/actions.js?v=13"></script>
 <script src="js/auth.js?v=12"></script>
 <script src="js/boot.js?v=12"></script>
 </body>

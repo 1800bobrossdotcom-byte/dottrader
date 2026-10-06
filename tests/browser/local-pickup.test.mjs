@@ -48,9 +48,9 @@ async function run(hash, old) {
   ok("…not on others", !/Local pickup/.test(await p.textContent("#feed .item:has(h3:text-is('Pikachu promo')) .foot")));
   await p.click("#t-post"); await p.waitForTimeout(100);
   ok("post form offers local pickup only", await p.isVisible("#f-local"));
-  await p.click("details.more summary").catch(() => {}); await p.check("#f-isasset"); await p.waitForTimeout(100);
-  ok("…but not for a digital asset", await p.isHidden("#f-localwrap"));
-  await p.uncheck("#f-isasset"); await p.fill("#f-title", "Old sofa"); await p.check("#f-local");
+  await p.click("label:has(#f-isasset)"); await p.waitForTimeout(100);
+  ok("…but not for an NFT", await p.isHidden("#f-localwrap"));
+  await p.click("label:has(#f-isthing)"); await p.fill("#f-title", "Old sofa"); await p.check("#f-local");
   await p.click("#postBtn"); await p.waitForTimeout(500);
   const post = posts.find(x => /^items /.test(x));
   ok("posting saves local_only", post && /"local_only":true/.test(post), post && post.slice(0, 200));

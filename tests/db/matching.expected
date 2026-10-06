@@ -1,4 +1,4 @@
-M1 keywords pulled from a title: boxed,console,game,nintendo,oled,switch
+M1 keywords pulled from a title: boxed,console,game,nintendo,oled,physical,switch
 M2 keywords pulled from a want: nintendo,switch
 M3 a saved search with nothing in it: refused: say what you are looking for
 M4 saving a search for someone else: refused: new row violates row-level security policy for table "saved_wants"
@@ -11,4 +11,4 @@ M10 Eve's saved-search hits: Nintendo Switch OLED, boxed with 2 games!
 M11 anyone reads saved searches: 0
 M12 anyone can see how many want the Switch: 3
 M13 a 21st saved search: refused: twenty saved searches is the limit — remove one first
-M14 keywords follow an edit: boy,color,game,gameboy,gbc,handheld,nintendo,retro,teal
+M14 keywords follow an edit: boy,color,game,gameboy,gbc,handheld,nintendo,physical,retro,teal

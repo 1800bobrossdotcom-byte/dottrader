@@ -27,7 +27,7 @@ function clip(s, n) { s = String(s || "").replace(/\s+/g, " ").trim(); return s.
 
 // Kept in step with GROUPS in site/js/core.js.
 const GROUPS = [
-  ["Collectables", ["Trading Cards", "Comics", "Collectibles", "Coins & Stamps", "Memorabilia", "Antiques"]],
+  ["Collectables", ["Trading Cards", "NFTs", "Comics", "Collectibles", "Coins & Stamps", "Memorabilia", "Antiques"]],
   ["Games & Tech", ["Video Games", "Consoles & Retro", "Computers", "Phones", "Electronics", "Cameras", "Audio & Hi-Fi"]],
   ["Media", ["Books", "Music & Vinyl", "Film & TV", "Board Games & Puzzles"]],
   ["Home", ["Furniture", "Home & Kitchen", "Tools & DIY", "Garden", "Appliances"]],

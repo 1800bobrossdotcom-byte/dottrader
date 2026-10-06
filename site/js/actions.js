@@ -43,7 +43,7 @@ $("postForm").addEventListener("submit", function (e) {
       if (/'photos' column/.test(r.error.message || "")) return toast("Photo storage is not set up on this project yet — run supabase/storage.sql in the SQL editor.");
       return fail(r.error);
     }
-    $("postForm").reset(); $("f-cat").value = "Other"; $("f-assetfields").hidden = true;
+    $("postForm").reset(); $("f-cat").value = "Other"; setPostKind(false);
     pendingPhotos = []; paintThumbs();
     postPicker.set([]); $("f-open").checked = true;
     toast("Posted to the board."); show("browse"); load();

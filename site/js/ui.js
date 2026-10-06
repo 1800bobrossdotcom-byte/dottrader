@@ -115,6 +115,7 @@ function groupedOptions(sel, allLabel) {
   $("catPick").addEventListener("change", function (e) { filter.cat = e.target.value; syncCats(); render(); refilter(); });
   groupedOptions($("f-cat"), null);
   $("f-cat").value = "Other";
+  var nftOpt = $("f-cat").querySelector('option[value="NFTs"]'); if (nftOpt) nftOpt.hidden = true;  // chosen by "An NFT" above
 })();
 function syncCats() {
   Array.prototype.forEach.call($("cats").children, function (b) {
@@ -137,17 +138,25 @@ $("radius").addEventListener("change", function (e) {
     });
     sel.value = "8453";
   });
-  $("f-isasset").addEventListener("change", function (e) {
-    $("f-assetfields").hidden = !e.target.checked;
-    // A token can't be picked up; the local-only choice is for things.
-    $("f-localwrap").hidden = !caps.local || e.target.checked;
-    if (e.target.checked) $("f-local").checked = false;
-    $("f-photohint").textContent = e.target.checked ? "— optional for a digital asset: the artwork comes from the chain" : "— up to 4 · location data is removed before upload";
-    if (e.target.checked) previewAsset();
-  });
+  ["f-isthing", "f-isasset"].forEach(function (id) { $(id).addEventListener("change", function () { setPostKind($("f-isasset").checked); }); });
   ["f-chain", "f-kind", "f-contract", "f-tokid"].forEach(function (id) { $(id).addEventListener("input", previewAsset); $(id).addEventListener("change", previewAsset); });
-  $("f-kind").addEventListener("change", function (e) { $("f-tokidwrap").hidden = e.target.value === "erc20"; });
 })();
+
+// The post form's first choice: a physical thing or an NFT. An NFT always files under NFTs, has
+// no pickup, and its picture comes from the chain.
+function setPostKind(nft) {
+  $("f-assetfields").hidden = !nft;
+  $("f-localwrap").hidden = !caps.local || nft;
+  if (nft) $("f-local").checked = false;
+  $("f-photohint").textContent = nft ? "— optional for an NFT: the artwork comes from the chain" : "— up to 4 · location data is removed before upload";
+  $("f-titlelbl").textContent = nft ? "Name it" : "What are you offering?";
+  $("f-title").placeholder = nft ? "Filled in from the chain — or name it yourself" : "Charizard holo, 1999 base set";
+  var cat = $("f-cat"), nftOpt = cat.querySelector('option[value="NFTs"]');
+  if (nftOpt) nftOpt.hidden = !nft;
+  if (nft) cat.value = "NFTs"; else if (cat.value === "NFTs") cat.value = "Other";
+  cat.disabled = nft;
+  if (nft) previewAsset();
+}
 
 // Live preview while listing a digital asset: find which chain the contract is on (people pick
 // the wrong one constantly), then show the artwork and name, and fill the title if it is empty.
