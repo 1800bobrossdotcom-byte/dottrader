@@ -144,6 +144,18 @@
 
   /* sign-in gate */
   .gate { max-width:430px; margin:52px auto; background:var(--card); border:1px solid var(--line); border-radius:14px; padding:26px; display:grid; gap:14px; }
+  .assetbox { border:1px solid var(--line); border-radius:8px; padding:14px; background:var(--paper); }
+  .tick { display:flex; align-items:center; gap:9px; font-size:14px; font-weight:500; cursor:pointer; margin:0; }
+  .tick input { width:auto; }
+  .wallet { display:flex; gap:12px; align-items:flex-end; justify-content:space-between; flex-wrap:wrap; border-top:1px solid var(--line-soft); padding-top:14px; }
+  .walletstate { font-family:var(--mono); font-size:12.5px; color:var(--muted); }
+  .walletstate.on { color:var(--dot); }
+  .assetline { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .assetmeta { font-family:var(--mono); font-size:11px; color:var(--faint); }
+  .chain { font-family:var(--mono); font-size:10.5px; letter-spacing:.06em; padding:3px 8px; border-radius:999px; border:1px solid var(--have); color:var(--have); background:var(--have-soft); text-decoration:none; }
+  .held { font-family:var(--mono); font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; padding:3px 8px; border-radius:999px; border:1px solid var(--line); color:var(--faint); }
+  .held.yes { color:var(--dot); border-color:var(--dot); background:var(--dot-soft); }
+  .held.no { color:var(--stop); border-color:var(--stop); }
   .gate h2 { font-size:23px; }
   .gate p { margin:0; color:var(--muted); font-size:14.5px; }
 </style>
@@ -216,6 +228,24 @@
           <select id="f-cat"></select>
         </div>
       </div>
+      <div class="assetbox">
+        <label class="tick"><input type="checkbox" id="f-isasset"> <span>This is a digital asset — an NFT or tokens on a chain</span></label>
+        <div id="f-assetfields" hidden>
+          <p class="hint" style="margin:0 0 12px">Anyone looking at your listing checks the chain themselves and sees whether you still hold it. You don't have to be trusted.</p>
+          <div class="rowf">
+            <div><label for="f-chain">Chain</label><select id="f-chain"></select></div>
+            <div><label for="f-kind">Type</label><select id="f-kind">
+              <option value="erc721">NFT (ERC-721)</option>
+              <option value="erc1155">Multi-edition (ERC-1155)</option>
+              <option value="erc20">Tokens (ERC-20)</option>
+            </select></div>
+          </div>
+          <div class="rowf" style="margin-top:14px">
+            <div><label for="f-contract">Contract address</label><input id="f-contract" maxlength="42" placeholder="0x…"></div>
+            <div id="f-tokidwrap"><label for="f-tokid">Token ID</label><input id="f-tokid" maxlength="78" placeholder="1234"></div>
+          </div>
+        </div>
+      </div>
       <div><button class="btn" id="postBtn" type="submit">Put it on the board</button></div>
     </form>
   </section>
@@ -236,6 +266,13 @@
           <div><label for="p-area">Where you trade <span class="hint">— earns a dot</span></label><input id="p-area" maxlength="60" placeholder="North Leeds"></div>
         </div>
         <div><label for="p-note">How you like to swap</label><input id="p-note" maxlength="80" placeholder="Happy to post, prefer meeting up"></div>
+        <div class="wallet">
+          <div>
+            <label>Wallet <span class="hint">— needed to list digital assets</span></label>
+            <div id="walletState" class="walletstate">Not connected</div>
+          </div>
+          <button class="btn ghost" type="button" id="connectBtn">Connect wallet</button>
+        </div>
         <div><button class="btn ghost" type="submit">Save profile</button></div>
       </form>
     </div>
@@ -256,6 +293,7 @@
 
 <script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
 <script>
 (function () {
   "use strict";
@@ -274,6 +312,73 @@
   ];
   var QUICK = ["Trading Cards", "Video Games", "Electronics", "Clothing", "Furniture"];
   var RANKS = [[0, "New trader"], [3, "Known"], [8, "Trusted"], [16, "Well vouched"], [30, "Pillar of the post"]];
+
+  // Cross-chain works because nothing is swapped atomically: each side is simply checked on its
+  // own chain. Adding a chain is one line here and nothing else.
+  var CHAINS = {
+    1:        { name: "Ethereum",  rpc: "https://ethereum-rpc.publicnode.com",        scan: "https://etherscan.io" },
+    8453:     { name: "Base",      rpc: "https://mainnet.base.org",                   scan: "https://basescan.org" },
+    42161:    { name: "Arbitrum",  rpc: "https://arbitrum-one-rpc.publicnode.com",    scan: "https://arbiscan.io" },
+    10:       { name: "Optimism",  rpc: "https://optimism-rpc.publicnode.com",        scan: "https://optimistic.etherscan.io" },
+    137:      { name: "Polygon",   rpc: "https://polygon-bor-rpc.publicnode.com",     scan: "https://polygonscan.com" },
+    56:       { name: "BNB Chain", rpc: "https://bsc-rpc.publicnode.com",             scan: "https://bscscan.com" },
+    43114:    { name: "Avalanche", rpc: "https://avalanche-c-chain-rpc.publicnode.com", scan: "https://snowtrace.io" },
+    7777777:  { name: "Zora",      rpc: "https://rpc.zora.energy",                    scan: "https://explorer.zora.energy" }
+  };
+  var CHAIN_IDS = [8453, 1, 42161, 10, 137, 56, 43114, 7777777];
+
+  function pad32(hex) { return hex.replace(/^0x/, "").toLowerCase().padStart(64, "0"); }
+  function rpc(chainId, to, data) {
+    var c = CHAINS[chainId];
+    if (!c) return Promise.reject(new Error("unknown chain"));
+    return fetch(c.rpc, {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_call", params: [{ to: to, data: data }, "latest"] })
+    }).then(function (r) { return r.json(); }).then(function (j) {
+      if (j.error || !j.result) throw new Error((j.error && j.error.message) || "read failed");
+      return j.result;
+    });
+  }
+
+  // Does `holder` still hold this asset? Answered by the chain, in the viewer's own browser, so
+  // the board never has to be believed about it. Null means the question could not be reached —
+  // deliberately different from "no", which would brand an honest listing a fake on a flaky RPC.
+  var ownCache = {};
+  function checkOwnership(a, holder) {
+    if (!a || !a.asset_kind || !holder || !CHAINS[a.asset_chain]) return Promise.resolve(null);
+    var key = [a.asset_chain, a.asset_contract, a.asset_token_id, holder].join("|");
+    if (key in ownCache) return Promise.resolve(ownCache[key]);
+    var p;
+    if (a.asset_kind === "erc721") {
+      p = rpc(a.asset_chain, a.asset_contract, "0x6352211e" + pad32(BigInt(a.asset_token_id).toString(16)))
+        .then(function (res) { return "0x" + res.slice(-40).toLowerCase() === holder.toLowerCase(); });
+    } else if (a.asset_kind === "erc1155") {
+      p = rpc(a.asset_chain, a.asset_contract, "0x00fdd58e" + pad32(holder) + pad32(BigInt(a.asset_token_id).toString(16)))
+        .then(function (res) { return BigInt(res) > 0n; });
+    } else {
+      p = rpc(a.asset_chain, a.asset_contract, "0x70a08231" + pad32(holder))
+        .then(function (res) { return BigInt(res) > 0n; });
+    }
+    return p.then(function (v) { ownCache[key] = v; return v; })
+            .catch(function () { return null; });
+  }
+
+  // The signature is public, so each viewer recovers the address themselves rather than taking
+  // the stored `wallet_address` at its word.
+  var sigCache = {};
+  function verifiedWallet(p) {
+    if (!p || !p.wallet_address || !p.wallet_sig || !p.wallet_msg) return null;
+    var key = p.wallet_sig;
+    if (key in sigCache) return sigCache[key];
+    var ok = false;
+    try {
+      ok = window.ethers &&
+        window.ethers.utils.verifyMessage(p.wallet_msg, p.wallet_sig).toLowerCase() === p.wallet_address.toLowerCase();
+    } catch (e) { ok = false; }
+    sigCache[key] = ok ? p.wallet_address : null;
+    return sigCache[key];
+  }
+  function shortAddr(a) { return a ? a.slice(0, 6) + "…" + a.slice(-4) : ""; }
 
   var sb = null, uid = null, myEmail = "";
   var items = [], offers = [], profiles = {};
@@ -378,6 +483,104 @@
   }
   $("q").addEventListener("input", function (e) { filter.q = e.target.value.trim().toLowerCase(); render(); });
 
+  (function buildChains() {
+    [$("f-chain")].forEach(function (sel) {
+      if (!sel) return;
+      CHAIN_IDS.forEach(function (id) {
+        var o = document.createElement("option"); o.value = id; o.textContent = CHAINS[id].name; sel.appendChild(o);
+      });
+      sel.value = "8453";
+    });
+    $("f-isasset").addEventListener("change", function (e) { $("f-assetfields").hidden = !e.target.checked; });
+    $("f-kind").addEventListener("change", function (e) { $("f-tokidwrap").hidden = e.target.value === "erc20"; });
+  })();
+
+  // Reading the asset fields is the same job on the post form and in the offer sheet.
+  function readAsset(scope, on) {
+    if (!on) return { asset_kind: null, asset_chain: null, asset_contract: null, asset_token_id: null };
+    var kind = scope.kind.value;
+    var contract = scope.contract.value.trim();
+    if (!/^0x[0-9a-fA-F]{40}$/.test(contract)) throw new Error("That contract address does not look right.");
+    var tok = kind === "erc20" ? null : scope.tokid.value.trim();
+    if (kind !== "erc20" && !/^\d+$/.test(tok || "")) throw new Error("Token ID should be a number.");
+    return { asset_kind: kind, asset_chain: Number(scope.chain.value), asset_contract: contract.toLowerCase(), asset_token_id: tok };
+  }
+
+  /* ---- wallet ---- */
+  function myWallet() { return verifiedWallet(profiles[uid]); }
+  function paintWallet() {
+    var w = myWallet();
+    var el = $("walletState");
+    el.textContent = w ? shortAddr(w) + " · verified" : (profiles[uid] && profiles[uid].wallet_address ? "signature did not verify — reconnect" : "Not connected");
+    el.className = "walletstate" + (w ? " on" : "");
+    $("connectBtn").textContent = w ? "Reconnect" : "Connect wallet";
+  }
+  $("connectBtn").addEventListener("click", function () {
+    var eth = window.ethereum;
+    if (!eth) { toast("No wallet found in this browser. Open the site in your wallet's browser, or install one."); return; }
+    if (!window.ethers) { toast("Still loading — try again in a second."); return; }
+    var btn = $("connectBtn"); btn.disabled = true;
+    var addr;
+    eth.request({ method: "eth_requestAccounts" })
+      .then(function (accts) {
+        addr = accts && accts[0];
+        if (!addr) throw new Error("No account selected.");
+        // Signed, not just typed: the message names this account, so the signature proves control
+        // of the address rather than knowledge of it.
+        var msg = "Dot Trading Post\nLinking this wallet to my account\n" + uid + "\n" + new Date().toISOString();
+        return new window.ethers.providers.Web3Provider(eth).getSigner().signMessage(msg)
+          .then(function (sig) { return { msg: msg, sig: sig }; });
+      })
+      .then(function (r) {
+        return sb.from("profiles").upsert({
+          id: uid, wallet_address: addr.toLowerCase(), wallet_msg: r.msg, wallet_sig: r.sig,
+          updated_at: new Date().toISOString()
+        });
+      })
+      .then(function (r) {
+        btn.disabled = false;
+        if (r.error) return fail(r.error);
+        sigCache = {};
+        toast("Wallet connected and verified.");
+        load();
+      })
+      .catch(function (e) { btn.disabled = false; toast(e && e.message ? e.message.slice(0, 80) : "Could not connect."); });
+  });
+
+  // A chain chip that links to the explorer, plus a badge the viewer's own browser fills in once
+  // the chain has answered. It starts as "checking" rather than as a verdict, because claiming an
+  // asset is unheld before the RPC replies would smear honest listings.
+  function assetRow(a, holder) {
+    if (!a || !a.asset_kind) return "";
+    var c = CHAINS[a.asset_chain];
+    var label = a.asset_kind === "erc20" ? "Tokens" : (a.asset_kind === "erc1155" ? "Edition #" + esc(a.asset_token_id) : "#" + esc(a.asset_token_id));
+    var href = c ? c.scan + "/address/" + a.asset_contract : null;
+    var id = "held-" + Math.random().toString(36).slice(2, 10);
+    var h = '<div class="assetline">';
+    h += href ? '<a class="chain" href="' + href + '" target="_blank" rel="noopener">' + esc(c.name) + "</a>"
+              : '<span class="chain">chain ' + esc(String(a.asset_chain)) + "</span>";
+    h += '<span class="held" data-held="' + id + '">checking…</span>';
+    h += '<span class="assetmeta">' + label + " · " + esc(shortAddr(a.asset_contract)) + "</span></div>";
+    pendingChecks.push({ id: id, asset: a, holder: holder });
+    return h;
+  }
+  var pendingChecks = [];
+  function runChecks() {
+    var jobs = pendingChecks; pendingChecks = [];
+    jobs.forEach(function (j) {
+      var el = document.querySelector('[data-held="' + j.id + '"]');
+      if (!el) return;
+      if (!j.holder) { el.textContent = "no wallet linked"; return; }
+      checkOwnership(j.asset, j.holder).then(function (ok) {
+        var e2 = document.querySelector('[data-held="' + j.id + '"]');
+        if (!e2) return;
+        if (ok === null) { e2.textContent = "could not check"; e2.className = "held"; return; }
+        e2.textContent = ok ? "held by lister" : "no longer held";
+        e2.className = "held " + (ok ? "yes" : "no");
+      });
+    });
+  }
+
   function itemCard(it, opts) {
     opts = opts || {};
     var traded = it.status === "traded", pledged = it.status === "pledged";
@@ -389,6 +592,7 @@
     el.className = "item" + (traded || pledged ? " gone" : "");
     var h = "<h3>" + esc(it.title) + "</h3>";
     if (it.descr) h += '<p class="desc">' + esc(it.descr) + "</p>";
+    h += assetRow(it, verifiedWallet(profiles[it.owner_id]));
     h += '<div class="sides"><div class="side h"><span class="k">Offering</span><span class="v">' + esc(it.title) + "</span></div>" +
       '<div class="arrow" aria-hidden="true">&#8646;</div>' +
       '<div class="side w"><span class="k">Wants</span><span class="v">' + esc(it.want || "Open to offers") + "</span></div></div>";
@@ -430,6 +634,7 @@
     h += '<div class="sides"><div class="side h"><span class="k">They give</span><span class="v">' + esc(o.give) + "</span></div>" +
       '<div class="arrow" aria-hidden="true">&#8646;</div>' +
       '<div class="side w"><span class="k">For</span><span class="v">' + esc(title) + "</span></div></div>";
+    h += assetRow(o, verifiedWallet(profiles[o.from_id]));
     if (o.msg) h += '<div class="msg">' + esc(o.msg) + "</div>";
     el.innerHTML = h;
 
@@ -514,6 +719,8 @@
       row(sc.trades * 2, sc.trades + (sc.trades === 1 ? " completed trade" : " completed trades") + " — two dots each") +
       row(sc.vouches, sc.vouches === 1 ? "partner pressed their dot for you" : "partners pressed their dot for you") +
       row(sc.profile, "profile filled in");
+    paintWallet();
+    runChecks();
   }
   function row(n, what) {
     return '<div><span class="amt' + (n ? "" : " zero") + '">' + (n ? "+" + n : "0") + '</span><span class="what">' + esc(what) + "</span></div>";
@@ -527,9 +734,27 @@
       '<div style="font-size:13px;color:var(--muted)">For <b style="color:var(--ink)">' + esc(it.title) +
         '</b> — they want <b style="color:var(--ink)">' + esc(it.want || "offers") + "</b></div>" +
       '<div><label for="o-give">What you are offering</label><input id="o-give" maxlength="80" required placeholder="Retro console, boxed"></div>' +
+      '<div class="assetbox"><label class="tick"><input type="checkbox" id="o-isasset"> <span>Offering a digital asset</span></label>' +
+        '<div id="o-assetfields" hidden><p class="hint" style="margin:0 0 12px">It can be on any chain — it does not have to match theirs.</p>' +
+        '<div class="rowf"><div><label for="o-chain">Chain</label><select id="o-chain"></select></div>' +
+        '<div><label for="o-kind">Type</label><select id="o-kind"><option value="erc721">NFT (ERC-721)</option>' +
+        '<option value="erc1155">Multi-edition (ERC-1155)</option><option value="erc20">Tokens (ERC-20)</option></select></div></div>' +
+        '<div class="rowf" style="margin-top:14px"><div><label for="o-contract">Contract address</label><input id="o-contract" maxlength="42" placeholder="0x…"></div>' +
+        '<div id="o-tokidwrap"><label for="o-tokid">Token ID</label><input id="o-tokid" maxlength="78" placeholder="1234"></div></div></div></div>' +
       '<div><label for="o-msg">Message <span class="hint">— optional</span></label><textarea id="o-msg" maxlength="400" placeholder="Happy to meet halfway this week."></textarea></div>' +
       '<div class="acts"><button class="btn" type="submit">Send offer</button><button class="btn ghost" type="button" data-x>Cancel</button></div>';
     veil.appendChild(form); document.body.appendChild(veil);
+    CHAIN_IDS.forEach(function (id) {
+      var o = document.createElement("option"); o.value = id; o.textContent = CHAINS[id].name;
+      form.querySelector("#o-chain").appendChild(o);
+    });
+    form.querySelector("#o-chain").value = "8453";
+    form.querySelector("#o-isasset").addEventListener("change", function (e) {
+      form.querySelector("#o-assetfields").hidden = !e.target.checked;
+    });
+    form.querySelector("#o-kind").addEventListener("change", function (e) {
+      form.querySelector("#o-tokidwrap").hidden = e.target.value === "erc20";
+    });
     form.querySelector("[data-x]").addEventListener("click", function () { veil.remove(); });
     veil.addEventListener("click", function (e) { if (e.target === veil) veil.remove(); });
     setTimeout(function () { var i = form.querySelector("#o-give"); if (i) i.focus(); }, 30);
@@ -538,8 +763,19 @@
       var give = form.querySelector("#o-give").value.trim();
       if (!give) return;
       var msg = form.querySelector("#o-msg").value.trim();
+      var isAsset = form.querySelector("#o-isasset").checked;
+      if (isAsset && !myWallet()) { toast("Connect your wallet first — a digital offer is checked against it."); return; }
+      var asset;
+      try {
+        asset = readAsset({
+          kind: form.querySelector("#o-kind"), chain: form.querySelector("#o-chain"),
+          contract: form.querySelector("#o-contract"), tokid: form.querySelector("#o-tokid")
+        }, isAsset);
+      } catch (err) { toast(err.message); return; }
       veil.remove();
-      sb.from("offers").insert({ item_id: it.id, owner_id: it.owner_id, from_id: uid, give: give, msg: msg })
+      var rec = { item_id: it.id, owner_id: it.owner_id, from_id: uid, give: give, msg: msg };
+      Object.keys(asset).forEach(function (k) { rec[k] = asset[k]; });
+      sb.from("offers").insert(rec)
         .then(function (r) { if (r.error) return fail(r.error); toast("Offer sent."); load(); });
     });
   }
@@ -560,14 +796,22 @@
     e.preventDefault();
     if (!uid) return;
     var title = $("f-title").value.trim(); if (!title) return;
+    var isAsset = $("f-isasset").checked;
+    if (isAsset && !myWallet()) { toast("Connect your wallet first — a digital listing is checked against it."); return; }
+    var asset;
+    try {
+      asset = readAsset({ kind: $("f-kind"), chain: $("f-chain"), contract: $("f-contract"), tokid: $("f-tokid") }, isAsset);
+    } catch (e) { toast(e.message); return; }
     var btn = $("postBtn"); btn.disabled = true;
-    sb.from("items").insert({
+    var rec = {
       owner_id: uid, title: title, descr: $("f-desc").value.trim(),
       want: $("f-want").value.trim(), cat: $("f-cat").value
-    }).then(function (r) {
+    };
+    Object.keys(asset).forEach(function (k) { rec[k] = asset[k]; });
+    sb.from("items").insert(rec).then(function (r) {
       btn.disabled = false;
       if (r.error) return fail(r.error);
-      $("postForm").reset(); $("f-cat").value = "Other";
+      $("postForm").reset(); $("f-cat").value = "Other"; $("f-assetfields").hidden = true;
       toast("Posted to the board."); show("browse"); load();
     });
   });
