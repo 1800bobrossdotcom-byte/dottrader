@@ -58,7 +58,10 @@ build step.
 
 ```
 site/index.html    landing page
-site/app.html      the board
+site/app.html      the board (markup only)
+site/js/*.js       the board's scripts, loaded in order: core, assets, state, ui, post, wallet,
+                   cards, protect, messages, board, map, verify, actions, auth, boot
+site/css/board.css the board's styles
 site/config.js     Supabase project URL + anon key
 site/photos.js         browser-side compress + metadata strip + upload
 supabase/schema.sql    tables, row-level security, the two transition functions
