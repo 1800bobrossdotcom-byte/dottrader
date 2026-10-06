@@ -3,3 +3,5 @@ T2 finishing a trade stamps when: true
 T3 a stranger sees finished trades: Vinyl box
 T4 so does a visitor: 1
 T5 what the history shows: asset_chain,asset_contract,asset_kind,asset_token_id,done_at,from_id,give,give_items,id,item_id,owner_id,swapped,tracked
+L1 marking a local-pickup trade posted: refused: this one is local pickup only — hand it over in person
+L2 marking it handed over in person: ok

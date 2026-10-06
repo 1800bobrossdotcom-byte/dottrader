@@ -29,3 +29,7 @@ create trigger profiles_round_location before insert or update of lat, lng on pu
 -- Anything stored before this existed.
 update public.profiles set lat = round(lat::numeric, 2)::double precision, lng = round(lng::numeric, 2)::double precision
  where lat is not null and (lat <> round(lat::numeric, 2)::double precision or lng <> round(lng::numeric, 2)::double precision);
+
+-- Local pickup only: the lister will hand it over in person and won't post it. A trade on such a
+-- listing is a meet-up, so neither side can mark it "posted" (see mark_sent in trades.sql).
+alter table public.items add column if not exists local_only boolean not null default false;

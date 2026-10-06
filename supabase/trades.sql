@@ -65,6 +65,9 @@ begin
   if not found then raise exception 'offer not found'; end if;
   if o.status <> 'agreed' then raise exception 'only an agreed trade can be marked sent'; end if;
   if p_how not in ('post', 'in_person', 'onchain') then raise exception 'say how it was sent'; end if;
+  if p_how = 'post' and exists (select 1 from public.items where id = o.item_id and local_only) then
+    raise exception 'this one is local pickup only — hand it over in person';
+  end if;
   if p_how = 'post' and coalesce(btrim(p_ref), '') = '' then raise exception 'add the tracking number'; end if;
   if p_how = 'onchain' and coalesce(p_ref, '') !~ '^0x[0-9a-fA-F]{64}$' then raise exception 'add the transaction hash'; end if;
   if char_length(coalesce(p_ref, '')) > 80 or char_length(coalesce(p_carrier, '')) > 40 then raise exception 'too long'; end if;

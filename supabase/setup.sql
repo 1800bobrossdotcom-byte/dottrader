@@ -597,6 +597,10 @@ create trigger profiles_round_location before insert or update of lat, lng on pu
 update public.profiles set lat = round(lat::numeric, 2)::double precision, lng = round(lng::numeric, 2)::double precision
  where lat is not null and (lat <> round(lat::numeric, 2)::double precision or lng <> round(lng::numeric, 2)::double precision);
 
+-- Local pickup only: the lister will hand it over in person and won't post it. A trade on such a
+-- listing is a meet-up, so neither side can mark it "posted" (see mark_sent in trades.sql).
+alter table public.items add column if not exists local_only boolean not null default false;
+
 -- ============================================================================================
 -- messages.sql
 -- ============================================================================================
@@ -724,6 +728,9 @@ begin
   if not found then raise exception 'offer not found'; end if;
   if o.status <> 'agreed' then raise exception 'only an agreed trade can be marked sent'; end if;
   if p_how not in ('post', 'in_person', 'onchain') then raise exception 'say how it was sent'; end if;
+  if p_how = 'post' and exists (select 1 from public.items where id = o.item_id and local_only) then
+    raise exception 'this one is local pickup only — hand it over in person';
+  end if;
   if p_how = 'post' and coalesce(btrim(p_ref), '') = '' then raise exception 'add the tracking number'; end if;
   if p_how = 'onchain' and coalesce(p_ref, '') !~ '^0x[0-9a-fA-F]{64}$' then raise exception 'add the transaction hash'; end if;
   if char_length(coalesce(p_ref, '')) > 80 or char_length(coalesce(p_carrier, '')) > 40 then raise exception 'too long'; end if;

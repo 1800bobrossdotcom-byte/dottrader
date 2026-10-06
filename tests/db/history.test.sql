@@ -23,3 +23,13 @@ reset role; set role anon;
 select 'T4 so does a visitor: ' || count(*) from public.trade_history;
 reset role;
 select 'T5 what the history shows: ' || string_agg(column_name, ',' order by column_name) from information_schema.columns where table_name = 'trade_history';
+-- Local pickup only.
+insert into public.items (id, owner_id, title, local_only) values ('10000000-0000-0000-0000-000000000009','a0000000-0000-0000-0000-000000000001','Sofa',true);
+set role authenticated; select set_config('req.uid','b0000000-0000-0000-0000-000000000002',false);
+insert into public.offers (id, item_id, from_id, give) values ('20000000-0000-0000-0000-000000000009','10000000-0000-0000-0000-000000000009','b0000000-0000-0000-0000-000000000002','Armchair');
+select set_config('req.uid','a0000000-0000-0000-0000-000000000001',false);
+select public.accept_offer('20000000-0000-0000-0000-000000000009');
+create or replace function pg_temp.try(q text) returns text language plpgsql as $$ begin execute q; return 'ok'; exception when others then return 'refused: ' || sqlerrm; end $$;
+select 'L1 marking a local-pickup trade posted: ' || pg_temp.try($q$select public.mark_sent('20000000-0000-0000-0000-000000000009','post','UPS','1Z999')$q$);
+select 'L2 marking it handed over in person: ' || pg_temp.try($q$select public.mark_sent('20000000-0000-0000-0000-000000000009','in_person',null,null)$q$);
+reset role;

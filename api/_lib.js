@@ -86,7 +86,7 @@ function page(o) {
     '<meta name="theme-color" content="#F3EAD3">\n' +
     '<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n' +
     '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">\n' +
-    '<link rel="stylesheet" href="/css/page.css?v=1">\n' +
+    '<link rel="stylesheet" href="/css/page.css?v=2">\n' +
     (o.ld || []).map((x) => '<script type="application/ld+json">' + jsonLd(x) + "</script>\n").join("") +
     "</head>\n<body>\n" +
     '<header class="top"><div class="wrap bar"><a class="brand" href="/">' + LOGO + '<span class="t">Dot Trading Post<small>BARTER BOARD</small></span></a>' +
@@ -116,7 +116,7 @@ function miniCard(it, img) {
   const pic = img || (it.photos && it.photos[0]);
   return '<a class="mini" href="/item/' + esc(it.id) + '" style="--c:' + hueOf(it.cat) + '">' +
     (pic ? '<img src="' + esc(pic) + '" alt="" loading="lazy">' : '<span class="noimg" aria-hidden="true"></span>') +
-    '<span class="mt">' + esc(it.title) + '</span><span class="mw"><b>Wants</b> ' + esc(wantText(it)) + "</span></a>";
+    '<span class="mt">' + esc(it.title) + (it.local_only ? ' <span class="tag local">Local</span>' : "") + '</span><span class="mw"><b>Wants</b> ' + esc(wantText(it)) + "</span></a>";
 }
 
 module.exports = { SB_URL, SB_KEY, SITE, rest, esc, jsonLd, clip, GROUPS, CATS, slug, catBySlug, hueOf, CHAINS, wantText, page, send, notFound, miniCard };

@@ -123,6 +123,9 @@ $("radius").addEventListener("change", function (e) {
   });
   $("f-isasset").addEventListener("change", function (e) {
     $("f-assetfields").hidden = !e.target.checked;
+    // A token can't be picked up; the local-only choice is for things.
+    $("f-localwrap").hidden = !caps.local || e.target.checked;
+    if (e.target.checked) $("f-local").checked = false;
     $("f-photohint").textContent = e.target.checked ? "— optional for a digital asset: the artwork comes from the chain" : "— up to 4 · location data is removed before upload";
     if (e.target.checked) previewAsset();
   });

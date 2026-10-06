@@ -25,7 +25,7 @@ module.exports = async function handler(req, res) {
 
   let rows;
   try {
-    rows = await L.rest("items?select=id,title,want,want_cats,open_to_offers,cat,photos,created_at&status=eq.open&cat=eq." + encodeURIComponent(cat) +
+    rows = await L.rest("items?select=*&status=eq.open&cat=eq." + encodeURIComponent(cat) +
       "&order=created_at.desc&limit=" + (PER + 1) + "&offset=" + (pageNo - 1) * PER);
   } catch (e) { rows = []; }
   const next = rows.length > PER; rows = rows.slice(0, PER);

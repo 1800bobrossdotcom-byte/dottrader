@@ -93,14 +93,16 @@ function protectEl(o, dir, other) {
 }
 
 function openSent(o) {
+  var local = !!(itemById(o.item_id) || {}).local_only;
   var veil = document.createElement("div"); veil.className = "veil";
   var form = document.createElement("form"); form.className = "sheet f";
   form.innerHTML = "<h3>Mark your side sent</h3>" +
     '<div class="radios">' +
-      '<label><input type="radio" name="how" value="post" checked> Posted, with tracking</label>' +
-      '<label><input type="radio" name="how" value="in_person"> Handed over in person</label>' +
+      (local ? "" : '<label><input type="radio" name="how" value="post" checked> Posted, with tracking</label>') +
+      '<label><input type="radio" name="how" value="in_person"' + (local ? " checked" : "") + '> Handed over in person</label>' +
       '<label><input type="radio" name="how" value="onchain"> Sent on chain</label></div>' +
-    '<div id="s-post" class="rowf"><div><label for="s-car">Carrier</label><select id="s-car">' + CARRIERS.map(function (c) { return "<option>" + c[0] + "</option>"; }).join("") + "</select></div>" +
+    (local ? '<p class="localnote">Local pickup only \u2014 this trade is a meet-up, so there\u2019s no posting.</p>' : "") +
+    '<div id="s-post" class="rowf"' + (local ? " hidden" : "") + '><div><label for="s-car">Carrier</label><select id="s-car">' + CARRIERS.map(function (c) { return "<option>" + c[0] + "</option>"; }).join("") + "</select></div>" +
       '<div><label for="s-ref">Tracking number</label><input id="s-ref" maxlength="80" autocomplete="off"></div></div>' +
     '<div id="s-chain" hidden><label for="s-tx">Transaction hash</label><input id="s-tx" maxlength="66" placeholder="0x…" autocomplete="off"></div>' +
     '<p class="hint" style="margin:0">' + esc(who(o.owner_id === uid ? o.from_id : o.owner_id)) + " sees this straight away. Once it’s marked, you can’t cancel the trade — and if they never send theirs, you can close it as a no-show after the ship-by date.</p>" +

@@ -2,7 +2,7 @@
 :root {
   --paper:#F3EAD3; --card:#FFFCF4; --sunk:#EADFC4;
   --ink:#121212; --muted:#4B4740; --faint:#8C867A; --line-soft:rgba(18,18,18,.14);
-  --red:#E8392B; --yellow:#FFD23F; --cyan:#27B2E8; --blue:#2F56D6; --pink:#F2518F; --green:#1DB36A; --purple:#7B4FD6;
+  --red:#E8392B; --yellow:#FFD23F; --cyan:#27B2E8; --blue:#2F56D6; --pink:#F2518F; --green:#1DB36A; --purple:#7B4FD6; --orange:#FF8A2B;
   --have-soft:#E3EAFF; --want-soft:#FFE4E0;
   --display:"Space Grotesk","Helvetica Neue",Arial,sans-serif;
   --body:"IBM Plex Sans",system-ui,-apple-system,sans-serif;
@@ -101,3 +101,4 @@ img { max-width:100%; display:block; }
   .sides { grid-template-columns:1fr; } .arrow { display:none; }
 }
 .traded { margin:0; padding:10px 12px; border:2px solid var(--ink); border-radius:6px; background:#DDF5E8; }
+.tag.local { background:var(--orange); }

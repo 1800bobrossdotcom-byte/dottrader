@@ -174,6 +174,12 @@ finished trade marks them all traded; a cancelled trade or a no-show puts them a
 pending offer that involves one of them — on it, or putting it in — is declined at that moment, so
 one listing is never promised twice.
 
+## Local pickup only
+
+A listing can be marked local pickup only: the lister won't post it. Its card, its public page and
+the offer sheet say so (with the lister's area and how far away they are), and a trade on it is a
+meet-up — the database refuses to mark either side "posted".
+
 ## Activity
 
 Once both dots are pressed, a trade is public: the Activity tab lists the board's recent finished
@@ -203,7 +209,7 @@ record, visible to the other party.
 npm run test:bond   # the bond Edge Function, with Stripe, the database and sign-in faked
 npm run test:notify # the notify Edge Function, with Resend and the database faked
 npm run test:pages  # listing, category and sitemap pages, with the database faked
-npm run test:db     # 106 checks on a throwaway Postgres: the trade state machine, permissions,
+npm run test:db     # 108 checks on a throwaway Postgres: the trade state machine, permissions,
                     # forged requests, and accepts racing on the same listings (needs PGHOST etc.)
 ```
 

@@ -44,7 +44,7 @@ module.exports = async function handler(req, res) {
   const [prof, badge, more, art, done] = await Promise.all([
     L.rest("profiles?select=id,name,area&id=eq." + it.owner_id).then((r) => r[0] || null, () => null),
     L.rest("verification_badges?select=verified_at,summary&status=eq.verified&item_id=eq." + id).then((r) => r[0] || null, () => null),
-    L.rest("items?select=id,title,want,want_cats,open_to_offers,cat,photos&status=eq.open&cat=eq." + encodeURIComponent(it.cat) + "&id=neq." + id + "&order=created_at.desc&limit=6").catch(() => []),
+    L.rest("items?select=*&status=eq.open&cat=eq." + encodeURIComponent(it.cat) + "&id=neq." + id + "&order=created_at.desc&limit=6").catch(() => []),
     it.photos && it.photos.length ? Promise.resolve(null) : artOf(it),
     it.status === "traded" ? L.rest("trade_history?select=give,from_id,done_at&item_id=eq." + id).then((r) => r[0] || null, () => null) : Promise.resolve(null),
   ]);
@@ -84,6 +84,7 @@ module.exports = async function handler(req, res) {
         : '<div class="pics none" aria-hidden="true"><span>' + L.esc(it.title.charAt(0).toUpperCase()) + "</span></div>") + "</div>" +
       '<div class="info">' +
         '<p class="state"><span class="tag ' + state[1] + '">' + state[0] + '</span> <a class="tag cat" href="' + catPath + '">' + L.esc(it.cat) + "</a>" +
+          (it.local_only ? ' <span class="tag local" title="No shipping — handed over in person">Local pickup only</span>' : "") +
           (badge ? ' <span class="tag proof" title="The lister photographed this item next to a handwritten note with a one-time code."><s></s>Proof of item</span>' : "") + "</p>" +
         "<h1>" + L.esc(it.title) + "</h1>" +
         '<div class="sides"><div class="side h"><span class="k">Offering</span><span class="v">' + L.esc(it.title) + '</span></div><div class="arrow" aria-hidden="true"></div>' +

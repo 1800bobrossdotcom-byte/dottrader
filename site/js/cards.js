@@ -78,6 +78,7 @@ function itemCard(it, opts) {
     "<span>" + esc(ago(it.created_at)) + (prof && prof.area ? " · " + esc(prof.area) : "") + "</span>" +
     (function () { var d = mine ? null : distTo(it.owner_id); return d === null ? "" : '<span class="dist">' + esc(fmtMiles(d)) + " away</span>"; })() + "</span>";
   if (it.cat) h += '<span class="tag">' + esc(it.cat) + "</span>";
+  if (it.local_only) h += '<span class="tag local" title="No shipping \u2014 the lister hands it over in person' + (prof && prof.area ? ", around " + esc(prof.area) : "") + '"><s></s>Local pickup</span>';
   if (!traded && !pledged) h += wantedTag(it);
   var badge = badges[it.id];
   if (badge) {

@@ -88,6 +88,9 @@ function openOffer(it, give) {
     "<h3>Offer a trade</h3>" +
     '<div style="font-size:13px;color:var(--muted)">For <b style="color:var(--ink)">' + esc(it.title) +
       '</b> — they want <b style="color:var(--ink)">' + esc(wantText(it)) + "</b></div>" +
+    (it.local_only ? '<p class="localnote"><b>Local pickup only.</b> ' + esc(who(it.owner_id)) + " won\u2019t post it \u2014 you\u2019ll meet up to swap" +
+      (profiles[it.owner_id] && profiles[it.owner_id].area ? ", around <b>" + esc(profiles[it.owner_id].area) + "</b>" : "") +
+      (function () { var d = distTo(it.owner_id); return d === null ? "" : " (" + esc(fmtMiles(d)) + " from you)"; })() + ".</p>" : "") +
     (mineOpen.length ? '<div><span class="lbl" id="o-minelbl">Offer something you have posted <span class="hint">— tap one or more</span></span>' +
       '<div class="pickmine" id="o-mine" role="group" aria-labelledby="o-minelbl"></div></div>' : "") +
     '<div><label for="o-give">' + (mineOpen.length ? "Or describe what you are offering" : "What you are offering") + '</label><input id="o-give" maxlength="80" required placeholder="Retro console, boxed"></div>' +
