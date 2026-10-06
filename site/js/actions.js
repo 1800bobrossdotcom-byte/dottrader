@@ -241,7 +241,7 @@ function followLink() {
 }
 
 function shareItem(it) {
-  var url = location.origin + "/item/" + it.id;
+  var url = location.origin + itemPath(it);
   if (navigator.share) return navigator.share({ title: it.title + " \u2014 up for trade", url: url }).catch(function () {});
   (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject()).then(function () { toast("Link copied \u2014 anyone can open it, no account needed."); },
     function () { window.prompt("Copy this link:", url); });

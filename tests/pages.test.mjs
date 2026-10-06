@@ -46,24 +46,26 @@ const meta = (b, prop) => (new RegExp('<meta (?:property|name)="' + prop + '" co
 const lds = (b) => [...b.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)].map((m) => JSON.parse(m[1]));
 
 {
-  const r = await call(item, { id: I1 });
+  const old = await call(item, { id: I1 });
+  ok("an old /item/<id> link redirects to the readable address", old.status === 301 && old.headers.location === "/item/charizard-script-alert-1-script-holo-" + I1, old.headers.location);
+  const r = await call(item, { id: "charizard-script-alert-1-script-holo-" + I1 });
   ok("an open listing answers 200 as HTML", r.status === 200 && /text\/html/.test(r.headers["content-type"]));
   ok("its title names the listing", /<title>Charizard &lt;script&gt;alert\(1\)&lt;\/script&gt; holo — up for trade \| Dot Trading Post<\/title>/.test(r.body), (r.body.match(/<title>.*<\/title>/) || [])[0]);
   ok("nothing the lister typed can open a tag", !/<script>alert/.test(r.body) && !/<\/script>alert/.test(r.body));
   ok("link previews get its first photo", meta(r.body, "og:image") === items[0].photos[0]);
   ok("…and a description with what they want", /Wants N64 games · or any Consoles &amp; Retro/.test(meta(r.body, "og:description") || ""), meta(r.body, "og:description"));
-  ok("canonical is its own address", /<link rel="canonical" href="https:\/\/www\.dottrader\.app\/item\/aaaaaaaa-/.test(r.body));
   ok("search engines may index it", !/noindex/.test(r.body));
   const ld = lds(r.body);
   ok("structured data: a Product with both photos, and breadcrumbs", ld[0]["@type"] === "Product" && ld[0].image.length === 2 && ld[0].name === items[0].title && ld[1]["@type"] === "BreadcrumbList" && ld[1].itemListElement[1].item.endsWith("/c/trading-cards"));
   ok("structured data can't close its own script tag", !/<\/script>alert/.test(r.body.split('application/ld+json">')[1].split("</script>")[0]));
   ok("Make an offer goes into the board", r.body.includes('href="/app#item=' + I1 + '"'));
   ok("shows the owner, the proof badge, and the swipe hint", /Listed by <b>Alice &amp; Co<\/b> · Leeds/.test(r.body) && /Proof of item/.test(r.body) && /Swipe for 1 more photo</.test(r.body));
-  ok("more from the category, not itself", r.body.includes("/item/" + I2) && !r.body.split('class="more"')[1].includes(I1));
+  ok("canonical is the readable address", r.body.includes('<link rel="canonical" href="https://www.dottrader.app/item/charizard-script-alert-1-script-holo-' + I1 + '">'));
+  ok("more from the category, not itself", r.body.includes("/item/pikachu-promo-" + I2) && !r.body.split('class="more"')[1].includes(I1));
   ok("cached briefly at the edge", /s-maxage=120/.test(r.headers["cache-control"]));
 }
 {
-  const r = await call(item, { id: I3 });
+  const r = await call(item, { id: "old-lamp-" + I3 });
   ok("a traded listing says what it went for, safely", /Traded for <b>A &lt;b&gt;bike&lt;\/b&gt;<\/b> with <b>Alice &amp; Co<\/b> · Sep 5, 2026/.test(r.body), (r.body.match(/<p class="traded">.*?<\/p>/) || [])[0]);
   ok("a traded listing still opens, marked Traded, not indexed", r.status === 200 && /Traded</.test(r.body) && /noindex/.test(r.body) && /See what else is up for trade/.test(r.body) && !/#item=/.test(r.body));
   const g = await call(item, { id: I4 });
@@ -73,7 +75,7 @@ const lds = (b) => [...b.matchAll(/<script type="application\/ld\+json">([\s\S]*
 }
 {
   const r = await call(cat, { cat: "trading-cards" });
-  ok("a category page lists its open listings", r.status === 200 && r.body.includes("/item/" + I1) && r.body.includes("/item/" + I2) && /<h1>Trading Cards up for trade<\/h1>/.test(r.body));
+  ok("a category page lists its open listings", r.status === 200 && r.body.includes("-" + I1 + '"') && r.body.includes("/item/pikachu-promo-" + I2) && /<h1>Trading Cards up for trade<\/h1>/.test(r.body));
   ok("…as an ItemList", lds(r.body)[0].mainEntity.itemListElement.length === 2);
   ok("…and links into the board filtered", r.body.includes('href="/app#cat=Trading%20Cards"'));
   const e = await call(cat, { cat: "garden" });
@@ -86,8 +88,19 @@ const lds = (b) => [...b.matchAll(/<script type="application\/ld\+json">([\s\S]*
 {
   const r = await call(sitemap, {});
   ok("the sitemap is XML", r.status === 200 && /application\/xml/.test(r.headers["content-type"]) && r.body.startsWith("<?xml"));
-  ok("it lists open listings and their categories, not finished ones", r.body.includes("/item/" + I1) && r.body.includes("/item/" + I2) && !r.body.includes(I3) && !r.body.includes(I4) &&
+  ok("it lists open listings and their categories, not finished ones", r.body.includes("-" + I1 + "</loc>") && r.body.includes("/item/pikachu-promo-" + I2 + "</loc>") && !r.body.includes(I3) && !r.body.includes(I4) &&
     r.body.includes("/c/trading-cards</loc>") && !r.body.includes("/c/home-kitchen"));
+}
+{
+  // The board builds the same addresses as the server.
+  const fs = await import("node:fs"); const vm = await import("node:vm");
+  const core = fs.readFileSync(new URL("../site/js/core.js", import.meta.url), "utf8");
+  const ctx = { document: { getElementById() { return null; } }, window: {} }; vm.createContext(ctx);
+  vm.runInContext(core.slice(0, core.indexOf("function fnUrl")), ctx);
+  const L = require("../api/_lib.js");
+  const titles = ["Charizard holo, base set (PSA 8)", "Pokémon Évolutions — ETB", "VAMPEPE ☲ aplcake", "☲", "Tom & Jerry", "x".repeat(90), "Ünïcödé çàfé ñ"];
+  const diff = titles.filter((t) => ctx.itemPath({ id: "i", title: t }) !== L.itemPath({ id: "i", title: t }));
+  ok("the board and the server spell listing addresses the same way", !diff.length, diff.join(" | "));
 }
 console.log(res.join("\n"));
 const failed = res.filter((x) => x.startsWith("FAIL")).length;

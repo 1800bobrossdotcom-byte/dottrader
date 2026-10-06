@@ -74,6 +74,8 @@ function itemCard(it, opts) {
     '<div class="side w"><span class="k">Wants</span><span class="v">' + esc(wantText(it)) + "</span></div></div>";
   var parts = sc.dots + " dots \u00b7 " + sc.trades + (sc.trades === 1 ? " trade" : " trades") + " \u00b7 " + sc.verified + " verified \u00b7 " + sc.noShows + (sc.noShows === 1 ? " no-show" : " no-shows");
   h += '<div class="foot"><span class="who" title="' + esc(parts) + '"><span class="av">' + esc(initial(it.owner_id).toUpperCase()) + '</span><b>' + esc(who(it.owner_id)) + "</b>" + dotRow(sc.dots) +
+    // The record behind the dots, spelled out: what a stranger actually needs to know.
+    '<span class="rec">' + (sc.trades ? sc.trades + (sc.trades === 1 ? " trade" : " trades") + " \u00b7 " + sc.verified + " verified" + (sc.noShows ? "" : " \u00b7 0 no-shows") : "No trades yet") + "</span>" +
     (sc.noShows ? '<span class="strike" title="Agreed a trade and never sent their side">' + sc.noShows + (sc.noShows === 1 ? " no-show" : " no-shows") + "</span>" : "") +
     "<span>" + esc(ago(it.created_at)) + (prof && prof.area ? " · " + esc(prof.area) : "") + "</span>" +
     (function () { var d = mine ? null : distTo(it.owner_id); return d === null ? "" : '<span class="dist">' + esc(fmtMiles(d)) + " away</span>"; })() + "</span>";
@@ -176,7 +178,7 @@ function offerCard(o, dir) {
     tiles.push('<div class="otile nft" data-art="' + artId + '"><div class="artph">Fetching artwork\u2026</div></div>');
   }
   (o.give_items || []).map(itemById).forEach(function (g) {
-    if (g && g.photos && g.photos[0]) tiles.push('<a class="otile" href="/item/' + esc(g.id) + '" target="_blank" rel="noopener" title="' + esc(g.title) + '"><img src="' + esc(g.photos[0]) + '" alt="' + esc(g.title) + '" loading="lazy"></a>');
+    if (g && g.photos && g.photos[0]) tiles.push('<a class="otile" href="' + esc(itemPath(g)) + '" target="_blank" rel="noopener" title="' + esc(g.title) + '"><img src="' + esc(g.photos[0]) + '" alt="' + esc(g.title) + '" loading="lazy"></a>');
   });
   if (tiles.length) h += '<div class="opics' + (tiles.length > 1 ? " many" : "") + '">' + tiles.join("") + "</div>";
   h += '<div class="sides"><div class="side h"><span class="k">They give</span><span class="v">' + esc(o.give) + "</span></div>" +
@@ -186,7 +188,7 @@ function offerCard(o, dir) {
   if (gi.length) h += '<div class="gitems"><span class="k">' + (dir === "in" ? "Their listings in this offer" : "Your listings in this offer") + "</span>" +
     gi.map(function (g) {
       var pic = g.photos && g.photos[0];
-      return '<a href="/item/' + esc(g.id) + '" target="_blank" rel="noopener">' + (pic ? '<img src="' + esc(pic) + '" alt="">' : '<span class="pi" style="background:' + hueOf(g.cat) + '">' + esc(g.title.charAt(0).toUpperCase()) + "</span>") + "<span>" + esc(g.title) + "</span></a>";
+      return '<a href="' + esc(itemPath(g)) + '" target="_blank" rel="noopener">' + (pic ? '<img src="' + esc(pic) + '" alt="">' : '<span class="pi" style="background:' + hueOf(g.cat) + '">' + esc(g.title.charAt(0).toUpperCase()) + "</span>") + "<span>" + esc(g.title) + "</span></a>";
     }).join("") + "</div>";
   h += assetRow(o, verifiedWallet(profiles[o.from_id]), o.from_id === uid ? "you" : who(o.from_id));
   if (o.msg) h += '<div class="msg">' + esc(o.msg) + "</div>";

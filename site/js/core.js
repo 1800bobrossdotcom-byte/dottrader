@@ -7,6 +7,14 @@
 
 var $ = function (id) { return document.getElementById(id); };
 // An Edge Function's URL, by its address in config.js (see the note there).
+// A listing's public address: its title as words, then its id (kept in step with api/_lib.js).
+var ACC = "\u00e1\u00e0\u00e2\u00e4\u00e3\u00e5\u0101\u00e9\u00e8\u00ea\u00eb\u0113\u00ed\u00ec\u00ee\u00ef\u012b\u00f3\u00f2\u00f4\u00f6\u00f5\u00f8\u014d\u00fa\u00f9\u00fb\u00fc\u016b\u00f1\u00e7\u00fd\u00ff", PLAIN = "aaaaaaaeeeeeiiiiiooooooouuuuuncyy";
+function itemPath(it) {
+  var s = String(it.title || "").toLowerCase().replace(/[^\x00-\x7f]/g, function (c) { var i = ACC.indexOf(c); return i < 0 ? " " : PLAIN[i]; });
+  s = s.replace(/&/g, " and ").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  if (s.length > 60) s = s.slice(0, 60).replace(/-[^-]*$/, "");
+  return "/item/" + (s ? s + "-" : "") + it.id;
+}
 function fnUrl(k) {
   var c = window.DTP_CONFIG || {}, f = (c.functions || {})[k] || { verify: "verify-item", bond: "bond" }[k];
   return c.url + "/functions/v1/" + f;

@@ -40,6 +40,16 @@ const GROUPS = [
 const HUES = ["var(--pink)", "var(--blue)", "var(--purple)", "var(--red)", "var(--cyan)", "var(--green)", "var(--yellow)", "#6B7280", "var(--faint)"];
 const CATS = [].concat(...GROUPS.map((g) => g[1]));
 function slug(cat) { return String(cat).toLowerCase().replace(/&/g, " ").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""); }
+// A listing's address: its title as words, then its id — /item/charizard-holo-1999-<uuid>. Only
+// the id is ever looked up, so a title edit can't break a link; the words are for people and search.
+const ACC = "áàâäãåāéèêëēíìîïīóòôöõøōúùûüūñçýÿ", PLAIN = "aaaaaaaeeeeeiiiiiooooooouuuuuncyy";
+function titleSlug(t) {
+  let s = String(t || "").toLowerCase().replace(/[^\x00-\x7f]/g, (c) => { const i = ACC.indexOf(c); return i < 0 ? " " : PLAIN[i]; });
+  s = s.replace(/&/g, " and ").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  if (s.length > 60) s = s.slice(0, 60).replace(/-[^-]*$/, "");
+  return s;
+}
+function itemPath(it) { const w = titleSlug(it.title); return "/item/" + (w ? w + "-" : "") + it.id; }
 function catBySlug(s) { return CATS.find((c) => slug(c) === s) || null; }
 function hueOf(cat) { const i = GROUPS.findIndex((g) => g[1].includes(cat)); return i < 0 ? "var(--faint)" : HUES[i]; }
 
@@ -54,7 +64,7 @@ function wantText(it) {
   if (it.want) bits.push(it.want);
   if (it.want_cats && it.want_cats.length) bits.push((it.want ? "or any " : "Any ") + it.want_cats.join(", "));
   if (!bits.length) return "Open to offers";
-  if (it.open_to_offers !== false) bits.push("open to other offers");
+  if (it.open_to_offers !== false && !/open to (other )?offers/i.test(it.want || "")) bits.push("open to other offers");
   return bits.join(" · ");
 }
 
@@ -114,9 +124,9 @@ function notFound(res, what) {
 // A small card linking to a listing's own page, used on category pages and under a listing.
 function miniCard(it, img) {
   const pic = img || (it.photos && it.photos[0]);
-  return '<a class="mini" href="/item/' + esc(it.id) + '" style="--c:' + hueOf(it.cat) + '">' +
+  return '<a class="mini" href="' + esc(itemPath(it)) + '" style="--c:' + hueOf(it.cat) + '">' +
     (pic ? '<img src="' + esc(pic) + '" alt="" loading="lazy">' : '<span class="noimg" aria-hidden="true"></span>') +
     '<span class="mt">' + esc(it.title) + (it.local_only ? ' <span class="tag local">Local</span>' : "") + '</span><span class="mw"><b>Wants</b> ' + esc(wantText(it)) + "</span></a>";
 }
 
-module.exports = { SB_URL, SB_KEY, SITE, rest, esc, jsonLd, clip, GROUPS, CATS, slug, catBySlug, hueOf, CHAINS, wantText, page, send, notFound, miniCard };
+module.exports = { titleSlug, itemPath, SB_URL, SB_KEY, SITE, rest, esc, jsonLd, clip, GROUPS, CATS, slug, catBySlug, hueOf, CHAINS, wantText, page, send, notFound, miniCard };

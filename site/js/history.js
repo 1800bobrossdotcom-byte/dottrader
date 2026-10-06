@@ -54,8 +54,8 @@ function tradeRow(t) {
   // Told from the viewer's side when it was their trade.
   var mineFrom = uid && t.from_id === uid;
   var a = mineFrom ? t.from_id : t.owner_id, b = mineFrom ? t.owner_id : t.from_id;
-  var aGave = mineFrom ? esc(t.give) : '<a href="/item/' + esc(t.item_id) + '">' + esc(it.title) + "</a>";
-  var bGave = mineFrom ? '<a href="/item/' + esc(t.item_id) + '">' + esc(it.title) + "</a>" : esc(t.give);
+  var aGave = mineFrom ? esc(t.give) : '<a href="' + esc(itemPath({ id: t.item_id, title: it.title })) + '">' + esc(it.title) + "</a>";
+  var bGave = mineFrom ? '<a href="' + esc(itemPath({ id: t.item_id, title: it.title })) + '">' + esc(it.title) + "</a>" : esc(t.give);
   var when = new Date(t.done_at);
   el.innerHTML =
     '<div class="tpair"><span class="tp">' + (mineFrom ? right : left) + '</span><span class="arrow" aria-hidden="true"></span><span class="tp">' + (mineFrom ? left : right) + "</span></div>" +

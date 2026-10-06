@@ -44,7 +44,7 @@ module.exports = async function handler(req, res) {
 
   const ld = [
     { "@context": "https://schema.org", "@type": "CollectionPage", name: cat + " up for trade", url: L.SITE + path,
-      mainEntity: { "@type": "ItemList", itemListElement: rows.map((m, i) => ({ "@type": "ListItem", position: (pageNo - 1) * PER + i + 1, url: L.SITE + "/item/" + m.id, name: m.title })) } },
+      mainEntity: { "@type": "ItemList", itemListElement: rows.map((m, i) => ({ "@type": "ListItem", position: (pageNo - 1) * PER + i + 1, url: L.SITE + L.itemPath(m), name: m.title })) } },
     { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [
       { "@type": "ListItem", position: 1, name: "Dot Trading Post", item: L.SITE + "/" },
       { "@type": "ListItem", position: 2, name: cat, item: L.SITE + "/c/" + s } ] },

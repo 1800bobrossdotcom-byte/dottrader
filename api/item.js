@@ -34,7 +34,9 @@ function assetLine(it) {
 
 module.exports = async function handler(req, res) {
   const q = req.query || Object.fromEntries(new URL(req.url, "http://x").searchParams);
-  const id = String(q.id || "").toLowerCase();
+  // /item/<words>-<uuid> or the older /item/<uuid>: only the id at the end counts.
+  const asked = String(q.id || "").toLowerCase();
+  const id = (asked.match(/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/) || [])[1] || "";
   if (!UUID.test(id)) return L.notFound(res, "No such listing");
 
   let it;
@@ -56,7 +58,9 @@ module.exports = async function handler(req, res) {
   const want = L.wantText(it);
   const open = it.status === "open";
   const state = open ? ["On the board", ""] : it.status === "pledged" ? ["Agreed — awaiting delivery", "hold"] : ["Traded", "ok"];
-  const path = "/item/" + id;
+  const path = L.itemPath(it);
+  // Any other spelling of the address (an old link, an edited title) goes to the current one.
+  if ("/item/" + asked !== path) { res.statusCode = 301; res.setHeader("location", path); res.setHeader("cache-control", "public, s-maxage=300"); return res.end(); }
   const catPath = "/c/" + L.slug(it.cat);
 
   const desc = L.clip("Up for trade: " + it.title + ". " + (want === "Open to offers" ? "Open to offers." : "Wants " + want.replace(/^Any /, "any ") + ".") + (it.descr ? " " + it.descr : ""), 158);

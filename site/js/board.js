@@ -167,7 +167,8 @@ function openOffer(it, give) {
       }, isAsset);
     } catch (err) { toast(err.message); return; }
     veil.remove();
-    var rec = { item_id: it.id, owner_id: it.owner_id, from_id: uid, give: give, msg: msg };
+    // Who owns the item is the database's to say (offers_guard looks it up), so it isn't sent.
+    var rec = { item_id: it.id, from_id: uid, give: give, msg: msg };
     Object.keys(asset).forEach(function (k) { rec[k] = asset[k]; });
     if (picked.length) {
       rec.give_items = picked.slice();

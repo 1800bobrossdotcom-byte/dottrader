@@ -57,10 +57,12 @@ async function run(hash, old) {
   await p.click(".sheet .pm:has-text('Game Boy Color')");
   await p.click(".sheet button[type=submit]"); await p.waitForTimeout(400);
   const o = posts.find(x => /^offers /.test(x));
+  ok("an offer doesn't name the listing's owner — the database looks that up", o && !("owner_id" in JSON.parse(o.slice(7))));
   ok("sending puts both listings in the offer", o && JSON.stringify(JSON.parse(o.slice(7)).give_items) === JSON.stringify([SW, GB]), o && o.slice(0, 200));
   await p.click("#matchBox .mcard button"); await p.waitForTimeout(200);
   ok("Offer it from a match comes with my listing already picked", (await p.getAttribute(".sheet .pm:has-text('Nintendo Switch OLED')", "aria-pressed")) === "true" && (await p.inputValue("#o-give")) === "Nintendo Switch OLED");
   await p.keyboard.press("Escape");
+  ok("cards spell out each trader's record", (await p.$$eval("#feed .item .who .rec", x => x.map(e => e.textContent))).every(t => t === "No trades yet"));
   ok("cards have a Share button", (await p.$$("#feed .item .linkbtn.share")).length === 4);
   await p.click("#t-mine"); await p.waitForTimeout(300);
   const chips = await p.$$eval(".offer .gitems a", x => x.map(e => e.textContent + " -> " + e.getAttribute("href")));
@@ -69,7 +71,7 @@ async function run(hash, old) {
   ok("offers show what is on offer as pictures: the NFT's artwork and the listing's photo", art.length === 2 && art.includes("5150_001 #2/2") && art.includes("Pikachu promo"), art.join("|"));
   await p.$eval(".offer:has-text('5150_001 2/2')", e => e.scrollIntoView());
   await p.screenshot({ path: OUT + "/offer-art.png", fullPage: false });
-  ok("an incoming offer shows the listings put in, linked to their pages", chips.length === 1 && chips[0] === "Pikachu promo -> /item/" + PK, chips.join("|"));
+  ok("an incoming offer shows the listings put in, linked to their pages", chips.length === 1 && chips[0] === "Pikachu promo -> /item/pikachu-promo-" + PK, chips.join("|"));
   await p.screenshot({ path: OUT + "/offermine-in.png", fullPage: false });
   await b.close(); }
 { const { b, p } = await run("#item=" + SD);

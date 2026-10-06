@@ -49,7 +49,7 @@ async function run(signedIn, noHistory) {
   const mine = await p.$$eval("#myHist .tline", x => x.map(e => e.textContent));
   ok("Your finished trades: only mine", mine.length === 1 && /^You swapped Switch OLED/.test(mine[0]), mine.join(" | "));
   ok("stats line counts trades and traders", /2 trades finished between 3 traders/.test(await p.textContent("#actStats")), await p.textContent("#actStats"));
-  ok("item titles link to their public pages", (await p.getAttribute("#allHist .trow:first-child .tline a", "href")) === "/item/" + I(1));
+  ok("item titles link to their public pages", (await p.getAttribute("#allHist .trow:first-child .tline a", "href")) === "/item/charizard-holo-" + I(1));
   await p.screenshot({ path: OUT + "/activity.png", fullPage: false });
   await b.close(); }
 { const { b, p } = await run(false);

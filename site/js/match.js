@@ -15,7 +15,8 @@ function wantText(it) {
   if (it.want) bits.push(it.want);
   if (it.want_cats && it.want_cats.length) bits.push((it.want ? "or any " : "Any ") + it.want_cats.join(", "));
   if (!bits.length) return "Open to offers";
-  if (it.open_to_offers !== false) bits.push("open to other offers");
+  // "Open to offers" typed as the want already says it.
+  if (it.open_to_offers !== false && !/open to (other )?offers/i.test(it.want || "")) bits.push("open to other offers");
   return bits.join(" · ");
 }
 
