@@ -1,0 +1,5 @@
+T1 a new offer can't arrive already finished: no finish time
+T2 finishing a trade stamps when: true
+T3 a stranger sees finished trades: Vinyl box
+T4 so does a visitor: 1
+T5 what the history shows: asset_chain,asset_contract,asset_kind,asset_token_id,done_at,from_id,give,give_items,id,item_id,owner_id,swapped,tracked

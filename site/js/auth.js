@@ -177,7 +177,8 @@ function enter(session) {
   lastUid = newUid; uid = newUid;
   myEmail = signedIn ? (session.user.email || "") : "";
   $("gate").hidden = signedIn;
-  $("tabs").hidden = !signedIn;
+  // Visitors get the tabs too: the board and its activity are public; posting and trading ask for an account.
+  $("tabs").hidden = false;
   $("me").hidden = !signedIn;
   $("signInTop").hidden = signedIn;
   applyCaps();
@@ -190,7 +191,7 @@ function enter(session) {
     $("meName").textContent = "· " + myEmail;
     show("browse");
   } else {
-    $("post").hidden = true; $("mine").hidden = true; $("browse").hidden = false;
+    $("post").hidden = true; $("mine").hidden = true; $("activity").hidden = true; $("browse").hidden = false;
   }
   var then = signedIn ? afterAuth : null; afterAuth = null;
   load().then(function () {

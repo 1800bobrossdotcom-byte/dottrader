@@ -100,3 +100,4 @@ img { max-width:100%; display:block; }
   .grid { grid-template-columns:repeat(2, minmax(0, 1fr)); gap:12px; }
   .sides { grid-template-columns:1fr; } .arrow { display:none; }
 }
+.traded { margin:0; padding:10px 12px; border:2px solid var(--ink); border-radius:6px; background:#DDF5E8; }

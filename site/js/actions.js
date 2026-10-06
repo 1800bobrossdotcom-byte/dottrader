@@ -178,6 +178,7 @@ function load() {
     }
     render();
     loadMatches();
+    loadHistory();
     followLink();
   });
 }

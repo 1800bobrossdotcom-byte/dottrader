@@ -43,14 +43,17 @@ function dotRow(n) {
 }
 
 function show(which) {
-  ["browse", "post", "mine"].forEach(function (k) {
+  ["browse", "post", "mine", "activity"].forEach(function (k) {
     $(k).hidden = k !== which;
     $("t-" + k).setAttribute("aria-selected", String(k === which));
   });
   render();
 }
-["browse", "post", "mine"].forEach(function (k) {
-  $("t-" + k).addEventListener("click", function () { show(k); });
+["browse", "post", "mine", "activity"].forEach(function (k) {
+  $("t-" + k).addEventListener("click", function () {
+    if (!uid && (k === "post" || k === "mine")) return needAccount(k === "post" ? "Make an account to post. It takes a minute." : "Make an account to trade. It takes a minute.", function () { show(k); });
+    show(k);
+  });
 });
 $("postCta").addEventListener("click", function () {
   if (!uid) return needAccount("Make an account to post. It takes a minute.", function () { show("post"); });

@@ -141,6 +141,8 @@ create table if not exists public.offers (
 -- the trade: pledged when it is accepted, traded when it completes, back on the board if it falls
 -- through — so one listing can't be promised in two trades at once.
 alter table public.offers add column if not exists give_items uuid[] not null default '{}';
+-- When the second dot was pressed. Older finished trades have none; their offer date stands in.
+alter table public.offers add column if not exists done_at timestamptz;
 alter table public.offers drop constraint if exists offers_give_items_max;
 alter table public.offers add constraint offers_give_items_max check (coalesce(array_length(give_items, 1), 0) <= 6);
 
@@ -222,7 +224,7 @@ begin
 
   select confirm_owner and confirm_from into v_both from public.offers where id = p_offer;
   if v_both then
-    update public.offers set status = 'done' where id = p_offer;
+    update public.offers set status = 'done', done_at = now() where id = p_offer;
     update public.items  set status = 'traded' where id = o.item_id or id = any (o.give_items);
   end if;
 end $$;

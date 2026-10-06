@@ -155,6 +155,8 @@ create table if not exists public.offers (
 -- the trade: pledged when it is accepted, traded when it completes, back on the board if it falls
 -- through — so one listing can't be promised in two trades at once.
 alter table public.offers add column if not exists give_items uuid[] not null default '{}';
+-- When the second dot was pressed. Older finished trades have none; their offer date stands in.
+alter table public.offers add column if not exists done_at timestamptz;
 alter table public.offers drop constraint if exists offers_give_items_max;
 alter table public.offers add constraint offers_give_items_max check (coalesce(array_length(give_items, 1), 0) <= 6);
 
@@ -236,7 +238,7 @@ begin
 
   select confirm_owner and confirm_from into v_both from public.offers where id = p_offer;
   if v_both then
-    update public.offers set status = 'done' where id = p_offer;
+    update public.offers set status = 'done', done_at = now() where id = p_offer;
     update public.items  set status = 'traded' where id = o.item_id or id = any (o.give_items);
   end if;
 end $$;
@@ -809,7 +811,7 @@ begin
   new.cancelled_by := null; new.defaulted_by := null; new.ship_by := null;
   new.owner_sent_at := null; new.owner_sent_how := null; new.owner_carrier := null; new.owner_ref := null;
   new.from_sent_at := null;  new.from_sent_how := null;  new.from_carrier := null;  new.from_ref := null;
-  new.swap_order := null; new.swap_sig := null; new.swap_tx := null;
+  new.swap_order := null; new.swap_sig := null; new.swap_tx := null; new.done_at := null;
   new.created_at := now();
   return new;
 end $$;
@@ -1204,3 +1206,30 @@ do $$ begin
   perform cron.schedule('dtp-shipby', '7 14 * * *', $job$ select public.notify_event('shipby_sweep', null) $job$);
 exception when others then raise notice 'pg_cron not available here: no ship-by reminders';
 end $$;
+
+-- ============================================================================================
+-- history.sql
+-- ============================================================================================
+
+-- Dot Trading Post — finished trades, for everyone to see.
+--
+-- Run this in the Supabase SQL editor AFTER trades.sql (setup.sql does it in order).
+--
+-- Offers are private to their two parties while they are being worked out. Once both dots are
+-- pressed the trade is done, and what was swapped for what becomes part of the board's record:
+-- the item, what the other side gave (their words, any listings they put in, any token), who the
+-- two traders were, and when. Messages, tracking numbers and anything said in the offer stay
+-- private. Only finished trades appear here — never pending, declined or cancelled ones.
+
+drop view if exists public.trade_history;
+create view public.trade_history with (security_invoker = off) as
+  select o.id, o.item_id, o.owner_id, o.from_id, o.give, o.give_items,
+         o.asset_kind, o.asset_chain, o.asset_contract, o.asset_token_id,
+         coalesce(o.done_at, o.created_at) as done_at,
+         (o.swap_tx is not null) as swapped,
+         (o.owner_sent_how = 'post' and o.from_sent_how = 'post') as tracked
+  from public.offers o
+  where o.status = 'done';
+grant select on public.trade_history to anon, authenticated;
+
+create index if not exists offers_done_idx on public.offers (done_at desc) where status = 'done';

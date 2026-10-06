@@ -74,6 +74,7 @@ supabase/messages.sql  a private thread on each offer, for its two parties only
 supabase/trades.sql    ship-by dates, "sent" + tracking, no-shows, swap orders, bonds, payouts
 supabase/matching.sql  what each listing wants, mutual matches, saved searches
 supabase/notifications.sql   database triggers that ask the notify function to send an email
+supabase/history.sql   finished trades, public: what went for what, between whom, when
 supabase/functions/notify/index.ts   Edge Function: the emails (offers, messages, matches, ship-by)
 supabase/functions/bond/index.ts   Edge Function: Stripe card holds for trade bonds
 site/swap.js           atomic NFT-for-NFT swaps through Seaport 1.6
@@ -173,6 +174,13 @@ finished trade marks them all traded; a cancelled trade or a no-show puts them a
 pending offer that involves one of them — on it, or putting it in — is declined at that moment, so
 one listing is never promised twice.
 
+## Activity
+
+Once both dots are pressed, a trade is public: the Activity tab lists the board's recent finished
+trades, and each trader's own. It shows what went for what (the listing, the other side's words,
+any listings or token they put in), between whom, when, and whether it was tracked both ways or
+swapped on chain. Messages, tracking numbers and unfinished offers stay private.
+
 ## Shareable pages
 
 Every listing has its own address, `/item/<id>`, rendered on the server so link previews and
@@ -195,7 +203,7 @@ record, visible to the other party.
 npm run test:bond   # the bond Edge Function, with Stripe, the database and sign-in faked
 npm run test:notify # the notify Edge Function, with Resend and the database faked
 npm run test:pages  # listing, category and sitemap pages, with the database faked
-npm run test:db     # 101 checks on a throwaway Postgres: the trade state machine, permissions,
+npm run test:db     # 106 checks on a throwaway Postgres: the trade state machine, permissions,
                     # forged requests, and accepts racing on the same listings (needs PGHOST etc.)
 ```
 

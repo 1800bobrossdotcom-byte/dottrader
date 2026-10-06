@@ -41,12 +41,14 @@ module.exports = async function handler(req, res) {
   try { it = (await L.rest("items?select=*&id=eq." + id))[0]; } catch (e) { return L.send(res, 503, L.page({ path: "/", title: "Dot Trading Post", desc: "", noindex: true, body: '<section class="empty"><h1>The board is busy</h1><p>Try again in a moment.</p></section>' })); }
   if (!it || it.status === "removed") return L.notFound(res, it ? "This listing was taken down" : "No such listing");
 
-  const [prof, badge, more, art] = await Promise.all([
+  const [prof, badge, more, art, done] = await Promise.all([
     L.rest("profiles?select=id,name,area&id=eq." + it.owner_id).then((r) => r[0] || null, () => null),
     L.rest("verification_badges?select=verified_at,summary&status=eq.verified&item_id=eq." + id).then((r) => r[0] || null, () => null),
     L.rest("items?select=id,title,want,want_cats,open_to_offers,cat,photos&status=eq.open&cat=eq." + encodeURIComponent(it.cat) + "&id=neq." + id + "&order=created_at.desc&limit=6").catch(() => []),
     it.photos && it.photos.length ? Promise.resolve(null) : artOf(it),
+    it.status === "traded" ? L.rest("trade_history?select=give,from_id,done_at&item_id=eq." + id).then((r) => r[0] || null, () => null) : Promise.resolve(null),
   ]);
+  const doneWith = done ? await L.rest("profiles?select=name&id=eq." + done.from_id).then((r) => (r[0] && r[0].name) || "another trader", () => "another trader") : null;
 
   const photos = (it.photos || []).slice(0, 4);
   const pics = photos.length ? photos : art && art.image ? [art.image] : [];
@@ -88,6 +90,8 @@ module.exports = async function handler(req, res) {
           '<div class="side w"><span class="k">Wants</span><span class="v">' + L.esc(want) + "</span></div></div>" +
         (it.descr ? '<p class="desc">' + L.esc(it.descr) + "</p>" : "") +
         assetLine(it) +
+        (done ? '<p class="traded">Traded for <b>' + L.esc(done.give) + "</b> with <b>" + L.esc(doneWith) + "</b> · " +
+          new Date(done.done_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) + "</p>" : "") +
         '<p class="by">Listed by <b>' + L.esc(name) + "</b>" + (prof && prof.area ? " · " + L.esc(prof.area) : "") +
           ' · <time datetime="' + L.esc(it.created_at) + '">' + new Date(it.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) + "</time></p>" +
         '<div class="acts">' +

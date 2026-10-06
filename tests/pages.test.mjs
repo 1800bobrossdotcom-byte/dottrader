@@ -29,6 +29,7 @@ globalThis.fetch = async (url) => {
     const off = Number(p.get("offset") || 0), lim = Number(p.get("limit") || 1000);
     rows = rows.slice(off, off + lim);
   } else if (t === "profiles") rows = [{ id: A, name: "Alice & Co", area: "Leeds" }];
+  else if (t === "trade_history") rows = p.get("item_id") === "eq." + I3 ? [{ give: "A <b>bike</b>", from_id: A, done_at: "2026-09-05T10:00:00Z" }] : [];
   else if (t === "verification_badges") rows = p.get("item_id") === "eq." + I1 ? [{ verified_at: "2026-10-02", summary: "ok" }] : [];
   return new Response(JSON.stringify(rows), { status: 200, headers: { "content-type": "application/json" } });
 };
@@ -63,6 +64,7 @@ const lds = (b) => [...b.matchAll(/<script type="application\/ld\+json">([\s\S]*
 }
 {
   const r = await call(item, { id: I3 });
+  ok("a traded listing says what it went for, safely", /Traded for <b>A &lt;b&gt;bike&lt;\/b&gt;<\/b> with <b>Alice &amp; Co<\/b> · Sep 5, 2026/.test(r.body), (r.body.match(/<p class="traded">.*?<\/p>/) || [])[0]);
   ok("a traded listing still opens, marked Traded, not indexed", r.status === 200 && /Traded</.test(r.body) && /noindex/.test(r.body) && /See what else is up for trade/.test(r.body) && !/#item=/.test(r.body));
   const g = await call(item, { id: I4 });
   ok("a taken-down listing is a 404", g.status === 404 && /taken down/.test(g.body) && /noindex/.test(g.body));

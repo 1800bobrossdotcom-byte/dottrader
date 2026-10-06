@@ -152,7 +152,7 @@ begin
   new.cancelled_by := null; new.defaulted_by := null; new.ship_by := null;
   new.owner_sent_at := null; new.owner_sent_how := null; new.owner_carrier := null; new.owner_ref := null;
   new.from_sent_at := null;  new.from_sent_how := null;  new.from_carrier := null;  new.from_ref := null;
-  new.swap_order := null; new.swap_sig := null; new.swap_tx := null;
+  new.swap_order := null; new.swap_sig := null; new.swap_tx := null; new.done_at := null;
   new.created_at := now();
   return new;
 end $$;
