@@ -255,8 +255,8 @@
   .gate h2 em { font-style:normal; background:var(--yellow); box-decoration-break:clone; -webkit-box-decoration-break:clone; padding:0 .14em; box-shadow:4px 4px 0 var(--ink); }
   .steps { display:grid; gap:14px; grid-template-columns:repeat(3,1fr); }
   @media (max-width:640px){ .steps { grid-template-columns:1fr; } }
-  .step { --c:var(--green); display:grid; gap:4px; padding:16px; background:var(--card); border:var(--bw) solid var(--ink); border-radius:var(--r); font-size:13.5px; color:var(--muted); position:relative; overflow:hidden; box-shadow:var(--sh); }
-  .step::before { content:""; position:absolute; bottom:-40px; left:-30px; width:130px; height:130px; border-radius:50%; background:radial-gradient(circle, var(--c) 1.8px, transparent 2.1px) 0 0/8px 8px; -webkit-mask-image:radial-gradient(circle, #000 20%, transparent 70%); mask-image:radial-gradient(circle, #000 20%, transparent 70%); opacity:.8; }
+  .step { --c:var(--green); display:grid; gap:4px; padding:28px 16px 16px; background:var(--card); border:var(--bw) solid var(--ink); border-radius:var(--r); font-size:13.5px; color:var(--muted); position:relative; overflow:hidden; box-shadow:var(--sh); }
+  .step::before { content:""; position:absolute; top:0; left:0; right:0; height:14px; background:radial-gradient(circle, var(--c) 1.7px, transparent 2px) 0 0/7px 7px; border-bottom:2px solid var(--ink); opacity:.9; }
   .step i { width:32px; height:32px; border-radius:50%; background:var(--c); border:2px solid var(--ink); color:#fff; font-style:normal; font-family:var(--mono); font-weight:600; display:inline-flex; align-items:center; justify-content:center; font-size:13px; margin-bottom:4px; box-shadow:2px 2px 0 var(--ink); }
   .step > * { position:relative; }
   .step b { color:var(--ink); font-family:var(--display); font-weight:700; font-size:14px; letter-spacing:.06em; text-transform:uppercase; }
