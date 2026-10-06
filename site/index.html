@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Dot Trading Post — barter and trade, no money</title>
-<meta name="description" content="A barter board. Post what you have, say what you want, swap with people who have it. Dots are earned by trading, never bought.">
+<title>Dot Trading Post — swap cards, games and retro consoles, no money</title>
+<meta name="description" content="A barter board for trading cards, video games, retro consoles and collectibles. Post what you have, say what you want, and get matched with people who have it. No money.">
 <link rel="icon" href="/favicon.ico?v=5" sizes="48x48">
 <link rel="icon" href="/favicon.svg?v=5" type="image/svg+xml">
 <link rel="icon" href="/favicon-48.png?v=5" sizes="48x48" type="image/png">
@@ -161,6 +161,8 @@
   .cat::before { content:""; width:9px; height:9px; border-radius:50%; background:var(--c); border:1.5px solid var(--ink); display:inline-block; margin-right:7px; vertical-align:-1px; }
   .cat.hot { background:var(--c); color:#fff; }
   .cat.hot::before { background:#fff; }
+  a.cat { text-decoration:none; display:inline-block; transition:transform .08s, box-shadow .08s; }
+  a.cat:hover { transform:translate(-1px,-1px); box-shadow:3px 3px 0 var(--ink); }
 
   footer { border-top:3px solid var(--ink); padding-block:30px 60px; color:var(--muted); font-size:13px; display:grid; gap:10px; }
   footer a { color:var(--ink); }
@@ -183,9 +185,9 @@
 
   <div class="hero">
     <div>
-      <div class="eyebrow">Barter board · no money changes hands</div>
+      <div class="eyebrow">Cards · games · retro · no money changes hands</div>
       <h1>You have something.<br>Someone wants it.<br><span class="sw">Swap</span> <span class="sw2">it</span>.</h1>
-      <p class="lede">Post what you have and what you'd take for it. Someone offers a trade, you say yes or no. No prices, no listings fees, no money — just two people who both end up with something they wanted more.</p>
+      <p class="lede">Trading cards, video games, retro consoles, collectibles — post what you have and what you'd take for it, and Dot finds people who want it. No prices, no fees, no money: just two people who both end up with something they wanted more.</p>
       <div class="cta">
         <a class="btn" href="/app">Open the board</a>
         <a class="btn ghost" href="#dots">How dots work</a>
@@ -269,25 +271,14 @@
   </section>
 
   <section>
-    <h2>Trade anything</h2>
-    <p class="sub">Forty-six categories, from the stuff people actually swap to the long tail.</p>
+    <h2>Cards, games and retro first</h2>
+    <p class="sub">That's where swapping is liveliest, so that's where the board starts — trading cards, video games, retro consoles and collectibles.</p>
     <div class="cats">
-      <span class="cat hot" style="--c:var(--rose)">Trading Cards</span><span class="cat hot" style="--c:var(--have)">Video Games</span><span class="cat hot" style="--c:var(--have)">Electronics</span>
-      <span class="cat hot" style="--c:var(--teal)">Clothing</span><span class="cat hot" style="--c:var(--want)">Furniture</span><span class="cat">Consoles &amp; Retro</span>
-      <span class="cat">Comics</span><span class="cat">Collectibles</span><span class="cat">Coins &amp; Stamps</span>
-      <span class="cat">Memorabilia</span><span class="cat">Antiques</span><span class="cat">Computers</span>
-      <span class="cat">Phones</span><span class="cat">Cameras</span><span class="cat">Audio &amp; Hi-Fi</span>
-      <span class="cat">Books</span><span class="cat">Music &amp; Vinyl</span><span class="cat">Film &amp; TV</span>
-      <span class="cat">Board Games</span><span class="cat">Home &amp; Kitchen</span><span class="cat">Tools &amp; DIY</span>
-      <span class="cat">Garden</span><span class="cat">Appliances</span><span class="cat">Shoes &amp; Trainers</span>
-      <span class="cat">Watches</span><span class="cat">Jewellery</span><span class="cat">Bags</span>
-      <span class="cat">Beauty</span><span class="cat">Sports Gear</span><span class="cat">Bikes</span>
-      <span class="cat">Camping &amp; Outdoors</span><span class="cat">Fitness</span><span class="cat">Musical Instruments</span>
-      <span class="cat">Art</span><span class="cat">Craft &amp; Sewing</span><span class="cat">Models &amp; Hobby</span>
-      <span class="cat">Toys &amp; Figures</span><span class="cat">Cars &amp; Parts</span><span class="cat">Motorbikes</span>
-      <span class="cat">Baby &amp; Kids</span><span class="cat">Pet Supplies</span><span class="cat">Office</span>
-      <span class="cat">Industrial</span><span class="cat">Tickets</span><span class="cat">Services &amp; Skills</span>
-      <span class="cat">Other</span>
+      <a class="cat hot" href="/c/trading-cards" style="--c:var(--rose)">Trading Cards</a><a class="cat hot" href="/c/video-games" style="--c:var(--have)">Video Games</a><a class="cat hot" href="/c/consoles-retro" style="--c:var(--have)">Consoles &amp; Retro</a><a class="cat hot" href="/c/collectibles" style="--c:var(--rose)">Collectibles</a><a class="cat hot" href="/c/comics" style="--c:var(--rose)">Comics</a><a class="cat hot" href="/c/toys-figures" style="--c:var(--pop)">Toys &amp; Figures</a>
+    </div>
+    <p class="sub" style="margin-top:22px">And everything else, from bikes to vinyl:</p>
+    <div class="cats">
+      <a class="cat" href="/c/coins-stamps">Coins &amp; Stamps</a><a class="cat" href="/c/memorabilia">Memorabilia</a><a class="cat" href="/c/antiques">Antiques</a><a class="cat" href="/c/computers">Computers</a><a class="cat" href="/c/phones">Phones</a><a class="cat" href="/c/electronics">Electronics</a><a class="cat" href="/c/cameras">Cameras</a><a class="cat" href="/c/audio-hi-fi">Audio &amp; Hi-Fi</a><a class="cat" href="/c/books">Books</a><a class="cat" href="/c/music-vinyl">Music &amp; Vinyl</a><a class="cat" href="/c/film-tv">Film &amp; TV</a><a class="cat" href="/c/board-games-puzzles">Board Games &amp; Puzzles</a><a class="cat" href="/c/furniture">Furniture</a><a class="cat" href="/c/home-kitchen">Home &amp; Kitchen</a><a class="cat" href="/c/tools-diy">Tools &amp; DIY</a><a class="cat" href="/c/garden">Garden</a><a class="cat" href="/c/appliances">Appliances</a><a class="cat" href="/c/clothing">Clothing</a><a class="cat" href="/c/shoes-trainers">Shoes &amp; Trainers</a><a class="cat" href="/c/watches">Watches</a><a class="cat" href="/c/jewellery">Jewellery</a><a class="cat" href="/c/bags">Bags</a><a class="cat" href="/c/beauty">Beauty</a><a class="cat" href="/c/sports-gear">Sports Gear</a><a class="cat" href="/c/bikes">Bikes</a><a class="cat" href="/c/camping-outdoors">Camping &amp; Outdoors</a><a class="cat" href="/c/fitness">Fitness</a><a class="cat" href="/c/musical-instruments">Musical Instruments</a><a class="cat" href="/c/art">Art</a><a class="cat" href="/c/craft-sewing">Craft &amp; Sewing</a><a class="cat" href="/c/models-hobby">Models &amp; Hobby</a><a class="cat" href="/c/cars-parts">Cars &amp; Parts</a><a class="cat" href="/c/motorbikes">Motorbikes</a><a class="cat" href="/c/baby-kids">Baby &amp; Kids</a><a class="cat" href="/c/pet-supplies">Pet Supplies</a><a class="cat" href="/c/office">Office</a><a class="cat" href="/c/industrial">Industrial</a><a class="cat" href="/c/tickets">Tickets</a><a class="cat" href="/c/services-skills">Services &amp; Skills</a><a class="cat" href="/c/other">Other</a>
     </div>
     <p class="sub" style="margin-top:26px">
       <a class="btn" href="/app">Open the board</a>

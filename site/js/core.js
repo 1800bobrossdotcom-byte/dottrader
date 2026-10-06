@@ -31,7 +31,8 @@ var GROUPS = [
   ["Vehicles", ["Cars & Parts", "Motorbikes"]],
   ["Everything else", ["Baby & Kids", "Pet Supplies", "Office", "Industrial", "Tickets", "Services & Skills", "Other"]]
 ];
-var QUICK = ["Trading Cards", "Video Games", "Electronics", "Clothing", "Furniture", "Books", "Sports Gear"];
+// The quick buttons lead with where the board is liveliest: cards, games, retro and collectibles.
+var QUICK = ["Trading Cards", "Video Games", "Consoles & Retro", "Collectibles", "Comics", "Toys & Figures", "Electronics"];
 // One colour per group, so a card tells you its corner of the board before you read it.
 var HUES = ["var(--rose)", "var(--have)", "var(--plum)", "var(--want)", "var(--teal)", "var(--dot)", "var(--pop)", "#6B7280", "var(--faint)"];
 var CAT_HUE = {};
