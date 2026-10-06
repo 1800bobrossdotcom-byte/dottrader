@@ -299,7 +299,7 @@
     <a class="brand" href="/"><svg viewBox="0 0 40 40" aria-hidden="true"><defs><pattern id="ht" width="4" height="4" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.1" fill="#121212" opacity=".35"/></pattern></defs><path d="M9 5h11a15 15 0 0 1 0 30H9z" fill="#FFD23F" stroke="#121212" stroke-width="3" stroke-linejoin="round"/><path d="M14 11h6a9 9 0 0 1 0 18h-6z" fill="url(#ht)" stroke="none"/><circle cx="20" cy="20" r="5.5" fill="#E8392B" stroke="#121212" stroke-width="3"/></svg><span class="t">Dot Trading Post<small>BARTER BOARD</small></span></a>
     <div class="me" id="me" hidden>
       <button class="wal" type="button" id="connectBtn" title="Connect a wallet to list or offer digital assets"><s></s><span id="walletState">Connect wallet</span></button>
-      <button class="linkbtn" id="signOut">Sign out</button>
+      <button class="linkbtn" id="signOut" title="Signs out of your Dot Trading Post account on this device. Your wallet link is separate — click the wallet pill to unlink it.">Sign out of account</button>
     </div>
     <div class="tabs" role="tablist" id="tabs" hidden>
       <button class="tab" id="t-browse" role="tab" aria-selected="true">Board</button>
@@ -902,7 +902,7 @@
     var broken = !w && profiles[uid] && profiles[uid].wallet_address;
     el.textContent = w ? shortAddr(w) : (broken ? "Reconnect wallet" : "Connect wallet");
     btn.className = "wal" + (w ? " on" : "");
-    btn.title = w ? "Wallet " + w + " — connected and verified. Click to switch." :
+    btn.title = w ? "Wallet " + w + " is linked to your account. Click to switch or unlink." :
       (broken ? "The saved signature did not verify — connect again." : "Connect a wallet to list or offer digital assets");
   }
   var wallets = [];
@@ -978,11 +978,32 @@
           '<button type="button" data-retry><span class="wi">&#8635;</span><span>Try again</span></button>' +
           '<a href="https://metamask.io/download/" target="_blank" rel="noopener"><span class="wi">&#129418;</span><span>Get MetaMask<small>Free browser extension</small></span></a>' +
         "</div>");
-      sh.box.querySelector("[data-retry]").addEventListener("click", function () { sh.close(); $("connectBtn").click(); });
+      sh.box.querySelector("[data-retry]").addEventListener("click", function () { sh.close(); startConnect(); });
     }
   }
 
+  // With a wallet already linked, the pill opens choices instead of launching a new connection.
+  function walletMenu() {
+    var w = myWallet();
+    var sh = sheet("Your wallet",
+      '<p class="hint" style="margin:0">Linked to this account: <b style="font-family:var(--mono)">' + esc(w) + '</b>. ' +
+      "It stays linked across sign-ins until you unlink it. Unlinking does not sign you out.</p>" +
+      '<div class="wlist">' +
+        '<button type="button" data-switch><span class="wi">&#8646;</span><span>Link a different wallet<small>Sign a message with the new one</small></span></button>' +
+        '<button type="button" data-unlink><span class="wi">&#10005;</span><span>Unlink this wallet<small>Digital listings will show “no wallet linked” until you link one</small></span></button>' +
+      "</div>");
+    sh.box.querySelector("[data-switch]").addEventListener("click", function () { sh.close(); startConnect(); });
+    sh.box.querySelector("[data-unlink]").addEventListener("click", function () {
+      sh.close();
+      sb.from("profiles").upsert({ id: uid, wallet_address: null, wallet_msg: null, wallet_sig: null, updated_at: new Date().toISOString() })
+        .then(function (r) { if (r.error) return fail(r.error); sigCache = {}; toast("Wallet unlinked. You are still signed in."); load(); });
+    });
+  }
   $("connectBtn").addEventListener("click", function () {
+    if (myWallet()) return walletMenu();
+    startConnect();
+  });
+  function startConnect() {
     if (!window.ethers) { toast("Still loading — try again in a second."); return; }
     // Ask again at click time: some wallets inject after the page has finished loading.
     window.dispatchEvent(new Event("eip6963:requestProvider"));
@@ -992,7 +1013,7 @@
       if (list.length === 1) return connectWith(list[0]);
       pickWallet(list);
     }, 80);
-  });
+  }
 
   function connectWith(w) {
     var eth = w.provider, btn = $("connectBtn"); btn.disabled = true;
