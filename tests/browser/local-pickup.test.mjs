@@ -1,4 +1,4 @@
-import { chromium, VENDOR, OUT, ROOT, CSP } from "./harness.mjs";
+import { chromium, VENDOR, OUT, ROOT, CSP, legacyBoard } from "./harness.mjs";
 const A = "11111111-1111-4111-8111-111111111111", B = "22222222-2222-4222-8222-222222222222";
 const SW = "aaaaaaaa-0000-4000-8000-000000000001", GB = "aaaaaaaa-0000-4000-8000-000000000002", SD = "bbbbbbbb-0000-4000-8000-000000000001", PK = "bbbbbbbb-0000-4000-8000-000000000002";
 const b64 = o => Buffer.from(JSON.stringify(o)).toString("base64url"); const exp = Math.floor(Date.now() / 1000) + 86400;
@@ -38,9 +38,9 @@ async function run(hash, old) {
     r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(out === undefined ? null : out) });
   });
   await p.route(/supabase\.co\/(auth|realtime)/, r => r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(sess.user) }));
-  await p.goto("http://127.0.0.1:8765/app.html", { waitUntil: "domcontentloaded" });
+  await legacyBoard(p); await p.goto("http://127.0.0.1:8765/app.html", { waitUntil: "domcontentloaded" });
   await p.evaluate(([s]) => localStorage.setItem("sb-yujxwfghmauajrpduagl-auth-token", JSON.stringify(s)), [sess]);
-  await p.goto("about:blank"); await p.goto("http://127.0.0.1:8765/app.html" + (hash || ""), { waitUntil: "domcontentloaded" }); await p.waitForTimeout(1800);
+  await p.goto("about:blank"); await legacyBoard(p); await p.goto("http://127.0.0.1:8765/app.html" + (hash || ""), { waitUntil: "domcontentloaded" }); await p.waitForTimeout(1800);
   return { b, p, posts };
 }
 { const { b, p, posts } = await run();

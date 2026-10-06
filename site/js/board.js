@@ -20,7 +20,10 @@ function render() {
 }
 function renderInner() {
   var open = items.filter(function (it) { return it.status === "open"; });
-  var shown = open.filter(function (it) {
+  // When the database has answered for exactly these filters, show its list in its order (it also
+  // knows other names for things). Until it answers, filter what is loaded, so typing feels instant.
+  var fromServer = caps.paging && boardKey === filterKey();
+  var shown = fromServer ? boardList.map(itemById).filter(function (it) { return it && it.status === "open"; }) : open.filter(function (it) {
     if (filter.cat && it.cat !== filter.cat) return false;
     if (filter.radius) { var d = distTo(it.owner_id); if (d === null || d > filter.radius) return false; }
     if (!filter.q) return true;
@@ -28,6 +31,7 @@ function renderInner() {
   });
   if (filter.radius) shown.sort(function (a, b) { return (distTo(a.owner_id) || 0) - (distTo(b.owner_id) || 0); });
   lastShown = shown;
+  $("moreBtn").hidden = !(caps.paging && fromServer && boardMore);
   paintMatches(); paintLooking();
   $("saveSearch").hidden = !(uid && caps.matching && (filter.q || filter.cat));
   fill($("feed"), $("feedEmpty"), shown, function (it) { return itemCard(it); });

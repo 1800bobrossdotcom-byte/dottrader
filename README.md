@@ -73,6 +73,7 @@ supabase/location.sql  rough lat/lng on profiles for "near me" and the map
 supabase/messages.sql  a private thread on each offer, for its two parties only
 supabase/trades.sql    ship-by dates, "sent" + tracking, no-shows, swap orders, bonds, payouts
 supabase/aliases.sql   names for the same thing (PS5 = PlayStation 5, Pokémon = pokemon tcg)
+supabase/scale.sql     the board a page at a time, and each trader's record added up in the database
 supabase/matching.sql  what each listing wants, ranked matches, saved searches
 supabase/notifications.sql   database triggers that ask the notify function to send an email
 supabase/history.sql   finished trades, public: what went for what, between whom, when
@@ -219,7 +220,7 @@ npm run test:notify # the notify Edge Function, with Resend and the database fak
 npm run test:pages  # listing, category and sitemap pages, with the database faked
 npm run test:browser # the board in headless Chromium under the live security policy: posting,
                     # offers, matching, protected trades and swaps, activity, local pickup
-npm run test:db     # 116 checks on a throwaway Postgres: the trade state machine, permissions,
+npm run test:db     # 128 checks on a throwaway Postgres: the trade state machine, permissions,
                     # forged requests, and accepts racing on the same listings (needs PGHOST etc.)
 ```
 

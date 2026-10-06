@@ -1,5 +1,5 @@
 import { createRequire } from "module"; const require = createRequire(import.meta.url);
-import { chromium, VENDOR, OUT, ROOT, CSP } from "./harness.mjs";
+import { chromium, VENDOR, OUT, ROOT, CSP, legacyBoard } from "./harness.mjs";
 const A = "11111111-1111-4111-8111-111111111111"; const now = new Date().toISOString();
 const svg = c => '<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600"><rect width="800" height="600" fill="' + c + '"/><text x="400" y="330" font-size="90" text-anchor="middle" font-family="sans-serif" fill="#121212">' + c + '</text></svg>';
 const items = [{ id: "i1", owner_id: A, title: "Desultor 2023 Fake Scientist Card sealed", want: "Open to offers", cat: "Trading Cards", status: "open", created_at: now, photos: ["https://img.test/front", "https://img.test/back", "https://img.test/side"] },
@@ -20,7 +20,7 @@ for (const [w, h, mobile] of [[1100, 900, false], [390, 900, true]]) {
   await p.route(/functions\/v1|api\/nft/, r => r.fulfill({ status: 404, body: "" }));
   await p.route(/supabase\.co\/rest\/v1\/(\w+)/, r => { const t = r.request().url().match(/rest\/v1\/(\w+)/)[1]; r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ items, profiles: [{ id: A, name: "gianniaronestudio" }] }[t] || []) }); });
   await p.route(/supabase\.co\/(auth|realtime)/, r => r.fulfill({ status: 200, contentType: "application/json", body: "{}" }));
-  await p.goto("http://127.0.0.1:8765/app.html", { waitUntil: "domcontentloaded" }); await p.waitForTimeout(1500);
+  await legacyBoard(p); await p.goto("http://127.0.0.1:8765/app.html", { waitUntil: "domcontentloaded" }); await p.waitForTimeout(1500);
   const g = "#feed .item:has-text('Desultor') .gallery";
   const visible = () => p.$eval(g + " .track", t => { const r = t.getBoundingClientRect(); return [...t.querySelectorAll("img")].filter(i => { const b = i.getBoundingClientRect(); return b.left >= r.left - 1 && b.right <= r.right + 1; }).map(i => i.alt.split(" — ")[1]); });
   ok((mobile ? "phone" : "desktop") + ": shows only the first photo", JSON.stringify(await visible()) === '["photo 1 of 3"]');

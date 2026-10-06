@@ -40,3 +40,10 @@ try { pw = await import("playwright"); }
 catch { pw = await import(process.env.PLAYWRIGHT_MODULE || "/opt/node22/lib/node_modules/playwright/index.mjs"); }
 const exe = process.env.CHROMIUM_PATH || (fs.existsSync("/opt/pw-browsers/chromium") ? "/opt/pw-browsers/chromium" : null);
 export const chromium = { launch: (o = {}) => pw.chromium.launch({ ...o, ...(exe ? { executablePath: exe } : {}) }) };
+
+// For suites written before paging: the fake database says board_page and trader_stats aren't
+// installed, so the board loads the older way. paging.test.mjs covers the paged way.
+export async function legacyBoard(page) {
+  await page.route(/supabase\.co\/rest\/v1\/rpc\/(board_page|trader_stats)/, (r) =>
+    r.fulfill({ status: 404, contentType: "application/json", body: JSON.stringify({ code: "PGRST202", message: "Could not find the function" }) }));
+}

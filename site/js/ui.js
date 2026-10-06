@@ -12,6 +12,10 @@
 // from an agreed trade costs three. Farming needs many genuinely different, finished partners.
 function scoreOf(id) {
   if (!id) return { dots: 0, trades: 0, partners: 0, verified: 0, vouches: 0, profile: 0, noShows: 0, tradePts: 0, verifiedPts: 0 };
+  // Other traders: the database adds up their record (scale.sql) by these same rules. The viewer's
+  // own is counted here from their own offers, which they can all see, for the full breakdown.
+  var st = id !== uid && statsBy[id];
+  if (st) return { dots: st.dots, trades: st.trades, partners: st.partners, verified: st.verified, vouches: st.vouches, profile: st.profile, noShows: st.no_shows, tradePts: 0, verifiedPts: 0 };
   var trades = 0, vouches = 0, noShows = 0, verified = 0, tradePts = 0, verifiedPts = 0, per = {}, vouchedBy = {};
   signals.slice().sort(function (a, b) { return a.created_at < b.created_at ? -1 : 1; }).forEach(function (o) {
     if (o.defaulted_by && o.defaulted_by === id) noShows++;
@@ -69,7 +73,7 @@ $("profBtn").addEventListener("click", function () { show("profile"); window.scr
 document.addEventListener("click", function (e) {
   var go = e.target && e.target.getAttribute && e.target.getAttribute("data-go");
   if (!go) return;
-  if (go === "clear") { filter.cat = ""; filter.q = ""; filter.radius = 0; $("q").value = ""; $("radius").value = "0"; syncCats(); render(); return; }
+  if (go === "clear") { filter.cat = ""; filter.q = ""; filter.radius = 0; $("q").value = ""; $("radius").value = "0"; syncCats(); render(); refilter(); return; }
   if (!uid && (go === "post" || go === "loc" || go === "mine" || go === "profile")) return needAccount("Make an account to post. It takes a minute.", function () { show(go === "loc" ? "profile" : go); });
   if (go === "loc") { show("profile"); setTimeout(function () { $("locBtn").scrollIntoView({ block: "center", behavior: "smooth" }); }, 30); return; }
   show(go);
@@ -88,17 +92,17 @@ function groupedOptions(sel, allLabel) {
   var all = document.createElement("button");
   all.className = "chip all"; all.type = "button"; all.textContent = "All";
   all.setAttribute("aria-pressed", "true");
-  all.addEventListener("click", function () { filter.cat = ""; syncCats(); render(); });
+  all.addEventListener("click", function () { filter.cat = ""; syncCats(); render(); refilter(); });
   wrap.appendChild(all);
   QUICK.forEach(function (c) {
     var b = document.createElement("button");
     b.className = "chip"; b.type = "button"; b.textContent = c; b.dataset.cat = c; b.style.setProperty("--c", hueOf(c));
     b.setAttribute("aria-pressed", "false");
-    b.addEventListener("click", function () { filter.cat = filter.cat === c ? "" : c; syncCats(); render(); });
+    b.addEventListener("click", function () { filter.cat = filter.cat === c ? "" : c; syncCats(); render(); refilter(); });
     wrap.appendChild(b);
   });
   groupedOptions($("catPick"), "All categories");
-  $("catPick").addEventListener("change", function (e) { filter.cat = e.target.value; syncCats(); render(); });
+  $("catPick").addEventListener("change", function (e) { filter.cat = e.target.value; syncCats(); render(); refilter(); });
   groupedOptions($("f-cat"), null);
   $("f-cat").value = "Other";
 })();
@@ -108,11 +112,11 @@ function syncCats() {
   });
   if ($("catPick").value !== filter.cat) $("catPick").value = filter.cat;
 }
-$("q").addEventListener("input", function (e) { filter.q = e.target.value.trim().toLowerCase(); render(); });
+$("q").addEventListener("input", function (e) { filter.q = e.target.value.trim().toLowerCase(); render(); refilter(); });
 $("radius").addEventListener("change", function (e) {
   filter.radius = Number(e.target.value) || 0;
-  if (filter.radius && !locOf(uid)) toast("Set your location under My trades → Your profile first.");
-  render();
+  if (filter.radius && !locOf(uid)) toast("Set your location on your Profile first.");
+  render(); refilter();
 });
 
 (function buildChains() {

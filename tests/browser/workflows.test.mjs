@@ -1,5 +1,5 @@
 import { createRequire } from "module"; const require = createRequire(import.meta.url);
-import { chromium, VENDOR, OUT, ROOT, CSP } from "./harness.mjs";
+import { chromium, VENDOR, OUT, ROOT, CSP, legacyBoard } from "./harness.mjs";
 const A = "11111111-1111-4111-8111-111111111111", B = "22222222-2222-4222-8222-222222222222";
 const b64 = o => Buffer.from(JSON.stringify(o)).toString("base64url");
 const exp = Math.floor(Date.now() / 1000) + 86400;
@@ -45,7 +45,7 @@ async function page(browser, { as, caps = {}, hash = "", data = {}, onPost }) {
     route.fulfill({ status: 200, contentType: "application/json", body: "{}" });
   });
   await p.route(/supabase\.co\/realtime/, r => r.abort());
-  await p.goto("http://127.0.0.1:8765/app.html" + hash, { waitUntil: "domcontentloaded" });
+  await legacyBoard(p); await p.goto("http://127.0.0.1:8765/app.html" + hash, { waitUntil: "domcontentloaded" });
   if (as) {
     await p.evaluate(([s]) => localStorage.setItem("sb-yujxwfghmauajrpduagl-auth-token", JSON.stringify(s)), [sessFor(as)]);
     await p.reload({ waitUntil: "domcontentloaded" });

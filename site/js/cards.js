@@ -46,7 +46,7 @@ function itemCard(it, opts) {
   opts = opts || {};
   var traded = it.status === "traded", pledged = it.status === "pledged";
   var mine = uid && it.owner_id === uid;
-  var pending = signals.filter(function (o) { return o.item_id === it.id && o.status === "pending"; }).length;
+  var pending = offers.filter(function (o) { return o.item_id === it.id && o.status === "pending"; }).length;
   var sc = scoreOf(it.owner_id), prof = profiles[it.owner_id];
 
   var el = document.createElement("article");

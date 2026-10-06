@@ -1,5 +1,5 @@
 import { createRequire } from "module"; const require = createRequire(import.meta.url);
-import { chromium, VENDOR, OUT, ROOT, CSP } from "./harness.mjs";
+import { chromium, VENDOR, OUT, ROOT, CSP, legacyBoard } from "./harness.mjs";
 const { ethers } = require(VENDOR + "/ethers.js");
 globalThis.window = globalThis; globalThis.window.ethers = ethers; require(ROOT + "/site/swap.js");
 const A = "11111111-1111-4111-8111-111111111111", B = "22222222-2222-4222-8222-222222222222";
@@ -76,9 +76,9 @@ async function open(browser, as, offers, { bondState = [], query = "" } = {}) {
   });
   await p.route(/supabase\.co\/rest\/v1\/rpc\/(\w+)/, r => { const fn = r.request().url().match(/rpc\/(\w+)/)[1]; rpcs.push({ fn, body: JSON.parse(r.request().postData() || "{}") }); r.fulfill({ status: 200, contentType: "application/json", body: "null" }); });
   await p.route(/supabase\.co\/(auth|realtime)/, r => r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(sess(as).user) }));
-  await p.goto("http://127.0.0.1:8765/app.html", { waitUntil: "domcontentloaded" });
+  await legacyBoard(p); await p.goto("http://127.0.0.1:8765/app.html", { waitUntil: "domcontentloaded" });
   await p.evaluate(([s]) => localStorage.setItem("sb-yujxwfghmauajrpduagl-auth-token", JSON.stringify(s)), [sess(as)]);
-  await p.goto("http://127.0.0.1:8765/app.html" + query, { waitUntil: "domcontentloaded" }); await p.waitForTimeout(1500);
+  await legacyBoard(p); await p.goto("http://127.0.0.1:8765/app.html" + query, { waitUntil: "domcontentloaded" }); await p.waitForTimeout(1500);
   await p.click("#t-mine"); await p.waitForTimeout(300);
   return { p, ctx, rpcs, bondCalls };
 }

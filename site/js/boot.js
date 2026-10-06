@@ -31,13 +31,15 @@ function probe() {
     has(sb.from("offers").select("give_items").limit(1)),
     has(sb.from("trade_history").select("id").limit(1)),
     has(sb.from("items").select("local_only").limit(1)),
+    has(sb.rpc("board_page", { p_limit: 1 })),
+    has(sb.rpc("trader_stats", { p_ids: [] })),
     // The bond function answers a plain GET with its price; 401 means it is there behind JWT checks.
     fetch(fnUrl("bond")).then(function (r) {
       if (r.status === 200) return r.json();
       return r.status === 404 ? null : { bond_cents: 2500, fee_cents: 150 };
     }, function () { return null; })
   ]).then(function (r) {
-    caps = { photos: r[0], location: r[1], messages: r[2], verify: r[3], trades: r[4], bond: r[4] && r[5] && r[11] ? r[11] : null, matching: r[6], notify: r[7], giveItems: r[8], history: r[9], local: r[10] };
+    caps = { photos: r[0], location: r[1], messages: r[2], verify: r[3], trades: r[4], bond: r[4] && r[5] && r[13] ? r[13] : null, matching: r[6], notify: r[7], giveItems: r[8], history: r[9], local: r[10], paging: r[11], stats: r[12] };
     applyCaps(); render(); loadMatches(); loadHistory();
     if (caps.bond) sb.channel("bonds").on("postgres_changes", { event: "*", schema: "public", table: "bonds" }, load).subscribe();
     if (caps.messages) {
@@ -66,12 +68,12 @@ var stripeBack = { session: qs.get("bond") === "ok" ? qs.get("session_id") : nul
 
   sb = window.supabase.createClient(cfg.url, cfg.anonKey);
 
+  probing = probe();
   sb.auth.getSession().then(function (r) { enter(r.data.session); });
   sb.auth.onAuthStateChange(function (ev, session) {
     enter(session);
     if (ev === "PASSWORD_RECOVERY") openAuth("newpass", "");
   });
-  probe();
   if (linkFailed) {
     try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {}
     setTimeout(function () {
@@ -81,8 +83,8 @@ var stripeBack = { session: qs.get("bond") === "ok" ? qs.get("session_id") : nul
 
   // Live: anyone's new listing or offer lands without a refresh.
   sb.channel("board")
-    .on("postgres_changes", { event: "*", schema: "public", table: "items" }, load)
-    .on("postgres_changes", { event: "*", schema: "public", table: "offers" }, load)
-    .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, load)
+    .on("postgres_changes", { event: "*", schema: "public", table: "items" }, reload)
+    .on("postgres_changes", { event: "*", schema: "public", table: "offers" }, reload)
+    .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, reload)
     .subscribe();
 })();

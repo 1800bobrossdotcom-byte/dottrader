@@ -438,3 +438,5 @@ h2 { font-family:var(--display); font-weight:700; font-size:28px; letter-spacing
 .mempty { display:flex; flex-wrap:wrap; align-items:center; gap:12px 16px; padding:14px 16px; border:var(--bw) dashed var(--ink); border-radius:var(--r); background:rgba(255,252,244,.7); font-size:14.5px; }
 .mempty span { flex:1 1 280px; }
 .who .rec { font-family:var(--mono); font-size:10.5px; letter-spacing:.04em; color:var(--muted); background:var(--sunk); border-radius:4px; padding:1px 6px; white-space:nowrap; }
+.morewrap { display:flex; justify-content:center; margin:22px 0 6px; }
+.morewrap .btn { min-width:200px; }

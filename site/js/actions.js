@@ -165,7 +165,104 @@ function removeItem(it) {
   });
 }
 
+// Fetches what the board shows. With scale.sql: one page of listings (filtered by the database),
+// the viewer's own listings, the listings their trades are about, and the people on screen. Without
+// it: the older way, everything recent at once.
 function load() {
+  return probing.then(function () { return caps.paging ? loadPaged() : loadAll(); });
+}
+// Many changes can land at once (an accept touches the offer and two items); fetch once for them.
+var reloadTimer = null;
+function reload() { clearTimeout(reloadTimer); reloadTimer = setTimeout(load, 400); }
+
+function filterKey() { return [filter.cat, filter.q, filter.radius, filter.radius && locOf(uid) ? locOf(uid).lat + "," + locOf(uid).lng : ""].join("|"); }
+function boardArgs(before, limit) {
+  var me = locOf(uid), near = filter.radius && me;
+  return { p_cat: filter.cat || null, p_q: filter.q || null, p_lat: near ? me.lat : null, p_lng: near ? me.lng : null,
+           p_km: near ? filter.radius * 1.609 : null, p_before: before || null, p_limit: limit };
+}
+// Long id lists go in pieces, so no request URL grows past what servers accept.
+function byIds(table, col, ids) {
+  var uniq = ids.filter(function (x, i) { return x && ids.indexOf(x) === i; }), parts = [];
+  for (var i = 0; i < uniq.length; i += 100) parts.push(sb.from(table).select("*").in(col, uniq.slice(i, i + 100)));
+  return Promise.all(parts).then(function (rs) {
+    return { error: (rs.filter(function (r) { return r.error; })[0] || {}).error || null, data: [].concat.apply([], rs.map(function (r) { return r.data || []; })) };
+  });
+}
+// Profiles, records and proof badges for whichever listings and traders are now on screen.
+function loadPeople() {
+  var ids = [uid].concat(items.map(function (it) { return it.owner_id; }), [].concat.apply([], offers.map(function (o) { return [o.owner_id, o.from_id]; })))
+    .filter(function (x, i, a) { return x && a.indexOf(x) === i; });
+  return Promise.all([
+    byIds("profiles", "id", ids),
+    caps.stats ? sb.rpc("trader_stats", { p_ids: ids }) : Promise.resolve({ data: [] }),
+    byIds("verification_badges", "item_id", items.map(function (it) { return it.id; }))
+  ]).then(function (p) {
+    (p[0].data || []).forEach(function (x) { profiles[x.id] = x; });
+    (Array.isArray(p[1].data) ? p[1].data : []).forEach(function (s) { statsBy[s.user_id] = s; });
+    if (!p[2].error) (p[2].data || []).forEach(function (b) { badges[b.item_id] = b; });
+  });
+}
+function loadPaged() {
+  var key = filterKey();
+  return Promise.all([
+    sb.rpc("board_page", boardArgs(null, Math.min(120, PAGE * boardPages))),
+    uid ? sb.from("items").select("*").eq("owner_id", uid).order("created_at", { ascending: false }).limit(500) : Promise.resolve({ data: [] }),
+    // Only the viewer's own offers come back here — the policy sees to that.
+    sb.from("offers").select("*").order("created_at", { ascending: false }).limit(800),
+    uid && caps.messages ? sb.from("messages").select("*").order("created_at", { ascending: true }).limit(3000) : Promise.resolve({ data: [] }),
+    uid && caps.bond ? sb.from("bonds").select("*").limit(2000) : Promise.resolve({ data: [] }),
+    uid && caps.bond ? sb.from("payouts").select("*").limit(200) : Promise.resolve({ data: [] })
+  ]).then(function (r) {
+    if (r[0].error || r[1].error || r[2].error) {
+      note("Could not load the board. If this is the first run, check the schema was applied in Supabase.", "bad");
+      return;
+    }
+    var board = r[0].data || [], have = {};
+    boardMore = board.length >= Math.min(120, PAGE * boardPages);
+    boardOldest = board.length ? board[board.length - 1].created_at : null;
+    board.concat(r[1].data || []).forEach(function (x) { have[x.id] = x; });
+    var offs = r[2].data || [], need = [];
+    // The listings the viewer's trades are about, and any listings put into them, wherever they are.
+    offs.forEach(function (o) { [o.item_id].concat(o.give_items || []).forEach(function (id) { if (id && !have[id]) need.push(id); }); });
+    return byIds("items", "id", need).then(function (e) {
+      (e.data || []).forEach(function (x) { have[x.id] = x; });
+      items = Object.keys(have).map(function (k) { return have[k]; });
+      boardList = board.map(function (x) { return x.id; }); boardKey = key;
+      offers = offs; signals = offs;
+      msgs = {}; (r[3].error ? [] : (r[3].data || [])).forEach(function (m) { (msgs[m.offer_id] = msgs[m.offer_id] || []).push(m); });
+      bondsBy = {}; (r[4].error ? [] : (r[4].data || [])).forEach(function (b) { (bondsBy[b.offer_id] = bondsBy[b.offer_id] || []).push(b); });
+      payouts = r[5].error ? [] : (r[5].data || []);
+      profiles = {}; badges = {}; statsBy = {};
+      return loadPeople().then(loaded);
+    });
+  });
+}
+// The next page of the board, under the current filters.
+function loadMore() {
+  if (!boardMore || !boardOldest) return;
+  var key = filterKey(), btn = $("moreBtn"); btn.disabled = true; btn.textContent = "Loading\u2026";
+  sb.rpc("board_page", boardArgs(boardOldest, PAGE)).then(function (r) {
+    btn.disabled = false; btn.textContent = "Load more";
+    if (r.error) return fail(r.error);
+    if (key !== boardKey) return;  // the filters changed meanwhile; that fetch replaces this one
+    var page = r.data || [];
+    boardMore = page.length >= PAGE; boardPages++;
+    if (page.length) boardOldest = page[page.length - 1].created_at;
+    page.forEach(function (x) { if (!itemById(x.id)) items.push(x); if (boardList.indexOf(x.id) < 0) boardList.push(x.id); });
+    loadPeople().then(function () { render(); runMeta(); });
+  });
+}
+$("moreBtn").addEventListener("click", loadMore);
+// A changed filter asks the database too, so listings beyond the loaded pages show up.
+var refilterTimer = null;
+function refilter() {
+  if (!caps.paging) return;
+  clearTimeout(refilterTimer);
+  refilterTimer = setTimeout(function () { boardPages = 1; load(); }, 300);
+}
+
+function loadAll() {
   return Promise.all([
     sb.from("items").select("*").order("created_at", { ascending: false }).limit(400),
     // Only the viewer's own offers come back here — the policy sees to that.
@@ -194,6 +291,11 @@ function load() {
     bondsBy = {}; (r[6].error ? [] : (r[6].data || [])).forEach(function (b) { (bondsBy[b.offer_id] = bondsBy[b.offer_id] || []).push(b); });
     payouts = r[7].error ? [] : (r[7].data || []);
     profiles = {}; (r[2].data || []).forEach(function (p) { profiles[p.id] = p; });
+    loaded();
+  });
+}
+// What every load ends with, whichever way it fetched.
+function loaded() {
     if (uid) paintLoc();
     if (uid && profiles[uid]) {
       if (!$("p-name").value) $("p-name").value = profiles[uid].name || "";
@@ -205,7 +307,6 @@ function load() {
     loadMatches();
     loadHistory();
     followLink();
-  });
 }
 
 /* ---- arriving from a listing's own page: /app#item=<id> or /app#cat=<category> ---- */
@@ -224,7 +325,7 @@ function followLink() {
     if (l.tab === "activity") return show("activity");
     return uid ? show(l.tab) : needAccount("Sign in to see that.", function () { show(l.tab); });
   }
-  if (l.cat && CAT_HUE[l.cat]) { filter.cat = l.cat; syncCats(); show("browse"); render(); }
+  if (l.cat && CAT_HUE[l.cat]) { filter.cat = l.cat; syncCats(); show("browse"); render(); refilter(); }
   if (!l.item) return;
   var have = items.filter(function (x) { return x.id === l.item; })[0];
   (have ? Promise.resolve(have) : sb.from("items").select("*").eq("id", l.item).maybeSingle().then(function (r) { return r.data; })).then(function (it) {

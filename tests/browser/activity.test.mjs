@@ -1,4 +1,4 @@
-import { chromium, VENDOR, OUT, ROOT, CSP } from "./harness.mjs";
+import { chromium, VENDOR, OUT, ROOT, CSP, legacyBoard } from "./harness.mjs";
 const A = "11111111-1111-4111-8111-111111111111", B = "22222222-2222-4222-8222-222222222222", C = "33333333-3333-4333-8333-333333333333";
 const b64 = o => Buffer.from(JSON.stringify(o)).toString("base64url"); const exp = Math.floor(Date.now() / 1000) + 86400;
 const jwt = b64({ alg: "HS256", typ: "JWT" }) + "." + b64({ sub: A, role: "authenticated", aud: "authenticated", exp, iat: exp - 86400, session_id: "s" }) + ".sig";
@@ -34,7 +34,7 @@ async function run(signedIn, noHistory) {
   });
   await p.route(/supabase\.co\/rest\/v1\/rpc\//, r => r.fulfill({ status: 200, contentType: "application/json", body: "[]" }));
   await p.route(/supabase\.co\/(auth|realtime)/, r => r.fulfill({ status: signedIn ? 200 : 401, contentType: "application/json", body: JSON.stringify(signedIn ? sess.user : {}) }));
-  await p.goto("http://127.0.0.1:8765/app.html", { waitUntil: "domcontentloaded" });
+  await legacyBoard(p); await p.goto("http://127.0.0.1:8765/app.html", { waitUntil: "domcontentloaded" });
   if (signedIn) { await p.evaluate(([s]) => localStorage.setItem("sb-yujxwfghmauajrpduagl-auth-token", JSON.stringify(s)), [sess]); await p.reload({ waitUntil: "domcontentloaded" }); }
   await p.waitForTimeout(1800);
   return { b, p };

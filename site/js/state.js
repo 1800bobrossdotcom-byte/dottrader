@@ -11,7 +11,12 @@ var profTouched = false, profNotifySet = false;
 // What this project has switched on. Each is probed once at boot, so the board never offers a
 // button whose back end is missing (the old failure: write the note, take the photo, then hear
 // the checker does not exist).
-var caps = { photos: true, location: true, messages: true, verify: true, trades: false, bond: null, matching: false, notify: false, giveItems: false, history: false, local: false };
+var caps = { photos: true, location: true, messages: true, verify: true, trades: false, bond: null, matching: false, notify: false, giveItems: false, history: false, local: false, paging: false, stats: false };
+// Resolves once the probes have run, so the first load knows which way to fetch.
+var probing = Promise.resolve();
+// The board a page at a time (scale.sql): what the database returned for the current filters, and
+// each on-screen trader's record as the database added it up.
+var PAGE = 30, boardPages = 1, boardMore = false, boardList = [], boardKey = "", boardOldest = null, statsBy = {};
 var bondsBy = {}, payouts = [], settledOnce = {};
 var SYMBOL = { 1: "ETH", 8453: "ETH", 42161: "ETH", 10: "ETH", 7777777: "ETH", 137: "POL", 56: "BNB", 43114: "AVAX" };
 var msgs = {}, threadOpen = {}, drafts = {}, seen = {};
