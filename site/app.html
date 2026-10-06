@@ -207,7 +207,7 @@
   .nftpreview img { width:76px; height:76px; border-radius:4px; object-fit:cover; border:2px solid var(--ink); background:var(--sunk); flex:none; }
   .nftpreview b { display:block; font-size:14px; }
   .nftpreview span { font-family:var(--mono); font-size:11px; color:var(--muted); }
-  .assetmeta { font-family:var(--mono); font-size:11px; color:var(--faint); }
+  .assetmeta { font-family:var(--mono); font-size:11px; color:var(--faint); overflow-wrap:anywhere; min-width:0; }
   .chain { font-family:var(--mono); font-size:10.5px; letter-spacing:.06em; padding:3px 8px; border-radius:4px; border:2px solid var(--ink); color:#fff; background:var(--blue); text-decoration:none; font-weight:600; }
   .held { font-family:var(--mono); font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; padding:3px 8px; border-radius:4px; border:2px solid var(--ink); color:var(--muted); }
   .held.yes { color:#fff; background:var(--green); }
@@ -609,7 +609,20 @@
     } else {
       var idHex = pad32(BigInt(a.asset_token_id).toString(16));
       var sel = a.asset_kind === "erc721" ? "0xc87b56dd" : "0x0e89341c";
-      p = rpc(a.asset_chain, a.asset_contract, sel + idHex).then(abiString).then(function (uri) {
+      // The site's own server function first (api/nft.js): it can read metadata hosts that block
+      // browsers, and its answers are cached at the edge. Reading straight from the chain in the
+      // browser is the fallback for when it is unreachable.
+      var viaServer = fetch("/api/nft?chain=" + a.asset_chain + "&contract=" + a.asset_contract +
+          "&id=" + encodeURIComponent(a.asset_token_id) + "&kind=" + a.asset_kind)
+        .then(function (r) { if (!r.ok) throw new Error("api " + r.status); return r.json(); })
+        .then(function (m) {
+          if (m.partial && !m.name) throw new Error("partial");
+          return { kind: a.asset_kind, name: m.name || "", image: m.image || null, description: m.description || "", collection: m.collection || "" };
+        });
+      p = viaServer.catch(function () { return direct(); });
+    }
+    function direct() {
+      return rpc(a.asset_chain, a.asset_contract, sel + idHex).then(abiString).then(function (uri) {
         uri = (uri || "").replace(/\{id\}/g, idHex);
         if (!uri) throw new Error("no uri");
         return readJsonUri(uri);
@@ -625,6 +638,10 @@
     metaCache[key] = p.catch(function () { return null; });
     return metaCache[key];
   }
+  // Shared minting contracts (OpenSea's storefront, Rarible's, Manifold-style factories) put every
+  // artist under one name; that name says nothing about the piece, so it is left off.
+  function genericCollection(n) { return /shared storefront|^rarible|^opensea collections?$|^mintable/i.test(n || ""); }
+  function shortId(t) { t = String(t == null ? "" : t); return t.length > 14 ? t.slice(0, 6) + "\u2026" + t.slice(-4) : t; }
   var pendingMeta = [];
   function runMeta() {
     var jobs = pendingMeta; pendingMeta = [];
@@ -634,7 +651,7 @@
         var nm = document.querySelector('[data-nftname="' + j.id + '"]');
         if (nm) {
           var bits = [];
-          if (m && m.collection) bits.push(m.collection);
+          if (m && m.collection && !genericCollection(m.collection)) bits.push(m.collection);
           if (m && m.name) bits.push(m.name);
           if (m && m.kind === "erc20" && m.symbol) bits.push(m.symbol);
           nm.textContent = bits.join(" · ");
@@ -851,9 +868,9 @@
         return assetMeta(a).then(function (m) {
           if (seq !== previewSeq) return;
           if (!m) { box.innerHTML = '<div class="artph small">Found the contract, but could not read this token.</div>'; return; }
-          var title = [m.collection, m.name].filter(Boolean).join(" · ");
+          var title = [genericCollection(m.collection) ? "" : m.collection, m.name].filter(Boolean).join(" · ");
           box.innerHTML = (m.image ? '<img src="' + esc(m.image) + '" alt="">' : '<span class="wi">&#9679;</span>') +
-            "<div><b>" + esc(m.name || m.symbol || "Found it") + "</b><span>" + esc(m.collection || "") + " · " + esc(CHAINS[a.asset_chain].name) + "</span></div>";
+            "<div><b>" + esc(m.name || m.symbol || "Found it") + "</b><span>" + esc(genericCollection(m.collection) ? "" : (m.collection || "")) + " · " + esc(CHAINS[a.asset_chain].name) + "</span></div>";
           if (!$("f-title").value.trim() && (m.name || m.symbol)) $("f-title").value = (m.name || m.symbol).slice(0, 80);
         });
       });
@@ -1086,7 +1103,7 @@
   function assetRow(a, holder) {
     if (!a || !a.asset_kind) return "";
     var c = CHAINS[a.asset_chain];
-    var label = a.asset_kind === "erc20" ? "Tokens" : (a.asset_kind === "erc1155" ? "Edition #" + esc(a.asset_token_id) : "#" + esc(a.asset_token_id));
+    var label = a.asset_kind === "erc20" ? "Tokens" : (a.asset_kind === "erc1155" ? "Edition #" : "#") + esc(shortId(a.asset_token_id));
     var href = c ? c.scan + "/address/" + a.asset_contract : null;
     var id = "held-" + Math.random().toString(36).slice(2, 10);
     pendingMeta.push({ id: id, asset: a });
@@ -1094,7 +1111,7 @@
     h += href ? '<a class="chain" href="' + href + '" target="_blank" rel="noopener">' + esc(c.name) + "</a>"
               : '<span class="chain">chain ' + esc(String(a.asset_chain)) + "</span>";
     h += '<span class="held" data-held="' + id + '">checking…</span>';
-    h += '<span class="assetmeta">' + label + " · " + esc(shortAddr(a.asset_contract)) + "</span></div>";
+    h += '<span class="assetmeta" title="' + esc(a.asset_kind === "erc20" ? a.asset_contract : "Token " + a.asset_token_id + " on " + a.asset_contract) + '">' + label + " · " + esc(shortAddr(a.asset_contract)) + "</span></div>";
     pendingChecks.push({ id: id, asset: a, holder: holder });
     return h;
   }
