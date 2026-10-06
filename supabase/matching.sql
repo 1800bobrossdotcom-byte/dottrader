@@ -14,19 +14,29 @@
 -- keywords. A match is MUTUAL when that holds both ways. Saved searches are stricter (every part
 -- given must fit), because they drive alerts and an alert should be right.
 
--- Words that say nothing about what a thing is.
-create or replace function public.match_terms(t text) returns text[]
-language sql immutable as $$
-  select coalesce(array_agg(distinct w order by w), '{}') from (
+-- Keywords for matching. Words that say nothing about what a thing is are dropped, plurals are
+-- folded, accents come off (Pokémon = Pokemon), and every phrase in match_aliases that appears adds
+-- its terms: all of them on the HAVE side, only the thing itself on the WANT side (see aliases.sql).
+drop function if exists public.match_terms(text);
+create or replace function public.match_terms(t text, side text default 'want') returns text[]
+language sql stable set search_path = public as $$
+  with n as (select public.match_norm(t) as s),
+  words as (
     select case when length(w) > 4 and w ~ '[^s]s$' then left(w, -1) else w end as w
-    from regexp_split_to_table(lower(coalesce(t, '')), '[^a-z0-9]+') as w
+    from n, regexp_split_to_table(btrim(n.s), ' ') as w
     where length(w) >= 3 and w !~ '^[0-9]+$' and w not in (
       'the','and','for','with','any','open','offers','offer','trade','trades','swap','swaps','want','wants',
       'wanted','looking','something','stuff','good','great','condition','new','used','mint','one','two',
       'set','lot','item','items','other','others','from','this','that','have','has','will','can','all',
       'some','more','also','just','like','very','not','but','are','was','you','your','our','its','into',
-      'only','just','pick','meet','post','ship','shipping','local','please','thanks','cash','money')
-  ) s where w <> '';
+      'only','pick','meet','post','ship','shipping','local','please','thanks','cash','money')
+  ),
+  named as (
+    select unnest(case when side = 'have' then a.terms else a.terms[1:1] end) as w
+    from n, public.match_aliases a
+    where position(' ' || a.phrase || ' ' in n.s) > 0
+  )
+  select coalesce(array_agg(distinct w order by w), '{}') from (select w from words union select w from named) u where w <> '';
 $$;
 
 alter table public.items
@@ -40,17 +50,24 @@ alter table public.items add constraint items_want_cats_max check (coalesce(arra
 create or replace function public.items_terms() returns trigger
 language plpgsql as $$
 begin
-  new.have_terms := public.match_terms(coalesce(new.title, '') || ' ' || coalesce(new.descr, ''));
-  new.want_terms := public.match_terms(new.want);
+  new.have_terms := public.match_terms(coalesce(new.title, '') || ' ' || coalesce(new.descr, ''), 'have');
+  new.want_terms := public.match_terms(new.want, 'want');
   return new;
 end $$;
 drop trigger if exists items_terms on public.items;
 create trigger items_terms before insert or update of title, descr, want on public.items
   for each row execute function public.items_terms();
--- Listings that existed before matching did.
-update public.items set have_terms = public.match_terms(coalesce(title, '') || ' ' || coalesce(descr, '')),
-                        want_terms = public.match_terms(want)
- where have_terms = '{}' and want_terms = '{}';
+-- Re-read every listing and saved search when the way keywords are made changes. Bump the
+-- version whenever match_terms or the alias list changes meaningfully.
+do $$
+begin
+  if coalesce((select value from public.app_config where key = 'match_terms_version'), '') <> '2' then
+    update public.items set have_terms = public.match_terms(coalesce(title, '') || ' ' || coalesce(descr, ''), 'have'),
+                            want_terms = public.match_terms(want, 'want');
+    insert into public.app_config (key, value) values ('match_terms_version', '2')
+      on conflict (key) do update set value = excluded.value;
+  end if;
+end $$;
 
 create index if not exists items_have_terms_idx on public.items using gin (have_terms);
 create index if not exists items_want_terms_idx on public.items using gin (want_terms);
@@ -77,7 +94,7 @@ create policy "saved wants are their owner's" on public.saved_wants for all
 create or replace function public.saved_wants_prepare() returns trigger
 language plpgsql as $$
 begin
-  new.terms := public.match_terms(new.label);
+  new.terms := public.match_terms(new.label, 'want');
   if cardinality(new.terms) = 0 and cardinality(new.cats) = 0 then raise exception 'say what you are looking for'; end if;
   if tg_op = 'INSERT' and (select count(*) from public.saved_wants where user_id = new.user_id) >= 20 then
     raise exception 'twenty saved searches is the limit — remove one first';
@@ -87,6 +104,8 @@ end $$;
 drop trigger if exists saved_wants_prepare on public.saved_wants;
 create trigger saved_wants_prepare before insert or update on public.saved_wants
   for each row execute function public.saved_wants_prepare();
+update public.saved_wants set terms = public.match_terms(label, 'want')
+ where terms is distinct from public.match_terms(label, 'want');
 
 -- ---------------------------------------------------------------- the matching rules, in one place
 
@@ -98,17 +117,40 @@ language sql immutable as $$
   select (cardinality(w.cats) = 0 or x.cat = any(w.cats)) and (cardinality(w.terms) = 0 or x.have_terms && w.terms)
 $$;
 
--- Every open listing of someone else's that wants one of mine, or that one of mine wants: the
--- matches strip. Listings are public, so this runs as the caller.
-create or replace function public.my_matches()
-returns table (my_item uuid, their_item uuid, they_want_mine boolean, i_want_theirs boolean)
+-- Every open listing of someone else's that wants one of mine, or that one of mine wants — the
+-- matches strip — best first. Listings are public, so this runs as the caller.
+--
+-- How a pair scores:
+--   both ways (mutual)                        +100
+--   they named my category / I named theirs   +40 / +30
+--   shared keywords, each way (up to 3)       +12 / +10 each
+--   within about 50 km of me                  +15
+--   their listing carries Proof of item        +5
+--   they're open to other offers               +5
+drop function if exists public.my_matches();
+create function public.my_matches()
+returns table (my_item uuid, their_item uuid, they_want_mine boolean, i_want_theirs boolean, score integer, nearby boolean)
 language sql stable set search_path = public as $$
-  select x.id, y.id, public.wants_item(y.want_cats, y.want_terms, x), public.wants_item(x.want_cats, x.want_terms, y)
+  with me as (select lat, lng from public.profiles where id = auth.uid())
+  select x.id, y.id, f.tw, f.iw,
+    ( case when f.tw and f.iw then 100 else 0 end
+    + case when x.cat = any (y.want_cats) then 40 else 0 end
+    + case when y.cat = any (x.want_cats) then 30 else 0 end
+    + 12 * least(3, cardinality(array(select unnest(x.have_terms) intersect select unnest(y.want_terms))))
+    + 10 * least(3, cardinality(array(select unnest(y.have_terms) intersect select unnest(x.want_terms))))
+    + case when g.near then 15 else 0 end
+    + case when exists (select 1 from public.verification_badges b where b.item_id = y.id) then 5 else 0 end
+    + case when y.open_to_offers then 5 else 0 end )::int as score,
+    g.near
   from public.items x
   join public.items y on y.owner_id <> x.owner_id and y.status = 'open'
-  where x.owner_id = auth.uid() and x.status = 'open'
-    and (public.wants_item(y.want_cats, y.want_terms, x) or public.wants_item(x.want_cats, x.want_terms, y))
-  order by (public.wants_item(y.want_cats, y.want_terms, x) and public.wants_item(x.want_cats, x.want_terms, y)) desc, y.created_at desc
+  cross join lateral (select public.wants_item(y.want_cats, y.want_terms, x) as tw, public.wants_item(x.want_cats, x.want_terms, y) as iw) f
+  left join public.profiles py on py.id = y.owner_id
+  left join me on true
+  cross join lateral (select coalesce(me.lat is not null and py.lat is not null
+    and 111 * sqrt(power(py.lat - me.lat, 2) + power((py.lng - me.lng) * cos(radians(me.lat)), 2)) <= 50, false) as near) g
+  where x.owner_id = auth.uid() and x.status = 'open' and (f.tw or f.iw)
+  order by score desc, y.created_at desc
   limit 100;
 $$;
 

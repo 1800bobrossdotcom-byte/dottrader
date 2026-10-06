@@ -8,7 +8,7 @@
 set -u
 DIR=$(cd "$(dirname "$0")" && pwd); ROOT="$DIR/../.."
 fail=0
-for t in messages trades hardening matching notifications offeritems history; do
+for t in messages trades hardening matching aliases notifications offeritems history; do
   DB="dtp_test_${t}_$$"
   createdb "$DB" || exit 2
   psql -q -v ON_ERROR_STOP=1 -d "$DB" -f "$DIR/stub.sql" >/dev/null 2>&1 &&

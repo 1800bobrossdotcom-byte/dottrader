@@ -29,7 +29,7 @@ async function run(matching) {
   await p.route(/supabase\.co\/rest\/v1\/rpc\/(\w+)/, r => {
     const fn = r.request().url().match(/rpc\/(\w+)/)[1];
     const out = { wanted_counts: [{ item_id: "sw", listings: 2, searches: 1 }, { item_id: "ch", listings: 0, searches: 1 }],
-      my_matches: [{ my_item: "sw", their_item: "ch", they_want_mine: true, i_want_theirs: false }, { my_item: "sw", their_item: "sd", they_want_mine: true, i_want_theirs: true }],
+      my_matches: [{ my_item: "sw", their_item: "ch", they_want_mine: true, i_want_theirs: false, score: 52, nearby: true }, { my_item: "sw", their_item: "sd", they_want_mine: true, i_want_theirs: true, score: 140, nearby: false }],
       my_search_hits: [{ want_id: "w1", item_id: "ch" }], listings_wanting: ["sd", "ch"] }[fn];
     r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(out === undefined ? null : out) });
   });
@@ -41,7 +41,7 @@ async function run(matching) {
 }
 { const { b, p, posts } = await run(true);
   const tags = await p.$$eval("#matchBox .mtag", t => t.map(x => x.textContent));
-  ok("matches strip: mutual match listed first", tags.join(",") === "Both ways,Wants yours" && /1 mutual match/.test(await p.$eval("#matchBox .sub", e => e.textContent)));
+  ok("matches strip: best score first, with a Nearby chip where it applies", tags.join(",") === "Both ways,Wants yours,Nearby" && /1 mutual match/.test(await p.$eval("#matchBox .sub", e => e.textContent)), tags.join(","));
   await p.click("#matchBox .mcard:first-of-type button"); await p.waitForTimeout(150);
   ok("Offer it opens the offer pre-filled with my item", (await p.inputValue("#o-give")) === "Nintendo Switch OLED" && /Steam Deck/.test(await p.$eval(".sheet", e => e.textContent)));
   await p.keyboard.press("Escape");

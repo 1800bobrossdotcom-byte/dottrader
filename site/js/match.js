@@ -74,7 +74,9 @@ function wantedTag(it) {
 
 function paintMatches() {
   var box = $("matchBox");
-  var rank = function (p) { return p.they_want_mine && p.i_want_theirs ? 0 : p.they_want_mine ? 1 : 2; };
+  // Best first: the database scores each pair (both ways, categories, shared words, distance, proof).
+  // An older database sends no score; then mutual first, then the ones that want yours.
+  var rank = function (p) { return typeof p.score === "number" ? -p.score : p.they_want_mine && p.i_want_theirs ? -2 : p.they_want_mine ? -1 : 0; };
   var pairs = uid && caps.matching ? matchData.pairs.filter(function (p) { return itemById(p.their_item) && itemById(p.my_item); })
     .sort(function (a, b) { return rank(a) - rank(b); }) : [];
   box.hidden = !pairs.length; if (!pairs.length) { box.innerHTML = ""; return; }
@@ -85,7 +87,8 @@ function paintMatches() {
     var mine = itemById(p.my_item), theirs = itemById(p.their_item);
     var kind = p.they_want_mine && p.i_want_theirs ? ["mutual", "Both ways"] : p.they_want_mine ? ["wants", "Wants yours"] : ["you", "You might want"];
     var c = document.createElement("article"); c.className = "mcard"; c.style.setProperty("--c", hueOf(theirs.cat));
-    c.innerHTML = '<span class="mtag ' + kind[0] + '">' + kind[1] + "</span>" +
+    c.innerHTML = '<span class="mtags"><span class="mtag ' + kind[0] + '">' + kind[1] + "</span>" +
+      (p.nearby ? '<span class="mtag near">Nearby</span>' : "") + (badges[theirs.id] ? '<span class="mtag proof">Proof</span>' : "") + "</span>" +
       '<a href="#" class="mtitle" data-jump="' + esc(theirs.id) + '">' + esc(theirs.title) + "</a>" +
       '<span class="mby">' + esc(who(theirs.owner_id)) + " " + esc(wantsLine(theirs)) + "</span>" +
       '<span class="mfor">for your <b>' + esc(mine.title) + "</b></span>";

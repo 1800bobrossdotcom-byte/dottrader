@@ -431,3 +431,7 @@ h2 { font-family:var(--display); font-weight:700; font-size:28px; letter-spacing
 .makers img { height:32px; width:auto; display:block; transition:transform .15s; }
 .makers:hover img { transform:rotate(-4deg) scale(1.06); }
 .makers:hover span { color:var(--ink); }
+
+.mtags { display:flex; flex-wrap:wrap; gap:6px; }
+.mtag.near { background:var(--orange); color:var(--ink); }
+.mtag.proof { background:var(--green); color:#fff; }
