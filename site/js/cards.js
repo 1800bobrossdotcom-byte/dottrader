@@ -8,7 +8,8 @@
 // A chain chip that links to the explorer, plus a badge the viewer's own browser fills in once
 // the chain has answered. It starts as "checking" rather than as a verdict, because claiming an
 // asset is unheld before the RPC replies would smear honest listings.
-function assetRow(a, holder) {
+// `heldBy` names whoever should hold it: the lister on a listing, the offerer on an offer.
+function assetRow(a, holder, heldBy) {
   if (!a || !a.asset_kind) return "";
   var c = CHAINS[a.asset_chain];
   var label = a.asset_kind === "erc20" ? "Tokens" : (a.asset_kind === "erc1155" ? "Edition #" : "#") + esc(shortId(a.asset_token_id));
@@ -20,7 +21,7 @@ function assetRow(a, holder) {
             : '<span class="chain">chain ' + esc(String(a.asset_chain)) + "</span>";
   h += '<span class="held" data-held="' + id + '">checking…</span>';
   h += '<span class="assetmeta" title="' + esc(a.asset_kind === "erc20" ? a.asset_contract : "Token " + a.asset_token_id + " on " + a.asset_contract) + '">' + label + " · " + esc(shortAddr(a.asset_contract)) + "</span></div>";
-  pendingChecks.push({ id: id, asset: a, holder: holder });
+  pendingChecks.push({ id: id, asset: a, holder: holder, heldBy: heldBy || "lister" });
   return h;
 }
 var pendingChecks = [];
@@ -35,7 +36,7 @@ function runChecks() {
       if (!e2) return;
       if (ok === null) { e2.textContent = "could not check"; e2.className = "held"; return; }
       if (ok === "nocontract") { e2.textContent = "not on " + (CHAINS[j.asset.asset_chain] || {}).name; e2.className = "held no"; e2.title = "Nothing lives at that address on this chain. The listing probably picked the wrong chain — edit it."; return; }
-      e2.textContent = ok ? "held by lister" : "no longer held";
+      e2.textContent = ok ? "held by " + j.heldBy : "no longer held";
       e2.className = "held " + (ok ? "yes" : "no");
     });
   });
@@ -166,6 +167,17 @@ function offerCard(o, dir) {
     ? "<b>" + esc(who(o.from_id)) + "</b> wants to trade for <b>" + esc(title) + "</b>"
     : "You offered on <b>" + esc(title) + "</b>" + (it ? " from <b>" + esc(who(it.owner_id)) + "</b>" : "");
   var h = '<div class="on">' + head + " " + dotRow(scoreOf(other).dots) + " · " + esc(ago(o.created_at)) + "</div>";
+  // What is on offer, as pictures: the token's artwork, and the photos of any listings put in.
+  var tiles = [];
+  if (o.asset_kind && o.asset_kind !== "erc20") {
+    var artId = "art-" + Math.random().toString(36).slice(2, 10);
+    pendingMeta.push({ id: artId, asset: o });
+    tiles.push('<div class="otile nft" data-art="' + artId + '"><div class="artph">Fetching artwork\u2026</div></div>');
+  }
+  (o.give_items || []).map(itemById).forEach(function (g) {
+    if (g && g.photos && g.photos[0]) tiles.push('<a class="otile" href="/item/' + esc(g.id) + '" target="_blank" rel="noopener" title="' + esc(g.title) + '"><img src="' + esc(g.photos[0]) + '" alt="' + esc(g.title) + '" loading="lazy"></a>');
+  });
+  if (tiles.length) h += '<div class="opics' + (tiles.length > 1 ? " many" : "") + '">' + tiles.join("") + "</div>";
   h += '<div class="sides"><div class="side h"><span class="k">They give</span><span class="v">' + esc(o.give) + "</span></div>" +
     '<div class="arrow" aria-hidden="true"></div>' +
     '<div class="side w"><span class="k">For</span><span class="v">' + esc(title) + "</span></div></div>";
@@ -175,7 +187,7 @@ function offerCard(o, dir) {
       var pic = g.photos && g.photos[0];
       return '<a href="/item/' + esc(g.id) + '" target="_blank" rel="noopener">' + (pic ? '<img src="' + esc(pic) + '" alt="">' : '<span class="pi" style="background:' + hueOf(g.cat) + '">' + esc(g.title.charAt(0).toUpperCase()) + "</span>") + "<span>" + esc(g.title) + "</span></a>";
     }).join("") + "</div>";
-  h += assetRow(o, verifiedWallet(profiles[o.from_id]));
+  h += assetRow(o, verifiedWallet(profiles[o.from_id]), o.from_id === uid ? "you" : who(o.from_id));
   if (o.msg) h += '<div class="msg">' + esc(o.msg) + "</div>";
   el.innerHTML = h;
 
