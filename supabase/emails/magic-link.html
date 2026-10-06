@@ -1,71 +1,67 @@
 <!-- Dot Trading Post — "Magic Link" email template.
-     Paste into Supabase → Authentication → Emails → Magic Link.
-
-     Written for email clients, not browsers: tables for layout, every style inline, no webfonts
-     (Outlook and Gmail strip or ignore all three), and a real text link under the button because a
-     fair number of clients will not render a styled anchor as a button at all.
-
-     The subject line matters as much as the body. Set it to:  Your link to the Trading Post  -->
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#edeef0;margin:0;padding:32px 12px;">
+     Paste into Supabase → Authentication → Emails → Magic Link.  Subject:  Your link to the Trading Post
+     Email clients, not browsers: tables, inline styles, no webfonts, a plain text link under the button. -->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f3ead3;margin:0;padding:32px 12px;">
   <tr>
     <td align="center">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:480px;background:#f9fafb;border:1px solid #d6d9de;border-radius:12px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:480px;background:#fffcf4;border:3px solid #121212;border-radius:8px;">
         <tr>
-          <td style="padding:28px 28px 0 28px;">
+          <td style="padding:26px 28px 0 28px;">
             <table role="presentation" cellpadding="0" cellspacing="0" border="0">
               <tr>
-                <td style="padding-right:9px;">
-                  <div style="width:11px;height:11px;border-radius:50%;background:#1f7a4d;"></div>
+                <td style="padding-right:10px;" valign="middle">
+                  <img src="https://www.dottrader.app/icon-192.png" width="36" height="36" alt="" style="display:block;width:36px;height:36px;border:0;">
                 </td>
-                <td style="font-family:Georgia,'Times New Roman',serif;font-size:19px;font-weight:bold;color:#15181c;letter-spacing:-0.3px;">
-                  Dot Trading Post
+                <td valign="middle" style="font-family:Helvetica,Arial,sans-serif;font-size:15px;font-weight:bold;color:#121212;letter-spacing:1.5px;text-transform:uppercase;">
+                  Dot Trading Post<br>
+                  <span style="font-family:'Courier New',Courier,monospace;font-size:9px;font-weight:normal;letter-spacing:2px;color:#4b4740;">BARTER BOARD</span>
                 </td>
               </tr>
             </table>
           </td>
         </tr>
         <tr>
-          <td style="padding:22px 28px 0 28px;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;font-size:22px;line-height:1.25;font-weight:600;color:#15181c;">
+          <td style="padding:24px 28px 0 28px;font-family:Helvetica,Arial,sans-serif;font-size:26px;line-height:1.15;font-weight:bold;color:#121212;letter-spacing:-0.5px;">
             Here's your way in
           </td>
         </tr>
         <tr>
-          <td style="padding:12px 28px 0 28px;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.55;color:#5e646c;">
-            Tap the button and you're signed in. No password to remember, nothing to install.
+          <td style="padding:12px 28px 0 28px;font-family:Helvetica,Arial,sans-serif;font-size:15px;line-height:1.55;color:#4b4740;">
+            Tap the button and you're signed in. No password to remember, nothing to install. The link works once and expires in an hour.
           </td>
         </tr>
         <tr>
           <td style="padding:24px 28px 0 28px;">
             <table role="presentation" cellpadding="0" cellspacing="0" border="0">
               <tr>
-                <td style="background:#15181c;border-radius:8px;">
-                  <a href="{{ .ConfirmationURL }}"
-                     style="display:inline-block;padding:14px 26px;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;font-weight:600;color:#edeef0;text-decoration:none;">
-                    Open the board
-                  </a>
+                <td style="background:#ffd23f;border:3px solid #121212;border-radius:999px;">
+                  <a href="{{ .ConfirmationURL }}" style="display:inline-block;padding:13px 26px;font-family:Helvetica,Arial,sans-serif;font-size:13px;font-weight:bold;letter-spacing:1.5px;text-transform:uppercase;color:#121212;text-decoration:none;">Sign in to the board</a>
                 </td>
               </tr>
             </table>
           </td>
         </tr>
         <tr>
-          <td style="padding:20px 28px 0 28px;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;line-height:1.5;color:#9aa0a8;">
-            Button not working? Paste this into your browser:<br>
-            <a href="{{ .ConfirmationURL }}" style="color:#2b5ce6;word-break:break-all;">{{ .ConfirmationURL }}</a>
+          <td style="padding:18px 28px 0 28px;font-family:'Courier New',Courier,monospace;font-size:12px;line-height:1.5;color:#8c867a;">
+            Button not working? Copy this into your browser:<br>
+            <a href="{{ .ConfirmationURL }}" style="color:#2f56d6;word-break:break-all;">{{ .ConfirmationURL }}</a>
           </td>
         </tr>
         <tr>
-          <td style="padding:22px 28px 28px 28px;">
-            <div style="border-top:1px solid #e4e7eb;padding-top:16px;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;font-size:12.5px;line-height:1.55;color:#9aa0a8;">
-              The link works once and expires in an hour. If you didn't ask for it, nothing has
-              happened to your account and you can ignore this.
+          <td style="padding:24px 28px 26px 28px;">
+            <div style="border-top:2px dashed #d8ccb0;padding-top:14px;font-family:Helvetica,Arial,sans-serif;font-size:12.5px;line-height:1.5;color:#8c867a;">
+              If you didn't ask for this, ignore it — nobody can use the link without this email.
             </div>
           </td>
         </tr>
       </table>
-      <div style="max-width:480px;padding:16px 8px 0 8px;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;font-size:12px;color:#9aa0a8;text-align:center;">
-        Dot Trading Post · barter and trade, no money changes hands
-      </div>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:480px;">
+        <tr>
+          <td style="padding:14px 8px 0 8px;font-family:'Courier New',Courier,monospace;font-size:10.5px;letter-spacing:1.5px;text-transform:uppercase;color:#8c867a;" align="center">
+            dottrader.app · no money changes hands
+          </td>
+        </tr>
+      </table>
     </td>
   </tr>
 </table>
