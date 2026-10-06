@@ -9,7 +9,7 @@ const items = [
   { id: "sd", owner_id: B, title: "Steam Deck 512GB", want: "a Nintendo Switch", want_cats: [], open_to_offers: false, cat: "Consoles & Retro", status: "open", created_at: now },
   { id: "ch", owner_id: C, title: "Charizard holo", want: "", want_cats: ["Video Games"], open_to_offers: true, cat: "Trading Cards", status: "open", created_at: now }];
 const res = []; const ok = (n, c, x) => res.push((c ? "PASS " : "FAIL ") + n + (x ? "  [" + x + "]" : ""));
-async function run(matching) {
+async function run(matching, noPairs) {
   const b = await chromium.launch({}).catch(() => chromium.launch());
   const p = await (await b.newContext({ viewport: { width: 1100, height: 1300 } })).newPage();
   const posts = []; let saved = [{ id: "w1", user_id: A, label: "pokemon cards", cats: ["Trading Cards"], terms: ["pokemon", "card"], created_at: now }];
@@ -29,7 +29,7 @@ async function run(matching) {
   await p.route(/supabase\.co\/rest\/v1\/rpc\/(\w+)/, r => {
     const fn = r.request().url().match(/rpc\/(\w+)/)[1];
     const out = { wanted_counts: [{ item_id: "sw", listings: 2, searches: 1 }, { item_id: "ch", listings: 0, searches: 1 }],
-      my_matches: [{ my_item: "sw", their_item: "ch", they_want_mine: true, i_want_theirs: false, score: 52, nearby: true }, { my_item: "sw", their_item: "sd", they_want_mine: true, i_want_theirs: true, score: 140, nearby: false }],
+      my_matches: noPairs ? [] : [{ my_item: "sw", their_item: "ch", they_want_mine: true, i_want_theirs: false, score: 52, nearby: true }, { my_item: "sw", their_item: "sd", they_want_mine: true, i_want_theirs: true, score: 140, nearby: false }],
       my_search_hits: [{ want_id: "w1", item_id: "ch" }], listings_wanting: ["sd", "ch"] }[fn];
     r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(out === undefined ? null : out) });
   });
@@ -75,6 +75,9 @@ async function run(matching) {
   await p.uncheck("#p-kinds input[data-pref=messages]"); await p.waitForTimeout(400);
   const prof = posts.filter(x => /^profiles POST/.test(x)).pop();
   ok("…ticking saves straight away, kind by kind", prof && /"email_notify":true/.test(prof) && /"messages":false/.test(prof) && /"offers":true/.test(prof), prof && prof.slice(0, 200));
+  await b.close(); }
+{ const { b, p } = await run(true, true);
+  ok("no matches yet: the strip says what to do instead of disappearing", await p.isVisible("#matchBox .mempty") && /No matches yet/.test(await p.textContent("#matchBox .mempty")));
   await b.close(); }
 { const { b, p } = await run(false);
   ok("without notifications.sql: no email settings", await p.$eval("#p-notifywrap", e => e.hidden));

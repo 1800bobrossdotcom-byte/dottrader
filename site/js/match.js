@@ -79,7 +79,19 @@ function paintMatches() {
   var rank = function (p) { return typeof p.score === "number" ? -p.score : p.they_want_mine && p.i_want_theirs ? -2 : p.they_want_mine ? -1 : 0; };
   var pairs = uid && caps.matching ? matchData.pairs.filter(function (p) { return itemById(p.their_item) && itemById(p.my_item); })
     .sort(function (a, b) { return rank(a) - rank(b); }) : [];
-  box.hidden = !pairs.length; if (!pairs.length) { box.innerHTML = ""; return; }
+  if (!pairs.length) {
+    // No matches yet: say what would make some, rather than showing nothing.
+    var mineOpen = uid ? items.filter(function (it) { return it.owner_id === uid && it.status === "open"; }) : [];
+    var saysWant = mineOpen.some(function (it) { return it.want || (it.want_cats && it.want_cats.length); });
+    box.hidden = !(uid && caps.matching);
+    box.innerHTML = box.hidden ? "" : '<div class="sub">Matches for you</div><div class="mempty">' + (!mineOpen.length
+      ? "<span>Post something you'd trade, and Dot finds people who want it \u2014 especially people who have what you want.</span><button class=\"btn ok\" type=\"button\" data-go=\"post\">Post something</button>"
+      : !saysWant
+        ? "<span>Say what you'd take on your listings \u2014 a few words or a category. That's what Dot matches on.</span><button class=\"btn ok\" type=\"button\" data-go=\"mine\">Edit my listings</button>"
+        : "<span>No matches yet. New listings are checked against yours as they're posted" + (caps.notify ? ", and you'll get an email when one fits." : ".") + "</span>") + "</div>";
+    return;
+  }
+  box.hidden = false;
   var mutual = pairs.filter(function (p) { return p.they_want_mine && p.i_want_theirs; }).length;
   box.innerHTML = '<div class="sub">' + (mutual ? mutual + (mutual === 1 ? " mutual match" : " mutual matches") + " · " : "") + "Matches for you</div>";
   var row = document.createElement("div"); row.className = "mrow";

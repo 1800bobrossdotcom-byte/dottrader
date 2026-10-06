@@ -132,6 +132,23 @@
   .cant h3 { font-family:var(--display); font-weight:700; font-size:18px; margin:0 0 6px; letter-spacing:-.015em; line-height:1.15; }
   .cant p { margin:0; color:var(--muted); font-size:14.5px; }
 
+  .matchdemo { display:grid; grid-template-columns:1fr auto 1fr; gap:18px; align-items:center; margin-bottom:22px; }
+  .mside { --c:var(--blue); position:relative; background:var(--card); border:var(--bw) solid var(--ink); border-radius:8px; padding:16px 18px; box-shadow:var(--sh); display:grid; gap:2px; overflow:hidden; }
+  .mside::after { content:""; position:absolute; top:-26px; right:-26px; width:110px; height:110px; border-radius:50%; background:radial-gradient(circle, var(--c) 1.7px, transparent 2px) 0 0/8px 8px; opacity:.6; pointer-events:none; }
+  .mside .who { font-family:var(--mono); font-size:11px; letter-spacing:.14em; text-transform:uppercase; font-weight:600; color:var(--c); margin-bottom:6px; }
+  .mside .k { font-family:var(--mono); font-size:9.5px; letter-spacing:.18em; text-transform:uppercase; color:var(--muted); margin-top:6px; }
+  .mside b { font-family:var(--display); font-size:18px; line-height:1.2; }
+  .mmid { display:grid; justify-items:center; gap:8px; }
+  .mbadge { background:var(--green); color:#fff; font-family:var(--mono); font-size:11px; font-weight:600; letter-spacing:.14em; text-transform:uppercase; border:2px solid var(--ink); border-radius:4px; padding:4px 9px; box-shadow:3px 3px 0 var(--ink); white-space:nowrap; }
+  .mlink { width:58px; height:26px; position:relative; }
+  .mlink::before, .mlink::after { content:""; position:absolute; top:2px; width:22px; height:22px; border-radius:50%; border:2.5px solid var(--ink); }
+  .mlink::before { left:2px; background:var(--blue); } .mlink::after { right:2px; background:var(--red); mix-blend-mode:multiply; }
+  .mpoints { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
+  .mpoints div { border-top:3px solid var(--ink); padding-top:10px; }
+  .mpoints b { font-family:var(--display); font-size:16px; }
+  .mpoints p { margin:4px 0 0; color:var(--muted); font-size:14.5px; }
+  @media (max-width:860px){ .mpoints { grid-template-columns:1fr 1fr; } }
+  @media (max-width:640px){ .matchdemo { grid-template-columns:1fr; } .mmid { grid-auto-flow:column; align-items:center; justify-content:center; gap:14px; } .mpoints { grid-template-columns:1fr; } }
   .safe { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
   @media (max-width:860px){ .safe { grid-template-columns:1fr 1fr; } }
   @media (max-width:560px){ .safe { grid-template-columns:1fr; } }
@@ -158,6 +175,7 @@
 
   <nav>
     <a class="brand" href="/"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M9 5h11a15 15 0 0 1 0 30H9z" fill="#FFD23F" stroke="#121212" stroke-width="3" stroke-linejoin="round"/><circle cx="20" cy="20" r="5.5" fill="#E8392B" stroke="#121212" stroke-width="3"/></svg><span class="t">Dot Trading Post<small>BARTER BOARD</small></span></a>
+    <a class="navlink" href="#match">Matching</a>
     <a class="navlink" href="#safe">Trade safely</a>
     <a class="navlink" href="#dots">How dots work</a>
     <a class="navbtn" href="/app">Open the board</a>
@@ -199,6 +217,22 @@
       <div class="step" style="--c:var(--have)"><span class="n">01 — POST</span><h3>Say what you have.</h3><p>A title, a line about condition, and what you'd want back. "Open to offers" is a fine answer.</p></div>
       <div class="step" style="--c:var(--want)"><span class="n">02 — OFFER</span><h3>Someone proposes a swap.</h3><p>They say what they'd give. You see their dots before you decide, so you know who you're dealing with.</p></div>
       <div class="step" style="--c:var(--dot)"><span class="n">03 — TRADE</span><h3>Accept, meet, vouch.</h3><p>Accepting takes the item off the board. When it's in hand, you each vouch — and you each earn dots.</p></div>
+    </div>
+  </section>
+
+  <section id="match">
+    <h2>You don't have to hunt for the other half</h2>
+    <p class="sub">Barter's oldest problem: you need someone who has what you want <em>and</em> wants what you have. Tell Dot both halves and it goes looking.</p>
+    <div class="matchdemo">
+      <div class="mside" style="--c:var(--blue)"><span class="who">You</span><span class="k">Have</span><b>Nintendo Switch OLED</b><span class="k">Want</span><b>Pokémon cards</b></div>
+      <div class="mmid" aria-hidden="true"><span class="mbadge">Both ways</span><span class="mlink"></span></div>
+      <div class="mside" style="--c:var(--red)"><span class="who">Cara · 4 mi away</span><span class="k">Has</span><b>Charizard holo, base set</b><span class="k">Wants</span><b>a Switch</b></div>
+    </div>
+    <div class="mpoints">
+      <div><b>Say what you'd take</b><p>In words, or tick whole categories. "Open to offers" counts too.</p></div>
+      <div><b>It knows the names</b><p>PS5 or PlayStation 5, Pokémon or pkmn, GBA or Game Boy Advance — read as the same thing.</p></div>
+      <div><b>Best matches first</b><p>Both-ways swaps at the top, then nearby traders and listings with Proof of item.</p></div>
+      <div><b>Save a search</b><p>Looking for something nobody has yet? Save it, and get an email the moment it's posted.</p></div>
     </div>
   </section>
 
