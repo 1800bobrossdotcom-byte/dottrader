@@ -274,7 +274,11 @@
   .gate h2 { font-size:clamp(34px,6.2vw,64px); line-height:.98; letter-spacing:-.035em; text-transform:uppercase; margin:0; text-wrap:balance; }
   .gate h2 em { font-style:normal; background:var(--yellow); box-decoration-break:clone; -webkit-box-decoration-break:clone; padding:0 .14em; box-shadow:4px 4px 0 var(--ink); }
   .steps { display:grid; gap:14px; grid-template-columns:repeat(3,1fr); }
-  @media (max-width:640px){ .steps { grid-template-columns:1fr; } }
+  @media (max-width:640px){
+    .steps { grid-template-columns:1fr; gap:10px; }
+    .step { grid-template-columns:auto 1fr; column-gap:12px; row-gap:0; padding:22px 14px 12px; align-items:center; }
+    .step i { grid-row:span 2; margin:0; }
+  }
   .step { --c:var(--green); display:grid; gap:4px; padding:28px 16px 16px; background:var(--card); border:var(--bw) solid var(--ink); border-radius:var(--r); font-size:13.5px; color:var(--muted); position:relative; overflow:hidden; box-shadow:var(--sh); }
   .step::before { content:""; position:absolute; top:0; left:0; right:0; height:14px; background:radial-gradient(circle, var(--c) 1.7px, transparent 2px) 0 0/7px 7px; border-bottom:2px solid var(--ink); opacity:.9; }
   .step i { width:32px; height:32px; border-radius:50%; background:var(--c); border:2px solid var(--ink); color:#fff; font-style:normal; font-family:var(--mono); font-weight:600; display:inline-flex; align-items:center; justify-content:center; font-size:13px; margin-bottom:4px; box-shadow:2px 2px 0 var(--ink); }
@@ -288,6 +292,25 @@
   .gate .fine { margin:0; color:var(--muted); font-size:13px; }
   #authMsg { margin:0; color:var(--ink); font-weight:600; background:var(--dot-soft); border:2px solid var(--ink); padding:10px 14px; border-radius:6px; }
   #authMsg.bad { background:var(--want-soft); }
+  .gate { margin-bottom:34px; }
+  .gate .ctas { display:flex; gap:12px; flex-wrap:wrap; }
+  .authmsg { margin:0; font-size:13.5px; font-weight:600; border:2px solid var(--ink); border-radius:6px; padding:9px 12px; background:var(--dot-soft); }
+  .authmsg.bad { background:var(--want-soft); }
+  .authlinks { display:flex; gap:6px 16px; flex-wrap:wrap; font-size:13px; }
+  .authlinks .linkbtn { color:var(--ink); }
+  .codein { font-family:var(--mono); font-size:22px !important; letter-spacing:.3em; text-align:center; }
+  .thread { border-top:2px dashed var(--line-soft); padding-top:10px; display:grid; gap:8px; }
+  .threadtog { justify-self:start; font-weight:700; color:var(--ink); text-decoration:none; font-size:13px; }
+  .threadtog:hover { text-decoration:underline; }
+  .newdot { display:inline-block; background:var(--red); color:#fff; border-radius:999px; padding:0 7px; font-size:11px; line-height:18px; margin-left:6px; font-family:var(--mono); }
+  .msgs { display:flex; flex-direction:column; gap:6px; max-height:260px; overflow-y:auto; padding:2px; }
+  .bub { max-width:82%; align-self:flex-start; background:#fff; border:2px solid var(--ink); border-radius:12px 12px 12px 3px; padding:7px 11px; font-size:13.5px; overflow-wrap:anywhere; white-space:pre-wrap; }
+  .bub.me { align-self:flex-end; background:var(--yellow); border-radius:12px 12px 3px 12px; }
+  .bub small { display:block; font-family:var(--mono); font-size:10px; color:var(--muted); margin-top:2px; }
+  .msgform { display:flex; gap:8px; }
+  .msgform input { flex:1; min-width:0; background:#fff; border:2px solid var(--ink); border-radius:999px; padding:9px 14px; outline:none; }
+  .msgform input:focus { box-shadow:3px 3px 0 var(--blue); }
+  .threadhint { font-size:12.5px; color:var(--muted); margin:0; }
 
   @media (prefers-reduced-motion: reduce) { .item, .btn, .chip, .wal { transition:none; } }
 </style>
@@ -301,6 +324,7 @@
       <button class="wal" type="button" id="connectBtn" title="Connect a wallet to list or offer digital assets"><s></s><span id="walletState">Connect wallet</span></button>
       <button class="linkbtn" id="signOut" title="Signs out of your Dot Trading Post account on this device. Your wallet link is separate — click the wallet pill to unlink it.">Sign out of account</button>
     </div>
+    <button class="btn ok" type="button" id="signInTop" hidden>Sign in</button>
     <div class="tabs" role="tablist" id="tabs" hidden>
       <button class="tab" id="t-browse" role="tab" aria-selected="true">Board</button>
       <button class="tab" id="t-post" role="tab" aria-selected="false">+ Post</button>
@@ -319,25 +343,14 @@
       <h2>Swap what you have<br>for <em>what you want.</em></h2>
       <div class="steps">
         <div class="step" style="--c:var(--have)"><i>1</i><b>Post an item</b><span>A photo and what you'd take for it.</span></div>
-        <div class="step" style="--c:var(--want)"><i>2</i><b>Get offers</b><span>Accept one, swap by post or in person.</span></div>
+        <div class="step" style="--c:var(--want)"><i>2</i><b>Get offers</b><span>Accept one, then sort the swap out in messages.</span></div>
         <div class="step" style="--c:var(--dot)"><i>3</i><b>Press your dot</b><span>Both press when it arrives. You both earn trust.</span></div>
       </div>
-      <form class="gateform" id="authForm">
-        <input id="email" type="email" required autocomplete="email" placeholder="you@example.com" aria-label="Your email">
-        <button class="btn ok big" id="authBtn" type="submit">Send me a sign-in link</button>
-      </form>
-      <p id="authMsg" hidden></p>
-      <p class="fine">No password needed. The link in the email signs you straight in, and you stay signed in on this device until you sign out.</p>
-      <details class="more" id="pwWrap">
-        <summary>Set a password? Sign in with it instead</summary>
-        <form class="f" id="pwForm" style="display:grid;gap:10px">
-          <div class="rowf">
-            <div><label for="pw-email">Email</label><input id="pw-email" type="email" required autocomplete="email" placeholder="you@example.com"></div>
-            <div><label for="pw-pass">Password</label><input id="pw-pass" type="password" required autocomplete="current-password" minlength="8"></div>
-          </div>
-          <div class="acts"><button class="btn" type="submit" id="pwBtn">Sign in</button><span class="hint">Set one under My trades → Your profile after signing in with a link.</span></div>
-        </form>
-      </details>
+      <div class="ctas">
+        <button class="btn ok big" type="button" data-auth="signup">Create an account</button>
+        <button class="btn big" type="button" data-auth="signin">Sign in</button>
+      </div>
+      <p class="fine">Look around first — everything on the board is below. You only need an account to post or make an offer.</p>
     </div>
   </section>
 
@@ -372,7 +385,7 @@
         <label for="f-title">What are you offering?</label>
         <input id="f-title" maxlength="80" required placeholder="Charizard holo, 1999 base set">
       </div>
-      <div>
+      <div id="f-photowrap">
         <label>Photos <span class="hint" id="f-photohint">— up to 4 · location data is removed before upload</span></label>
         <label class="filebtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg><span>Add photos</span><input id="f-photos" type="file" accept="image/jpeg,image/png,image/webp" multiple></label>
         <div class="thumbs" id="f-thumbs"></div>
@@ -434,7 +447,7 @@
             <div><label for="p-area">Where you trade <span class="hint">— earns a dot</span></label><input id="p-area" maxlength="60" placeholder="North Leeds"></div>
           </div>
           <div><label for="p-note">How you like to swap</label><input id="p-note" maxlength="80" placeholder="Happy to post, prefer meeting up"></div>
-          <div><label>Location <span class="hint">— for “near me” and the map · rounded to about a kilometre, never your address</span></label>
+          <div id="p-locwrap"><label>Location <span class="hint">— for “near me” and the map · rounded to about a kilometre, never your address</span></label>
             <div class="acts"><button class="btn ghost" type="button" id="locBtn">Use my location</button>
               <button class="btn ghost" type="button" id="locFind">Find from the area above</button>
               <span class="hint" id="locState">Not set</span><button class="linkbtn" type="button" id="locClear" hidden>clear</button></div></div>
@@ -658,6 +671,13 @@
   var sb = null, uid = null, myEmail = "";
   var items = [], offers = [], signals = [], profiles = {}, badges = {};
   var profTouched = false;
+  // What this project has switched on. Each is probed once at boot, so the board never offers a
+  // button whose back end is missing (the old failure: write the note, take the photo, then hear
+  // the checker does not exist).
+  var caps = { photos: true, location: true, messages: true, verify: true };
+  var msgs = {}, threadOpen = {}, drafts = {}, seen = {};
+  var afterAuth = null;
+  var baseTitle = document.title;
   var filter = { q: "", cat: "", radius: 0 };
   // Distance between two rough points, in miles.
   function miles(a, b, c, d) {
@@ -732,7 +752,10 @@
   ["browse", "post", "mine"].forEach(function (k) {
     $("t-" + k).addEventListener("click", function () { show(k); });
   });
-  $("postCta").addEventListener("click", function () { show("post"); setTimeout(function () { $("f-title").focus(); }, 30); });
+  $("postCta").addEventListener("click", function () {
+    if (!uid) return needAccount("Make an account to post. It takes a minute.", function () { show("post"); });
+    show("post"); setTimeout(function () { $("f-title").focus(); }, 30);
+  });
   function openProfile() {
     show("mine"); $("profWrap").open = true;
     setTimeout(function () { $("p-name").focus(); $("p-name").scrollIntoView({ block: "center", behavior: "smooth" }); }, 30);
@@ -742,6 +765,7 @@
     var go = e.target && e.target.getAttribute && e.target.getAttribute("data-go");
     if (!go) return;
     if (go === "clear") { filter.cat = ""; filter.q = ""; filter.radius = 0; $("q").value = ""; $("radius").value = "0"; syncCats(); render(); return; }
+    if (!uid && (go === "post" || go === "loc" || go === "mine")) return needAccount("Make an account to post. It takes a minute.", function () { show(go === "loc" ? "mine" : go); });
     if (go === "loc") { show("mine"); $("profWrap").open = true; setTimeout(function () { $("locBtn").scrollIntoView({ block: "center", behavior: "smooth" }); }, 30); return; }
     show(go);
   });
@@ -1135,13 +1159,21 @@
     el.innerHTML = h;
 
     var foot = el.querySelector(".foot");
-    if (!traded && !pledged && !mine && uid) {
+    var sentMine = uid && offers.some(function (o) { return o.item_id === it.id && o.from_id === uid && (o.status === "pending" || o.status === "agreed"); });
+    if (!traded && !pledged && !mine && sentMine) {
+      var sent = document.createElement("span"); sent.className = "tag mine"; sent.textContent = "Offer sent";
+      sent.title = "See it under My trades. You can withdraw it there.";
+      foot.appendChild(sent);
+    } else if (!traded && !pledged && !mine) {
       var b = document.createElement("button");
       b.className = "btn ok"; b.type = "button"; b.textContent = "Offer a trade";
-      b.addEventListener("click", function () { openOffer(it); });
+      b.addEventListener("click", function () {
+        if (!uid) return needAccount("Make an account to offer on \u201c" + it.title + "\u201d. It takes a minute.", function () { openOffer(it); });
+        openOffer(it);
+      });
       foot.appendChild(b);
     }
-    if (mine && opts.manage && !traded && !pledged && !badge) {
+    if (mine && opts.manage && !traded && !pledged && !badge && !it.asset_kind && caps.verify) {
       var ver = document.createElement("button");
       ver.className = "btn ghost"; ver.type = "button"; ver.textContent = "Prove you have it";
       ver.title = "Photograph a handwritten note with a one-time code next to the item. Verified listings carry a badge.";
@@ -1197,6 +1229,9 @@
       }
     } else if (o.status === "declined") {
       var d = document.createElement("span"); d.className = "tag"; d.textContent = "declined"; acts.appendChild(d);
+    } else if (o.status === "withdrawn") {
+      var wdn = document.createElement("span"); wdn.className = "tag off";
+      wdn.textContent = dir === "out" ? "you withdrew this" : "withdrawn by " + who(o.from_id); acts.appendChild(wdn);
     } else if (o.status === "cancelled") {
       var c = document.createElement("span"); c.className = "tag off";
       c.textContent = "cancelled by " + (o.cancelled_by === uid ? "you" : who(o.cancelled_by)); acts.appendChild(c);
@@ -1233,7 +1268,71 @@
       }
     }
     el.appendChild(acts);
+    if (caps.messages && uid && (o.status === "pending" || o.status === "agreed" || o.status === "done")) el.appendChild(threadEl(o, other));
     return el;
+  }
+
+  /* ---- messages ----
+     One thread per offer, readable and writable only by its two parties (messages.sql). Agreed
+     trades open their thread by default: that is the moment people need to talk. */
+  function seenKey() { return "dtp-seen-" + uid; }
+  function loadSeen() { try { seen = JSON.parse(localStorage.getItem(seenKey()) || "{}") || {}; } catch (e) { seen = {}; } }
+  function markSeen(id) {
+    var t = msgs[id] || []; if (!t.length) return;
+    seen[id] = t[t.length - 1].created_at;
+    try { localStorage.setItem(seenKey(), JSON.stringify(seen)); } catch (e) {}
+  }
+  function unreadIn(id) {
+    var mark = seen[id] || "";
+    return (msgs[id] || []).filter(function (m) { return m.from_id !== uid && m.created_at > mark; }).length;
+  }
+  function threadEl(o, other) {
+    var t = msgs[o.id] || [];
+    var open = threadOpen[o.id] !== undefined ? threadOpen[o.id] : o.status === "agreed";
+    var fresh = unreadIn(o.id);
+    if (open) markSeen(o.id);
+    var box = document.createElement("div"); box.className = "thread";
+    var tog = document.createElement("button"); tog.type = "button"; tog.className = "linkbtn threadtog";
+    tog.innerHTML = esc(open ? "Hide messages" : (t.length ? "Messages (" + t.length + ")" : "Message " + who(other))) +
+      (!open && fresh ? '<span class="newdot">' + fresh + " new</span>" : "");
+    tog.addEventListener("click", function () { threadOpen[o.id] = !open; render(); if (!open) setTimeout(function () { var i = $("m-" + o.id); if (i) i.focus(); }, 30); });
+    box.appendChild(tog);
+    if (!open) return box;
+    var list = document.createElement("div"); list.className = "msgs";
+    if (!t.length) {
+      var hint = document.createElement("p"); hint.className = "threadhint";
+      hint.textContent = o.status === "agreed" ? "You've agreed. Sort out where and when to meet, or how you'll each post." : "Ask a question, or suggest a tweak to the offer.";
+      list.appendChild(hint);
+    }
+    t.forEach(function (m) {
+      var bub = document.createElement("div"); bub.className = "bub" + (m.from_id === uid ? " me" : "");
+      bub.textContent = m.body;
+      var when = document.createElement("small"); when.textContent = (m.from_id === uid ? "You" : who(m.from_id)) + " · " + ago(m.created_at);
+      bub.appendChild(when); list.appendChild(bub);
+    });
+    box.appendChild(list);
+    requestAnimationFrame(function () { list.scrollTop = list.scrollHeight; });
+    var form = document.createElement("form"); form.className = "msgform";
+    var input = document.createElement("input"); input.id = "m-" + o.id; input.maxLength = 1000; input.autocomplete = "off";
+    input.placeholder = "Write to " + who(other) + "…"; input.value = drafts[o.id] || "";
+    input.addEventListener("input", function () { drafts[o.id] = input.value; });
+    var send = document.createElement("button"); send.className = "btn ok"; send.type = "submit"; send.textContent = "Send";
+    form.appendChild(input); form.appendChild(send);
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var body = input.value.trim(); if (!body) return;
+      send.disabled = true;
+      sb.from("messages").insert({ offer_id: o.id, from_id: uid, body: body }).then(function (r) {
+        send.disabled = false;
+        if (r.error) return fail(r.error);
+        drafts[o.id] = ""; input.value = "";
+        (msgs[o.id] = msgs[o.id] || []).push({ offer_id: o.id, from_id: uid, body: body, created_at: new Date().toISOString() });
+        render(); setTimeout(function () { var i = $("m-" + o.id); if (i) i.focus(); }, 0);
+        load();
+      });
+    });
+    box.appendChild(form);
+    return box;
   }
 
   function fill(host, emptyEl, list, make) {
@@ -1244,6 +1343,12 @@
   }
 
   function render() {
+    var act = document.activeElement, keepId = act && act.id && act.id.indexOf("m-") === 0 ? act.id : null;
+    var keepAt = keepId ? act.selectionEnd : 0;
+    renderInner();
+    if (keepId && $(keepId)) { $(keepId).focus(); try { $(keepId).setSelectionRange(keepAt, keepAt); } catch (e) {} }
+  }
+  function renderInner() {
     var open = items.filter(function (it) { return it.status === "open"; });
     var shown = open.filter(function (it) {
       if (filter.cat && it.cat !== filter.cat) return false;
@@ -1268,7 +1373,9 @@
     var waiting = inc.filter(function (o) { return o.status === "pending"; }).length +
       inc.concat(out).filter(function (o) {
         return o.status === "agreed" && !(o.owner_id === uid ? o.confirm_owner : o.confirm_from);
-      }).length;
+      }).length +
+      inc.concat(out).filter(function (o) { return unreadIn(o.id) > 0 && !(threadOpen[o.id] !== undefined ? threadOpen[o.id] : o.status === "agreed"); }).length;
+    document.title = (uid && waiting ? "(" + waiting + ") " : "") + baseTitle;
 
     fill($("offersIn"), $("offersInEmpty"), inc, function (o) { return offerCard(o, "in"); });
     fill($("offersOut"), $("offersOutEmpty"), out, function (o) { return offerCard(o, "out"); });
@@ -1591,7 +1698,7 @@
       '<div><label for="e-desc">Details</label><textarea id="e-desc" maxlength="600"></textarea></div>' +
       '<div class="rowf"><div><label for="e-want">What you want back</label><input id="e-want" maxlength="80"></div>' +
       '<div><label for="e-cat">Category</label><select id="e-cat"></select></div></div>' +
-      '<div><label>Photos <span class="hint">— up to 4</span></label><div class="thumbs" id="e-thumbs"></div>' +
+      '<div' + (caps.photos ? "" : " hidden") + '><label>Photos <span class="hint">— up to 4</span></label><div class="thumbs" id="e-thumbs"></div>' +
       '<label class="filebtn" style="margin-top:10px"><span>Add photos</span><input id="e-photos" type="file" accept="image/jpeg,image/png,image/webp" multiple></label></div>' +
       '<div class="acts"><button class="btn ok" type="submit">Save changes</button><button class="btn ghost" type="button" data-x>Cancel</button></div>';
     veil.appendChild(form); document.body.appendChild(veil);
@@ -1653,7 +1760,9 @@
       // The public half of every offer: enough to count dots, nothing anyone said.
       sb.from("offer_signals").select("*").limit(2000),
       // Which items carry a proof: the photo and the one-line read, never the code.
-      sb.from("verification_badges").select("*").limit(2000)
+      sb.from("verification_badges").select("*").limit(2000),
+      // Only threads the viewer is part of — messages.sql makes sure of that.
+      uid && caps.messages ? sb.from("messages").select("*").order("created_at", { ascending: true }).limit(3000) : Promise.resolve({ data: [] })
     ]).then(function (r) {
       if (r[0].error || r[1].error || r[2].error) {
         note("Could not load the board. If this is the first run, check the schema was applied in Supabase.", "bad");
@@ -1665,6 +1774,7 @@
       signals = r[3].error ? offers : (r[3].data || []);
       // Missing until verify.sql has been run; the board just shows no badges.
       badges = {}; (r[4].error ? [] : (r[4].data || [])).forEach(function (b) { badges[b.item_id] = b; });
+      msgs = {}; (r[5].error ? [] : (r[5].data || [])).forEach(function (m) { (msgs[m.offer_id] = msgs[m.offer_id] || []).push(m); });
       profiles = {}; (r[2].data || []).forEach(function (p) { profiles[p.id] = p; });
       if (uid && !profTouched) { profTouched = true; $("profWrap").open = !(profiles[uid] && profiles[uid].name); }
       if (uid) paintLoc();
@@ -1677,28 +1787,153 @@
     });
   }
 
-  /* ---- auth ---- */
-  $("authForm").addEventListener("submit", function (e) {
-    e.preventDefault();
-    var email = $("email").value.trim(); if (!email) return;
-    var btn = $("authBtn"); btn.disabled = true; btn.textContent = "Sending…";
-    sb.auth.signInWithOtp({ email: email, options: { emailRedirectTo: location.origin + "/app" } })
-      .then(function (r) {
-        btn.disabled = false; btn.textContent = "Send me a sign-in link";
-        var m = $("authMsg"); m.hidden = false;
-        var msg = r.error ? r.error.message : "Check your email — the link signs you straight in.";
-        if (r.error && /rate limit/i.test(msg)) msg = "Too many sign-in emails in the last hour — the mail service caps them. Wait a while and try again, or sign in with a password below if you have set one.";
-        m.textContent = msg; m.className = r.error ? "bad" : "";
+  /* ---- accounts ----
+     Password first: a link-only login means a fresh email every time someone signs out or picks up
+     another device, and the link opens in whatever browser the mail app chooses. The emailed code
+     is the way in for anyone without a password yet, and it works in any browser. */
+  var authBox = null, authEmail = "";
+  function hasAccountHint() { try { return localStorage.getItem("dtp-has-account") === "1"; } catch (e) { return false; } }
+  function pwAskedKey() { return "dtp-pw-asked-" + uid; }
+  function authErr(e) {
+    var m = (e && e.message) || "That did not work.";
+    if (/rate limit/i.test(m)) return "Too many emails in a short time. Wait a minute and try again.";
+    if (/invalid login credentials/i.test(m)) return "That email and password don’t match. If you’ve only ever signed in with email links you don’t have a password yet — use “Email me a code”, then set one.";
+    if (/email not confirmed/i.test(m)) return "Confirm your email first — the confirmation is in your inbox. Or use “Email me a code”.";
+    if (/expired|invalid.*(otp|token)|token.*invalid/i.test(m)) return "That code is wrong or has expired. Send yourself a new one.";
+    if (/already (been )?registered/i.test(m)) return "There’s already an account with that email. Sign in instead.";
+    if (/password should be/i.test(m)) return "Use at least 8 characters for the password.";
+    if (/signups? (not allowed|disabled)/i.test(m)) return "New accounts are switched off on this board right now.";
+    return m;
+  }
+  function needAccount(reason, then) {
+    afterAuth = then || null;
+    openAuth(hasAccountHint() ? "signin" : "signup", reason);
+  }
+  function closeAuth() { if (authBox) { authBox.veil.remove(); authBox = null; } }
+  function openAuth(mode, reason) {
+    if (!authBox) {
+      var veil = document.createElement("div"); veil.className = "veil";
+      var form = document.createElement("form"); form.className = "sheet f";
+      veil.appendChild(form); document.body.appendChild(veil);
+      veil.addEventListener("click", function (e) { if (e.target === veil && authBox && authBox.mode !== "newpass") closeAuth(); });
+      authBox = { veil: veil, form: form, sent: false };
+    }
+    if (mode !== "code") authBox.sent = false;
+    authBox.mode = mode;
+    if (reason !== undefined) authBox.reason = reason;
+    paintAuth();
+  }
+  function paintAuth() {
+    var b = authBox, f = b.form, m = b.mode;
+    var em = function (ac) { return '<div><label for="a-email">Email</label><input id="a-email" type="email" required autocomplete="' + (ac || "email") + '" value="' + esc(authEmail) + '" placeholder="you@example.com"></div>'; };
+    var pw = function (ac, label) { return '<div><label for="a-pass">' + (label || "Password") + '</label><input id="a-pass" type="password" required minlength="8" autocomplete="' + ac + '"' + (ac === "new-password" ? ' placeholder="At least 8 characters"' : "") + "></div>"; };
+    var links = function (l) { return '<div class="authlinks">' + l.map(function (x) { return '<button type="button" class="linkbtn" data-mode="' + x[0] + '">' + x[1] + "</button>"; }).join("") + "</div>"; };
+    var reason = b.reason ? '<p class="hint" style="margin:0">' + esc(b.reason) + "</p>" : "";
+    var close = m === "newpass" ? "" : '<button class="btn ghost" type="button" data-x>' + (m === "setpass" ? "Not now" : "Close") + "</button>";
+    var h = "";
+    if (m === "signin") h = "<h3>Sign in</h3>" + reason + em() + pw("current-password") + msgSlot() +
+      '<div class="acts"><button class="btn ok" type="submit">Sign in</button>' + close + "</div>" +
+      links([["forgot", "Forgot password?"], ["code", "Email me a code instead"], ["signup", "New here? Create an account"]]);
+    else if (m === "signup") h = "<h3>Create an account</h3>" + reason + em() + pw("new-password") + msgSlot() +
+      '<p class="hint" style="margin:0">We email you once to confirm it’s really you. After that you just sign in with your password.</p>' +
+      '<div class="acts"><button class="btn ok" type="submit">Create account</button>' + close + "</div>" +
+      links([["signin", "Already have an account? Sign in"]]);
+    else if (m === "code" && !b.sent) h = "<h3>Sign in with a code</h3>" + reason + em() + msgSlot() +
+      '<p class="hint" style="margin:0">We email you a short code. Type it here — it works in any browser, so it doesn’t matter where your mail app opens links.</p>' +
+      '<div class="acts"><button class="btn ok" type="submit">Email me a code</button>' + close + "</div>" +
+      links([["signin", "Use my password instead"]]);
+    else if (m === "code") h = "<h3>Enter your code</h3>" +
+      '<p class="hint" style="margin:0">Sent to <b>' + esc(authEmail) + "</b>. The email has a link too — either works.</p>" +
+      '<div><label for="a-code">Code</label><input id="a-code" class="codein" inputmode="numeric" autocomplete="one-time-code" required pattern="[0-9]{6,10}" maxlength="10" placeholder="123456"></div>' + msgSlot() +
+      '<div class="acts"><button class="btn ok" type="submit">Sign in</button>' + close + "</div>" +
+      links([["code-again", "Send a new code"], ["code-other", "Use a different email"]]);
+    else if (m === "checkemail") h = "<h3>Check your inbox</h3>" +
+      '<p class="hint" style="margin:0">We sent a confirmation to <b>' + esc(authEmail) + "</b>. Tap its link, or type the code from it here. You only do this once — from then on it’s just your password.</p>" +
+      '<div><label for="a-code">Code from the email</label><input id="a-code" class="codein" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6,10}" maxlength="10" placeholder="123456"></div>' + msgSlot() +
+      '<div class="acts"><button class="btn ok" type="submit">Confirm</button>' + close + "</div>";
+    else if (m === "forgot") h = "<h3>Reset your password</h3>" + em() + msgSlot() +
+      '<p class="hint" style="margin:0">We email you a link that brings you back here to choose a new one. If you never set a password, this sets your first.</p>' +
+      '<div class="acts"><button class="btn ok" type="submit">Email me a reset link</button>' + close + "</div>" +
+      links([["signin", "Back to sign in"]]);
+    else if (m === "newpass") h = "<h3>Choose a new password</h3>" + pw("new-password", "New password") + msgSlot() +
+      '<div class="acts"><button class="btn ok" type="submit">Save password</button></div>';
+    else if (m === "setpass") h = "<h3>You’re in. Make next time one step?</h3>" +
+      '<p class="hint" style="margin:0">Set a password and you can sign straight back in, on any device, without waiting for an email.</p>' +
+      pw("new-password") + msgSlot() + '<div class="acts"><button class="btn ok" type="submit">Set password</button>' + close + "</div>";
+    f.innerHTML = h;
+    var e1 = f.querySelector("#a-email"); if (e1) e1.addEventListener("input", function () { authEmail = e1.value.trim(); });
+    Array.prototype.forEach.call(f.querySelectorAll("[data-mode]"), function (x) {
+      x.addEventListener("click", function () {
+        var to = x.getAttribute("data-mode");
+        if (to === "code-again" || to === "code-other") { b.sent = false; if (to === "code-other") authEmail = ""; return paintAuth(); }
+        openAuth(to);
       });
-  });
-  $("pwForm").addEventListener("submit", function (e) {
-    e.preventDefault();
-    var btn = $("pwBtn"); btn.disabled = true;
-    sb.auth.signInWithPassword({ email: $("pw-email").value.trim(), password: $("pw-pass").value })
-      .then(function (r) {
-        btn.disabled = false;
-        if (r.error) toast(/invalid/i.test(r.error.message) ? "Wrong email or password — or no password set yet. Use the email link, then set one." : r.error.message);
+    });
+    var xb = f.querySelector("[data-x]");
+    if (xb) xb.addEventListener("click", function () { if (m === "setpass") markPwAsked(); closeAuth(); });
+    f.onsubmit = function (e) { e.preventDefault(); submitAuth(); };
+    setTimeout(function () {
+      var first = f.querySelector(m === "code" && b.sent || m === "checkemail" ? "#a-code" : (authEmail && f.querySelector("#a-pass") ? "#a-pass" : "input"));
+      if (first) first.focus();
+    }, 30);
+  }
+  function msgSlot() { return '<p class="authmsg" id="a-msg" hidden></p>'; }
+  function say(text, bad) { var el = authBox && authBox.form.querySelector("#a-msg"); if (!el) return toast(text); el.textContent = text; el.className = "authmsg" + (bad ? " bad" : ""); el.hidden = false; }
+  function markPwAsked() { try { localStorage.setItem(pwAskedKey(), "1"); } catch (e) {} }
+  function busy(on) { var btn = authBox && authBox.form.querySelector('button[type="submit"]'); if (btn) btn.disabled = on; }
+  function submitAuth() {
+    var b = authBox, f = b.form, m = b.mode;
+    var val = function (id) { var el = f.querySelector(id); return el ? el.value : ""; };
+    if (f.querySelector("#a-email")) authEmail = val("#a-email").trim();
+    var redirect = location.origin + "/app";
+    busy(true);
+    var done = function (r) { busy(false); return r; };
+    if (m === "signin") {
+      sb.auth.signInWithPassword({ email: authEmail, password: val("#a-pass") }).then(done).then(function (r) {
+        if (r.error) return say(authErr(r.error), true);
+        closeAuth();
       });
+    } else if (m === "signup") {
+      sb.auth.signUp({ email: authEmail, password: val("#a-pass"), options: { emailRedirectTo: redirect } }).then(done).then(function (r) {
+        if (r.error) return say(authErr(r.error), true);
+        if (r.data && r.data.session) { markPwAsked(); return closeAuth(); }
+        // Supabase answers an existing address with an empty identity list rather than an error.
+        if (r.data && r.data.user && r.data.user.identities && r.data.user.identities.length === 0)
+          return say("There’s already an account with that email. Sign in — or if you’ve only ever used email links, use “Email me a code”.", true);
+        openAuth("checkemail");
+      });
+    } else if (m === "code" && !b.sent) {
+      sb.auth.signInWithOtp({ email: authEmail, options: { emailRedirectTo: redirect, shouldCreateUser: true } }).then(done).then(function (r) {
+        if (r.error) return say(authErr(r.error), true);
+        b.sent = true; paintAuth();
+      });
+    } else if (m === "code" || m === "checkemail") {
+      var token = val("#a-code").replace(/\D/g, "");
+      if (!token) { busy(false); return say("Type the code from the email, or tap the link in it.", true); }
+      sb.auth.verifyOtp({ email: authEmail, token: token, type: "email" }).then(function (r) {
+        return r.error && m === "checkemail" ? sb.auth.verifyOtp({ email: authEmail, token: token, type: "signup" }) : r;
+      }).then(done).then(function (r) {
+        if (r.error) return say(authErr(r.error), true);
+        if (m === "checkemail") { markPwAsked(); return closeAuth(); }
+        if (isPwAsked()) return closeAuth();
+        openAuth("setpass", "");
+      });
+    } else if (m === "forgot") {
+      sb.auth.resetPasswordForEmail(authEmail, { redirectTo: redirect }).then(done).then(function (r) {
+        if (r.error) return say(authErr(r.error), true);
+        say("Sent. The link in that email brings you back here to choose a password.");
+      });
+    } else if (m === "newpass" || m === "setpass") {
+      sb.auth.updateUser({ password: val("#a-pass") }).then(done).then(function (r) {
+        if (r.error) return say(authErr(r.error), true);
+        markPwAsked(); closeAuth(); toast("Password saved. Next time, just sign in with it.");
+      });
+    }
+  }
+  function isPwAsked() { try { return localStorage.getItem(pwAskedKey()) === "1"; } catch (e) { return false; } }
+  $("signInTop").addEventListener("click", function () { afterAuth = null; openAuth(hasAccountHint() ? "signin" : "signup", ""); });
+  Array.prototype.forEach.call(document.querySelectorAll("[data-auth]"), function (x) {
+    x.addEventListener("click", function () { afterAuth = null; openAuth(x.getAttribute("data-auth"), ""); });
   });
   $("npBtn").addEventListener("click", function () {
     var pw = $("np-pass").value;
@@ -1707,27 +1942,68 @@
     sb.auth.updateUser({ password: pw }).then(function (r) {
       b.disabled = false;
       if (r.error) return fail(r.error);
-      $("np-pass").value = ""; toast("Password set. Next time you can sign in with it.");
+      $("np-pass").value = ""; markPwAsked(); toast("Password set. Next time you can sign in with it.");
     });
   });
   $("signOut").addEventListener("click", function () {
     sb.auth.signOut().then(function () { location.reload(); });
   });
 
+  // Called on every auth event, including the silent hourly token refresh. Only a change of WHO is
+  // signed in resets the view — before, every refresh threw people back to the Board tab mid-task.
+  var lastUid = "boot";
   function enter(session) {
     var signedIn = !!(session && session.user);
-    uid = signedIn ? session.user.id : null;
+    var newUid = signedIn ? session.user.id : null;
+    var changed = newUid !== lastUid;
+    lastUid = newUid; uid = newUid;
     myEmail = signedIn ? (session.user.email || "") : "";
     $("gate").hidden = signedIn;
     $("tabs").hidden = !signedIn;
     $("me").hidden = !signedIn;
+    $("signInTop").hidden = signedIn;
+    applyCaps();
+    if (!changed) return;
+    profTouched = false; threadOpen = {}; drafts = {};
+    ["p-name", "p-area", "p-note"].forEach(function (id) { $(id).value = ""; });
     if (signedIn) {
+      try { localStorage.setItem("dtp-has-account", "1"); } catch (e) {}
+      loadSeen();
       $("meName").textContent = "· " + myEmail;
       show("browse");
     } else {
-      ["browse", "post", "mine"].forEach(function (k) { $(k).hidden = true; });
+      $("post").hidden = true; $("mine").hidden = true; $("browse").hidden = false;
     }
-    load();
+    var then = signedIn ? afterAuth : null; afterAuth = null;
+    load().then(function () {
+      if (then) then();
+      else if (signedIn && (arrivedBy === "magiclink" || arrivedBy === "signup") && !isPwAsked() && !authBox) openAuth("setpass", "");
+      arrivedBy = "";
+    });
+  }
+
+  /* ---- what this project has switched on ---- */
+  function applyCaps() {
+    $("f-photowrap").hidden = !caps.photos;
+    $("p-locwrap").hidden = !caps.location;
+    $("radius").hidden = !caps.location || !uid;
+    $("mapBtn").hidden = !caps.location;
+  }
+  function probe() {
+    var has = function (q) { return q.then(function (r) { return !r.error; }, function () { return false; }); };
+    return Promise.all([
+      has(sb.from("items").select("photos").limit(1)),
+      has(sb.from("profiles").select("lat").limit(1)),
+      has(sb.from("messages").select("id").limit(1)),
+      // A plain GET has no preflight; "not deployed" is a 404 from the gateway, anything else means it is there.
+      fetch(cfg.url + "/functions/v1/verify-item").then(function (r) { return r.status !== 404; }, function () { return true; })
+    ]).then(function (r) {
+      caps = { photos: r[0], location: r[1], messages: r[2], verify: r[3] };
+      applyCaps(); render();
+      if (caps.messages) {
+        sb.channel("threads").on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, load).subscribe();
+      }
+    });
   }
 
   /* ---- boot ---- */
@@ -1736,10 +2012,26 @@
     note("This board is not connected to its database yet. Paste the Supabase project URL and anon key into <b>site/config.js</b>.", "bad");
     return;
   }
+  // How did we get here? An email link leaves its type (or its error) in the URL fragment, and the
+  // client clears that fragment as soon as it starts, so it has to be read first.
+  var frag = location.hash || "";
+  var arrivedBy = (/[#&]type=(magiclink|signup|recovery|invite)/.exec(frag) || [])[1] || "";
+  var linkFailed = /[#&]error_code=(otp_expired|access_denied)|[#&]error=access_denied/.test(frag);
+
   sb = window.supabase.createClient(cfg.url, cfg.anonKey);
 
   sb.auth.getSession().then(function (r) { enter(r.data.session); });
-  sb.auth.onAuthStateChange(function (_e, session) { enter(session); });
+  sb.auth.onAuthStateChange(function (ev, session) {
+    enter(session);
+    if (ev === "PASSWORD_RECOVERY") openAuth("newpass", "");
+  });
+  probe();
+  if (linkFailed) {
+    try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {}
+    setTimeout(function () {
+      openAuth("code", "That email link had expired or was already used — links only work once. Get a code instead; it works in any browser.");
+    }, 400);
+  }
 
   // Live: anyone's new listing or offer lands without a refresh.
   sb.channel("board")

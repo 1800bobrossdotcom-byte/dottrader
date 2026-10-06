@@ -67,25 +67,29 @@ supabase/privacy.sql   offers readable only by their two parties
 supabase/storage.sql   photo bucket and upload policies
 supabase/verify.sql    proof-of-item table, badge view, withdraw + cancel
 supabase/location.sql  rough lat/lng on profiles for "near me" and the map
+supabase/messages.sql  a private thread on each offer, for its two parties only
+supabase/setup.sql     all of the above in order, in one paste (generated; safe to re-run)
 supabase/functions/verify-item/index.ts   Edge Function that scores a proof photo
 ```
 
 **Setup**
 
 1. Create a Supabase project.
-2. Run `supabase/schema.sql` first, then `wallets.sql`, `privacy.sql`, `storage.sql`,
-   `verify.sql` and `location.sql`, in the SQL editor.
-3. Under Authentication → URL Configuration, set the Site URL to your domain and
-   add `/app` to the redirect URLs.
+2. In the SQL editor, run `supabase/setup.sql`. It is every other `.sql` file in this folder in the
+   right order, and it is safe to run again: re-running it is how a project picks up new features.
+3. Under Authentication → URL Configuration, set the Site URL to your domain and add `/app` to the
+   redirect URLs (both `https://dottrader.app/app` and `https://www.dottrader.app/app`).
 4. Put the project URL and the **anon public** key into `site/config.js`.
-5. For Proof of item: Edge Functions → Deploy a new function, name it
-   `verify-item`, paste `supabase/functions/verify-item/index.ts`. Then Edge
-   Functions → Secrets → add `ANTHROPIC_API_KEY`. The function reads
-   `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` from the environment Supabase
-   gives it; nothing needs pasting for those.
+5. Authentication → Emails: paste the three templates from `supabase/emails/` (Magic Link,
+   Confirm signup, Reset Password), with the subjects written at the top of each file. The Magic
+   Link one carries a typeable code, which is what the "Email me a code" sign-in uses.
+6. For Proof of item: Edge Functions → Deploy a new function, name it `verify-item`, paste
+   `supabase/functions/verify-item/index.ts`. Then Edge Functions → Secrets → add
+   `ANTHROPIC_API_KEY`. The function reads `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` from the
+   environment Supabase gives it; nothing needs pasting for those.
 
-Without step 5 the board still works; the "Prove you have it" button simply
-reports that the checker is unavailable.
+The board probes for each optional piece (photos, location, messages, Proof of item) when it loads
+and simply doesn't offer what the project hasn't switched on yet, so nothing fails halfway.
 
 The anon key belongs in the page — that's what it's for. Row-level security in
 the schema is what protects the data, which is why the `service_role` key must

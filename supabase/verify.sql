@@ -97,7 +97,7 @@ begin
   if not found then raise exception 'offer not found'; end if;
   if o.from_id <> auth.uid() then raise exception 'only the person who made the offer can withdraw it'; end if;
   if o.status <> 'pending' then raise exception 'only a pending offer can be withdrawn'; end if;
-  update public.offers set status = 'declined' where id = p_offer;
+  update public.offers set status = 'withdrawn' where id = p_offer;
 end $$;
 
 -- Walk away from an agreed trade. Either side may, but only while THEY have not pressed their dot:
@@ -105,7 +105,7 @@ end $$;
 -- back on the board. The record of the cancellation stays — a negative signal for dots later.
 alter table public.offers drop constraint if exists offers_status_check;
 alter table public.offers add constraint offers_status_check
-  check (status in ('pending', 'agreed', 'done', 'declined', 'cancelled'));
+  check (status in ('pending', 'agreed', 'done', 'declined', 'cancelled', 'withdrawn'));
 
 alter table public.offers add column if not exists cancelled_by uuid;
 

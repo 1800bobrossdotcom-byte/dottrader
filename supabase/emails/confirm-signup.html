@@ -26,22 +26,31 @@
         </tr>
         <tr>
           <td style="padding:12px 28px 0 28px;font-family:Helvetica,Arial,sans-serif;font-size:15px;line-height:1.55;color:#4b4740;">
-            One tap confirms your email and signs you in. Then post something you'd swap, and see what comes back.
+            Confirm your email once and you're in. After this, you just sign in with your password.
           </td>
         </tr>
         <tr>
-          <td style="padding:24px 28px 0 28px;">
+          <td style="padding:20px 28px 0 28px;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td style="background:#ffd23f;border:3px solid #121212;border-radius:6px;padding:12px 18px 12px 24px;font-family:'Courier New',Courier,monospace;font-size:32px;font-weight:bold;letter-spacing:10px;color:#121212;">{{ .Token }}</td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:22px 28px 0 28px;">
             <table role="presentation" cellpadding="0" cellspacing="0" border="0">
               <tr>
                 <td style="background:#ffd23f;border:3px solid #121212;border-radius:999px;">
-                  <a href="{{ .ConfirmationURL }}" style="display:inline-block;padding:13px 26px;font-family:Helvetica,Arial,sans-serif;font-size:13px;font-weight:bold;letter-spacing:1.5px;text-transform:uppercase;color:#121212;text-decoration:none;">Confirm and sign in</a>
+                  <a href="{{ .ConfirmationURL }}" style="display:inline-block;padding:12px 24px;font-family:Helvetica,Arial,sans-serif;font-size:12.5px;font-weight:bold;letter-spacing:1.5px;text-transform:uppercase;color:#121212;text-decoration:none;">Confirm and sign in</a>
                 </td>
               </tr>
             </table>
           </td>
         </tr>
         <tr>
-          <td style="padding:18px 28px 0 28px;font-family:'Courier New',Courier,monospace;font-size:12px;line-height:1.5;color:#8c867a;">
+          <td style="padding:16px 28px 0 28px;font-family:'Courier New',Courier,monospace;font-size:12px;line-height:1.5;color:#8c867a;">
             Button not working? Copy this into your browser:<br>
             <a href="{{ .ConfirmationURL }}" style="color:#2f56d6;word-break:break-all;">{{ .ConfirmationURL }}</a>
           </td>
