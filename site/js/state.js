@@ -7,11 +7,11 @@
 
 var sb = null, uid = null, myEmail = "";
 var items = [], offers = [], signals = [], profiles = {}, badges = {};
-var profTouched = false;
+var profTouched = false, profNotifySet = false;
 // What this project has switched on. Each is probed once at boot, so the board never offers a
 // button whose back end is missing (the old failure: write the note, take the photo, then hear
 // the checker does not exist).
-var caps = { photos: true, location: true, messages: true, verify: true, trades: false, bond: null, matching: false };
+var caps = { photos: true, location: true, messages: true, verify: true, trades: false, bond: null, matching: false, notify: false };
 var bondsBy = {}, payouts = [], settledOnce = {};
 var SYMBOL = { 1: "ETH", 8453: "ETH", 42161: "ETH", 10: "ETH", 7777777: "ETH", 137: "POL", 56: "BNB", 43114: "AVAX" };
 var msgs = {}, threadOpen = {}, drafts = {}, seen = {};

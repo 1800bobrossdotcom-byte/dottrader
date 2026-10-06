@@ -1,0 +1,10 @@
+N1 emails are on by default: true
+N2 posting a listing with the triggers in place: ok
+N2b alert targets for a new Switch listing: mutual -> Trader B000, search -> Trader C000
+N3 who may list alert targets: refused: permission denied for function listing_alert_targets
+N4 who may fire notify_event: refused: permission denied for function notify_event
+N5 making an offer with the triggers in place: ok
+N6 sending a message with the triggers in place: ok
+N7 accepting with the triggers in place: ok
+N8 turning emails off: ok
+N10 anyone reads what was sent: 0

@@ -182,7 +182,7 @@ function enter(session) {
   $("signInTop").hidden = signedIn;
   applyCaps();
   if (!changed) return;
-  profTouched = false; threadOpen = {}; drafts = {};
+  profTouched = false; profNotifySet = false; threadOpen = {}; drafts = {};
   ["p-name", "p-area", "p-note"].forEach(function (id) { $(id).value = ""; });
   if (signedIn) {
     try { localStorage.setItem("dtp-has-account", "1"); } catch (e) {}

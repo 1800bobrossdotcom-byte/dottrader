@@ -60,7 +60,7 @@ build step.
 site/index.html    landing page
 site/app.html      the board (markup only)
 site/js/*.js       the board's scripts, loaded in order: core, assets, state, ui, post, wallet,
-                   cards, protect, messages, board, map, verify, actions, auth, boot
+                   cards, protect, messages, board, match, map, verify, actions, auth, boot
 site/css/board.css the board's styles
 site/config.js     Supabase project URL + anon key
 site/photos.js         browser-side compress + metadata strip + upload
@@ -72,6 +72,9 @@ supabase/verify.sql    proof-of-item table, badge view, withdraw + cancel
 supabase/location.sql  rough lat/lng on profiles for "near me" and the map
 supabase/messages.sql  a private thread on each offer, for its two parties only
 supabase/trades.sql    ship-by dates, "sent" + tracking, no-shows, swap orders, bonds, payouts
+supabase/matching.sql  what each listing wants, mutual matches, saved searches
+supabase/notifications.sql   database triggers that ask the notify function to send an email
+supabase/functions/notify/index.ts   Edge Function: the emails (offers, messages, matches, ship-by)
 supabase/functions/bond/index.ts   Edge Function: Stripe card holds for trade bonds
 site/swap.js           atomic NFT-for-NFT swaps through Seaport 1.6
 api/nft.js             Vercel function: NFT name and artwork, read server-side
@@ -102,14 +105,21 @@ supabase/functions/verify-item/index.ts   Edge Function that scores a proof phot
    `sk_test_` key and switch to `sk_live_` when you are ready. Optional: `BOND_CENTS` (default
    2500), `BOND_FEE_CENTS` (default 150). Before charging real cards, publish terms of service
    that describe bonds, fees and how no-shows are decided.
-8. For the swap fee: put the wallet that should receive it in `swapFee.recipient` in
+8. For email notifications: create an API key at resend.com (the same account that sends your
+   sign-in emails). Edge Functions → Deploy a new function named `notify`, paste
+   `supabase/functions/notify/index.ts`, and turn **Verify JWT off** for it. Add the secret
+   `RESEND_API_KEY`. Optional: `NOTIFY_FROM` (default `Dot Trading Post <hello@dottrader.app>`) and
+   `SITE_URL`. Database → Extensions: turn on `pg_net` and `pg_cron`, then run `setup.sql` again so
+   the triggers and the daily ship-by reminder can find them. Each trader can switch emails off
+   in their profile.
+9. For the swap fee: put the wallet that should receive it in `swapFee.recipient` in
    `site/config.js`. Empty means swaps are free. Per-chain amounts are in the same place.
 
 Forfeited bonds become payouts that wait for a person: set `approved` to true on the row in
 Table Editor → payouts once you are satisfied the other side really didn't send. The recipient
 then claims it from My trades and Stripe walks them through getting paid.
 
-The board probes for each optional piece (photos, location, messages, Proof of item, protected trades, bonds) when it loads
+The board probes for each optional piece (photos, location, messages, Proof of item, protected trades, bonds, matching, email settings) when it loads
 and simply doesn't offer what the project hasn't switched on yet, so nothing fails halfway.
 
 The anon key belongs in the page — that's what it's for. Row-level security in
@@ -163,7 +173,8 @@ record, visible to the other party.
 
 ```
 npm run test:bond   # the bond Edge Function, with Stripe, the database and sign-in faked
-npm run test:db     # 59 checks on a throwaway Postgres: the trade state machine, permissions,
+npm run test:notify # the notify Edge Function, with Resend and the database faked
+npm run test:db     # 83 checks on a throwaway Postgres: the trade state machine, permissions,
                     # forged requests, and two accepts racing on one item (needs PGHOST etc.)
 ```
 

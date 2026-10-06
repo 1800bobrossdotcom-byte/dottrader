@@ -8,13 +8,13 @@
 set -u
 DIR=$(cd "$(dirname "$0")" && pwd); ROOT="$DIR/../.."
 fail=0
-for t in messages trades hardening matching; do
+for t in messages trades hardening matching notifications; do
   DB="dtp_test_${t}_$$"
   createdb "$DB" || exit 2
   psql -q -v ON_ERROR_STOP=1 -d "$DB" -f "$DIR/stub.sql" >/dev/null 2>&1 &&
   psql -q -v ON_ERROR_STOP=1 -d "$DB" -f "$ROOT/supabase/setup.sql" >/dev/null 2>&1 &&
   psql -q -v ON_ERROR_STOP=1 -d "$DB" -f "$ROOT/supabase/setup.sql" >/dev/null 2>&1 || { echo "FAIL $t: setup.sql did not apply cleanly twice"; fail=1; dropdb "$DB"; continue; }
-  out=$(psql -q -d "$DB" -f "$DIR/$t.test.sql" 2>/dev/null | sed 's/^ *//' | grep -E '^[A-Z][0-9]+ ')
+  out=$(psql -q -d "$DB" -f "$DIR/$t.test.sql" 2>/dev/null | sed 's/^ *//' | grep -E '^[A-Z][0-9]+[a-z]? ')
   if [ "$t" = hardening ]; then
     # Two owners' sessions accept two offers on one item at the same moment: exactly one may win.
     for n in 1 2; do

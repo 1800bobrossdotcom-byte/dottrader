@@ -56,6 +56,7 @@ $("profForm").addEventListener("submit", function (e) {
     id: uid, name: $("p-name").value.trim() || null,
     area: $("p-area").value.trim(), note: $("p-note").value.trim(), updated_at: new Date().toISOString()
   };
+  if (caps.notify) rec.email_notify = $("p-notify").checked;
   if (pendingLoc !== undefined) { rec.lat = pendingLoc ? pendingLoc.lat : null; rec.lng = pendingLoc ? pendingLoc.lng : null; }
   sb.from("profiles").upsert(rec).then(function (r) {
     if (r.error) {
@@ -173,6 +174,7 @@ function load() {
       if (!$("p-name").value) $("p-name").value = profiles[uid].name || "";
       if (!$("p-area").value) $("p-area").value = profiles[uid].area || "";
       if (!$("p-note").value) $("p-note").value = profiles[uid].note || "";
+      if (!profNotifySet) { profNotifySet = true; $("p-notify").checked = profiles[uid].email_notify !== false; }
     }
     render();
     loadMatches();
