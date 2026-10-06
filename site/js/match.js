@@ -141,7 +141,7 @@ function openHits(w, ids) {
   ids.forEach(function (id) {
     var y = itemById(id); if (!y) return;
     var b = document.createElement("button"); b.type = "button";
-    b.innerHTML = '<span class="wi" style="background:' + cssColor(hueOf(y.cat)) + '"></span><span>' + esc(y.title) + "<small>" + esc(who(y.owner_id)) + " · wants " + esc(wantText(y)) + "</small></span>";
+    b.innerHTML = '<span class="wi" style="background:' + cssColor(hueOf(y.cat)) + '"></span><span>' + esc(y.title) + "<small>" + esc(who(y.owner_id)) + " " + esc(wantsLine(y)) + "</small></span>";
     b.addEventListener("click", function () { sh.close(); openOffer(y); });
     host.appendChild(b);
   });
