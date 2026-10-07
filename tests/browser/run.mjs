@@ -11,7 +11,8 @@ const SITE = path.join(ROOT, "site");
 const TYPES = { ".html": "text/html", ".js": "application/javascript", ".css": "text/css", ".svg": "image/svg+xml", ".png": "image/png", ".ico": "image/x-icon", ".json": "application/json", ".webmanifest": "application/manifest+json", ".pdf": "application/pdf", ".webp": "image/webp" };
 const server = http.createServer((req, res) => {
   const p = path.normalize(decodeURIComponent(new URL(req.url, "http://x").pathname)).replace(/^(\.\.[/\\])+/, "");
-  const file = path.join(SITE, p === "/" ? "index.html" : p);
+  let file = path.join(SITE, p === "/" ? "index.html" : p);
+  if (p.endsWith("/") && fs.existsSync(path.join(file, "index.html"))) file = path.join(file, "index.html");
   if (!file.startsWith(SITE) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) { res.statusCode = 404; return res.end(); }
   res.setHeader("content-type", TYPES[path.extname(file)] || "application/octet-stream");
   fs.createReadStream(file).pipe(res);

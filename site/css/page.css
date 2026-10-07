@@ -133,3 +133,6 @@ img { max-width:100%; display:block; }
 .way:hover { transform:translate(-2px,-2px); box-shadow:6px 6px 0 var(--ink); }
 .way b { font-family:var(--display); font-size:19px; }
 .way span { color:var(--muted); font-size:14px; }
+.foot .langs { flex-basis:100%; display:flex; flex-wrap:wrap; gap:6px 14px; }
+.foot .langs a { text-decoration:none; font-weight:600; }
+.foot .langs a[aria-current] { color:var(--ink); text-decoration:underline; text-underline-offset:3px; }

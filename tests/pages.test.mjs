@@ -65,7 +65,7 @@ const lds = (b) => [...b.matchAll(/<script type="application\/ld\+json">([\s\S]*
   ok("Make an offer goes into the board", r.body.includes('href="/app#item=' + I1 + '"'));
   ok("shows the owner, the proof badge, and the swipe hint", /Listed by <b>Alice &amp; Co<\/b> · Leeds/.test(r.body) && /Proof of item/.test(r.body) && /Swipe for 1 more photo</.test(r.body));
   ok("canonical is the readable address", r.body.includes('<link rel="canonical" href="https://www.dottrader.app/item/charizard-script-alert-1-script-holo-' + I1 + '">'));
-  ok("more from the category, not itself", r.body.includes("/item/pikachu-promo-" + I2) && !r.body.split('class="more"')[1].includes(I1));
+  ok("more from the category, not itself", r.body.includes("/item/pikachu-promo-" + I2) && !r.body.split('class="more"')[1].split("</section>")[0].includes(I1));
   ok("cached briefly at the edge", /s-maxage=120/.test(r.headers["cache-control"]));
 }
 {
@@ -112,6 +112,37 @@ const lds = (b) => [...b.matchAll(/<script type="application\/ld\+json">([\s\S]*
   ok("the sitemap lists the ways to trade", r.body.includes("/trade</loc>") && trade.ORDER.every((s) => r.body.includes("/trade/" + s + "</loc>")));
   const n = await call(cat, { cat: "nfts" });
   ok("the NFTs page talks about NFTs, not posting", /across chains/.test(meta(n.body, "description")) && !/by post/.test(meta(n.body, "description")));
+}
+{
+  // Every public page in Spanish, Japanese and Portuguese: right language, every other language
+  // linked, no English left in what the page itself says (listings keep their owners' words).
+  const I = require("../api/_i18n.js"), TT = require("../api/_trade_text.js");
+  const englishOnly = (lang) => {
+    const words = new Set();
+    for (const k in I.S) if (I.S[k][lang] !== I.S[k].en && I.S[k].en.length > 6 && !/\{/.test(I.S[k].en)) words.add(I.S[k].en);
+    const walk = (a, b) => { if (typeof a === "string") { if (a !== b && a.length > 12) words.add(a.replace(/<[^>]+>/g, "")); } else if (a && typeof a === "object") for (const k in a) walk(a[k], b && b[k]); };
+    walk(TT.en, TT[lang]);
+    return [...words].map((w) => w.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/'/g, "&#39;").replace(/</g, "&lt;"));
+  };
+  for (const lang of ["es", "ja", "pt"]) {
+    const P = "/" + lang, H = I.META[lang].hreflang, en = englishOnly(lang);
+    const pages = [["item", await call(item, { id: "charizard-script-alert-1-script-holo-" + I1, lang })], ["category", await call(cat, { cat: "trading-cards", lang })],
+      ["all categories", await call(cat, { lang })], ["ways to trade", await call(trade, { lang })], ["a way to trade", await call(trade, { page: "nfts-for-physical-items", lang })]];
+    const bad = pages.filter(([, r]) => !(r.status === 200 && r.body.includes('<html lang="' + H + '">') && r.body.includes('<link rel="canonical" href="https://www.dottrader.app' + P + "/") &&
+      ["en", "es", "ja", "pt-BR", "x-default"].every((h) => r.body.includes('hreflang="' + h + '"')))).map(([n]) => n);
+    ok(lang + ": every page is in " + H + ", with its own address and every language's linked", !bad.length, bad.join(", "));
+    const leaks = pages.flatMap(([n, r]) => { const seen = r.body.replace(/<script[\s\S]*?<\/script>/g, ""); return en.filter((w) => seen.includes(w)).map((w) => n + ": " + w.slice(0, 50)); });
+    ok(lang + ": no English left on the pages", !leaks.length, leaks.slice(0, 4).join(" | "));
+    ok(lang + ": links stay in " + H, pages.every(([, r]) => !/href="\/(c|trade|item)\//.test(r.body.split("<main")[1].split('<nav class="langs"')[0])) &&
+      pages[0][1].body.includes('href="/app?lang=' + lang + "#item=" + I1 + '"'), "");
+  }
+  const old = await call(item, { id: I1, lang: "ja" });
+  ok("an old link in Japanese redirects to the Japanese address", old.status === 301 && old.headers.location === "/ja/item/charizard-script-alert-1-script-holo-" + I1, old.headers.location);
+  const sm = (await call(sitemap, {})).body;
+  ok("the sitemap lists every language of a page, each naming the others", sm.includes("<loc>https://www.dottrader.app/pt/trade/pokemon-cards</loc>") &&
+    sm.includes('<xhtml:link rel="alternate" hreflang="ja" href="https://www.dottrader.app/ja/item/pikachu-promo-' + I2 + '"/>') && !sm.includes("/es/app") && !sm.includes("/es/stickers"));
+  ok("the trade pages say the same things in every language", ["es", "ja", "pt"].every((l) => Object.keys(TT[l].pages).join() === Object.keys(TT.en.pages).join() &&
+    Object.keys(TT.en.pages).every((k) => TT[l].pages[k].faq.length === TT.en.pages[k].faq.length && TT[l].pages[k].sections.length === TT.en.pages[k].sections.length)));
 }
 {
   // The board builds the same addresses as the server.

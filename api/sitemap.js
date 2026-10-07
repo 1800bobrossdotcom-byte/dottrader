@@ -4,9 +4,14 @@
 const L = require("./_lib.js");
 const T = require("./trade.js");
 
-function u(loc, lastmod, freq, pri) {
-  return "  <url><loc>" + L.esc(L.SITE + loc) + "</loc>" + (lastmod ? "<lastmod>" + lastmod.slice(0, 10) + "</lastmod>" : "") +
-    "<changefreq>" + freq + "</changefreq><priority>" + pri + "</priority></url>\n";
+// Every page is listed once per language, each naming all its language versions, so a search
+// engine shows people the one in their language.
+function u(loc, lastmod, freq, pri, englishOnly) {
+  if (englishOnly) return "  <url><loc>" + L.esc(L.SITE + loc) + "</loc>" + (lastmod ? "<lastmod>" + lastmod.slice(0, 10) + "</lastmod>" : "") + "<changefreq>" + freq + "</changefreq><priority>" + pri + "</priority></url>\n";
+  const alts = L.I.alternates(loc).map((a) => '<xhtml:link rel="alternate" hreflang="' + a.lang + '" href="' + L.esc(L.SITE + a.href) + '"/>').join("") +
+    '<xhtml:link rel="alternate" hreflang="x-default" href="' + L.esc(L.SITE + loc) + '"/>';
+  return L.I.LANGS.map((l) => "  <url><loc>" + L.esc(L.SITE + L.I.prefix(l) + loc) + "</loc>" + (lastmod ? "<lastmod>" + lastmod.slice(0, 10) + "</lastmod>" : "") +
+    "<changefreq>" + freq + "</changefreq><priority>" + pri + "</priority>" + alts + "</url>\n").join("");
 }
 
 module.exports = async function handler(req, res) {
@@ -14,9 +19,9 @@ module.exports = async function handler(req, res) {
   try { rows = await L.rest("items?select=id,title,cat,created_at&status=eq.open&order=created_at.desc&limit=20000"); } catch (e) { rows = []; }
   const cats = {};
   rows.forEach((r) => { if (!cats[r.cat] || r.created_at > cats[r.cat]) cats[r.cat] = r.created_at; });
-  let x = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
-    u("/", null, "weekly", "1.0") + u("/app", rows[0] && rows[0].created_at, "hourly", "0.8") + u("/c", rows[0] && rows[0].created_at, "daily", "0.7") + u("/trade", null, "weekly", "0.8") +
-    T.ORDER.map((s) => u("/trade/" + s, null, "weekly", "0.8")).join("") + u("/stickers", null, "monthly", "0.4");
+  let x = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n' +
+    u("/", null, "weekly", "1.0") + u("/app", rows[0] && rows[0].created_at, "hourly", "0.8", true) + u("/c", rows[0] && rows[0].created_at, "daily", "0.7") + u("/trade", null, "weekly", "0.8") +
+    T.ORDER.map((s) => u("/trade/" + s, null, "weekly", "0.8")).join("") + u("/stickers", null, "monthly", "0.4", true);
   L.CATS.forEach((c) => { if (cats[c]) x += u("/c/" + L.slug(c), cats[c], "daily", "0.6"); });
   rows.forEach((r) => { x += u(L.itemPath(r), r.created_at, "weekly", "0.5"); });
   x += "</urlset>\n";

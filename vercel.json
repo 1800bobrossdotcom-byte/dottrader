@@ -7,6 +7,26 @@
   "cleanUrls": true,
   "rewrites": [
     {
+      "source": "/:lang(es|ja|pt)/trade",
+      "destination": "/api/trade?lang=:lang"
+    },
+    {
+      "source": "/:lang(es|ja|pt)/trade/:page",
+      "destination": "/api/trade?page=:page&lang=:lang"
+    },
+    {
+      "source": "/:lang(es|ja|pt)/c",
+      "destination": "/api/c?lang=:lang"
+    },
+    {
+      "source": "/:lang(es|ja|pt)/c/:cat",
+      "destination": "/api/c?cat=:cat&lang=:lang"
+    },
+    {
+      "source": "/:lang(es|ja|pt)/item/:id",
+      "destination": "/api/item?id=:id&lang=:lang"
+    },
+    {
       "source": "/og/art/:file",
       "destination": "/api/og?art=1&id=:file"
     },
