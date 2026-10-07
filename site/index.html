@@ -194,6 +194,10 @@
   .langmenu .lm-list a:hover { background:var(--sunk); }
   .langmenu .lm-list a[aria-current] { background:var(--yellow); }
   @media (max-width:420px){ .langmenu .lm-cur { display:none; } .langmenu summary { padding:7px 9px; } }
+  .site-stats { display:flex; flex-wrap:wrap; align-items:center; gap:6px 16px; margin:0; font-size:12.5px; color:var(--muted); }
+  .site-stats::before { content:""; width:8px; height:8px; border-radius:50%; background:var(--green); box-shadow:0 0 0 3px rgba(29,179,106,.18); }
+  .site-stats span { white-space:nowrap; }
+  .site-stats b { color:var(--ink); font-family:var(--mono); font-weight:600; font-variant-numeric:tabular-nums; }
   .langs { display:flex; flex-wrap:wrap; gap:6px 14px; }
   .langs a { color:var(--muted); text-decoration:none; font-weight:600; }
   .langs a[aria-current] { color:var(--ink); text-decoration:underline; text-underline-offset:3px; }
@@ -369,10 +373,11 @@
     <div>Free to use. Nothing to install — it works in your phone's browser. <a href="/stickers">Get the stickers</a></div>
     <div class="flinks"><a href="/trade">Ways to trade</a> · <a href="/trade/nfts-for-physical-items">NFTs for physical items</a> · <a href="/trade/nft-swap-cross-chain">NFTs across chains</a> · <a href="/trade/pokemon-cards">Pokémon cards</a> · <a href="/trade/video-games">Video games</a> · <a href="/trade/retro-consoles">Retro consoles</a> · <a href="/c">All categories</a></div>
     <nav class="langs" aria-label="Language"><a href="/" hreflang="en" lang="en" aria-current="true">English</a><a href="/es/" hreflang="es" lang="es">Español</a><a href="/ja/" hreflang="ja" lang="ja">日本語</a><a href="/pt/" hreflang="pt-BR" lang="pt-BR">Português</a></nav>
+    <p class="site-stats" id="siteStats" aria-live="polite" hidden></p>
     <div><a class="makers" href="https://cbuy.ing" target="_blank" rel="noopener"><span>From the makers of</span><img src="/cbuy.png?v=1" alt="cbuy" width="75" height="32"></a></div>
   </footer>
 
 </div>
-<script src="/js/share.js?v=4" defer></script>
+<script src="/js/share.js?v=5" defer></script>
 </body>
 </html>

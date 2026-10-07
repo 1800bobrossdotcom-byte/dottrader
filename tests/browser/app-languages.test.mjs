@@ -45,7 +45,7 @@ async function open(lang, signedIn, posts) {
   });
   await p.route(/supabase\.co\/rest\/v1\/rpc\/(\w+)/, (r) => {
     const fn = r.request().url().match(/rpc\/(\w+)/)[1];
-    const out = { my_matches: [{ my_item: SW, their_item: PK, they_want_mine: false, i_want_theirs: true, score: 40 }], wanted_counts: [{ item_id: SW, listings: 2, searches: 1 }] }[fn];
+    const out = { my_matches: [{ my_item: SW, their_item: PK, they_want_mine: false, i_want_theirs: true, score: 40 }], wanted_counts: [{ item_id: SW, listings: 2, searches: 1 }], note_visit: [{ visits: 4321, members: 25 }] }[fn];
     r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(out === undefined ? null : out) });
   });
   await p.route(/supabase\.co\/(auth|realtime)/, (r) => r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(sess.user) }));
@@ -87,6 +87,7 @@ for (const [lang, h, word] of [["ja", "ja", "ボード"], ["es", "es", "Tablón"
   await p.check(".sheet #o-isasset"); await look("offer sheet"); await p.keyboard.press("Escape");
   await p.evaluate(() => openEdit(items.filter((x) => x.title === "Nintendo Switch OLED")[0])); await p.waitForTimeout(150); await look("edit sheet"); await p.keyboard.press("Escape");
   await p.evaluate(() => openSent(offers[1])); await p.waitForTimeout(150); await look("mark sent sheet"); await p.keyboard.press("Escape");
+  ok(lang + ": the foot shows visits and members in " + h, (await p.textContent("#siteStats")) === { ja: "4,321 回の訪問25 人のメンバー", es: "4321 visitas25 miembros", pt: "4.321 visitas25 membros" }[lang], await p.textContent("#siteStats"));
   await p.screenshot({ path: OUT + "/app-" + lang + ".png", fullPage: true });
   ok(lang + ": no English or unfilled {placeholders} on any screen", !bad.length, bad.join(" || "));
   ok(lang + ": the profile is told the language, for emails", posts.some((x) => /^profiles /.test(x) && x.includes('"lang":"' + lang + '"')), posts.filter((x) => /^profiles/.test(x)).join(" ").slice(0, 200));

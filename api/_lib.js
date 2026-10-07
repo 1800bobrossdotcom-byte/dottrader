@@ -109,7 +109,7 @@ function page(o) {
     '<meta name="theme-color" content="#F3EAD3">\n' +
     '<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n' +
     '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">\n' +
-    '<link rel="stylesheet" href="/css/page.css?v=6">\n' +
+    '<link rel="stylesheet" href="/css/page.css?v=7">\n' +
     (o.ld || []).map((x) => '<script type="application/ld+json">' + jsonLd(x) + "</script>\n").join("") +
     "</head>\n<body>\n" +
     '<header class="top"><div class="wrap bar"><a class="brand" href="' + (P || "") + '/">' + LOGO + '<span class="t">Dot Trading Post<small>' + esc(tt("brand.small")) + "</small></span></a>" +
@@ -120,8 +120,8 @@ function page(o) {
       ["Trading Cards", "Video Games", "Consoles & Retro", "NFTs"].map((c) => '<a href="' + P + "/c/" + slug(c) + '">' + esc(I.catName(lang, c)) + "</a>").join("") +
       '<a href="' + P + '/trade">' + esc(tt("foot.ways")) + '</a><a href="/stickers">' + esc(tt("foot.stickers")) + "</a>" +
       '<a class="makers" href="https://cbuy.ing" target="_blank" rel="noopener"><span>' + esc(tt("foot.makers")) + '</span><img src="/cbuy.png?v=1" alt="cbuy" width="75" height="32"></a>' +
-      '<nav class="langs" aria-label="' + esc(tt("foot.lang")) + '">' + langLinks + "</nav></footer>\n" +
-    '<script src="/js/share.js?v=4" defer></script>\n</body>\n</html>\n';
+      '<nav class="langs" aria-label="' + esc(tt("foot.lang")) + '">' + langLinks + "</nav>" + '<p class="site-stats" id="siteStats" aria-live="polite" hidden></p></footer>\n' +
+    '<script src="/js/share.js?v=5" defer></script>\n</body>\n</html>\n';
 }
 // The board in a language: it reads ?lang= on arrival and remembers it.
 function appHref(lang, hash) { return "/app" + (lang && lang !== "en" ? "?lang=" + lang : "") + (hash || ""); }

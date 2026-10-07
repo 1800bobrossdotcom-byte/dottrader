@@ -2,12 +2,14 @@
 import { chromium, OUT, CSP } from "./harness.mjs";
 const res = []; const ok = (n, c, x) => res.push((c ? "PASS " : "FAIL ") + n + (x ? "  [" + x + "]" : ""));
 const b = await chromium.launch({});
+const visits = [];
 async function open(url, locale, width) {
   const ctx = await b.newContext({ locale, viewport: { width: width || 1100, height: 900 } }); const p = await ctx.newPage();
   p.on("pageerror", (e) => res.push("PAGEERROR " + e.message));
   p.on("console", (m) => { if (/Content Security Policy/i.test(m.text())) res.push("CSPVIOLATION " + m.text().slice(0, 200)); });
   await p.route(/127\.0\.0\.1:8765\/(es\/|ja\/|pt\/)?(index\.html)?$/, async (r) => { const resp = await r.fetch(); r.fulfill({ response: resp, headers: { ...resp.headers(), "content-security-policy": CSP } }); });
   await p.route(/fonts\./, (r) => r.fulfill({ status: 200, contentType: "text/css", body: "" }));
+  await p.route(/supabase\.co\/rest\/v1\/rpc\/note_visit/, (r) => { visits.push(r.request().postDataJSON()); r.fulfill({ status: 200, contentType: "application/json", headers: { "access-control-allow-origin": "*" }, body: JSON.stringify([{ visits: 12345, members: 1 }]) }); });
   await p.goto("http://127.0.0.1:8765" + url, { waitUntil: "load" }); await p.waitForTimeout(300);
   return { ctx, p };
 }
@@ -36,7 +38,17 @@ for (const [lang, h, word] of [["es", "es", "Cambia"], ["ja", "ja", "なんで�
   await ctx.close();
 }
 {
+  visits.length = 0;
+  const { ctx, p } = await open("/", "en-US");
+  await p.waitForSelector("#siteStats:not([hidden])", { timeout: 5000 }).catch(() => {});
+  ok("the foot shows visits and members, like cbuy", (await p.textContent("#siteStats")) === "12,345 visits1 member", await p.textContent("#siteStats"));
+  ok("…counting the visit with only a random id, no cookie", visits.length === 1 && /^[0-9a-f-]{36}$/.test(visits[0].p_client) && !(await ctx.cookies()).length, JSON.stringify(visits));
+  await ctx.close();
+}
+{
   const { ctx, p } = await open("/ja/", "ja", 375);
+  await p.waitForSelector("#siteStats:not([hidden])", { timeout: 5000 }).catch(() => {});
+  ok("…in the page's language", (await p.textContent("#siteStats")) === "12,345 回の訪問1 人のメンバー", await p.textContent("#siteStats"));
   ok("the header has a language menu showing the page's language", (await p.textContent(".langmenu summary")).includes("日本語") && !(await p.isVisible(".langmenu .lm-list")));
   await p.click(".langmenu summary");
   ok("…which opens to every language, the current one marked", await p.isVisible('.langmenu .lm-list a[hreflang="es"]') && (await p.textContent(".langmenu [aria-current]")) === "日本語");

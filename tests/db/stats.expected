@@ -1,0 +1,10 @@
+S1 a first visit: 1 visit, 2 members
+S2 the same browser again today: 1
+S3 someone else: 2
+S4 a crawler isn't counted: 2
+S5 no address: the page's own id stands in: 3
+S6 no address and no id: not counted: 3
+S7 anyone reading the visits: 0
+S8 anyone writing a visit: 0
+S9 nothing stored names a visitor: true, one secret kept: 1
+S10 yesterday's secret is gone after a visit: true

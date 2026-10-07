@@ -52,3 +52,21 @@ Array.prototype.forEach.call(document.querySelectorAll("img[data-art]"), functio
   bar.appendChild(p); bar.appendChild(go); bar.appendChild(x);
   document.body.insertBefore(bar, document.body.firstChild);
 })();
+// Visits since launch and members, at the foot of the page (supabase/stats.sql). Counting a visit
+// sends no cookie: the database recognises a browser for one day, then forgets it.
+(function () {
+  var box = document.getElementById("siteStats"); if (!box || !window.fetch) return;
+  var SB = "https://yujxwfghmauajrpduagl.supabase.co", KEY = "sb_publishable_3bOvzS08UOQsu1376idqDg_XHPmOgfp";
+  var WORDS = { en: ["visit", "visits", "member", "members"], es: ["visita", "visitas", "miembro", "miembros"],
+    ja: ["回の訪問", "回の訪問", "人のメンバー", "人のメンバー"], pt: ["visita", "visitas", "membro", "membros"] };
+  var lang = String(document.documentElement.lang || "en").slice(0, 2), w = WORDS[lang] || WORDS.en;
+  var id = null; try { id = localStorage.getItem("dtp-vid"); if (!id) { id = (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2)); localStorage.setItem("dtp-vid", id); } } catch (e) {}
+  fetch(SB + "/rest/v1/rpc/note_visit", { method: "POST", headers: { apikey: KEY, Authorization: "Bearer " + KEY, "Content-Type": "application/json" }, body: JSON.stringify({ p_client: id }) })
+    .then(function (r) { return r.ok ? r.json() : null; }).then(function (rows) {
+      var c = Array.isArray(rows) ? rows[0] : rows; if (!c) return;
+      var fmt = function (n) { try { return new Intl.NumberFormat(document.documentElement.lang || "en").format(n); } catch (e) { return String(n); } };
+      var chip = function (n, one, many) { var s = document.createElement("span"), b = document.createElement("b"); b.textContent = fmt(n); s.appendChild(b); s.appendChild(document.createTextNode(" " + (Number(n) === 1 ? one : many))); return s; };
+      box.textContent = ""; box.appendChild(chip(c.visits, w[0], w[1])); box.appendChild(chip(c.members, w[2], w[3])); box.hidden = false;
+    }).catch(function () {});
+})();
+

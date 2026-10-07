@@ -42,12 +42,23 @@ function probe() {
   ]).then(function (r) {
     caps = { photos: r[0], location: r[1], messages: r[2], verify: r[3], trades: r[4], bond: r[4] && r[5] && r[14] ? r[14] : null, matching: r[6], notify: r[7], giveItems: r[8], history: r[9], local: r[10], paging: r[11], stats: r[12], lang: r[13] };
     syncLang();
-    applyCaps(); render(); loadMatches(); loadHistory();
+    applyCaps(); render(); loadMatches(); loadHistory(); noteVisit();
     if (caps.bond) sb.channel("bonds").on("postgres_changes", { event: "*", schema: "public", table: "bonds" }, load).subscribe();
     if (caps.messages) {
       sb.channel("threads").on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, load).subscribe();
     }
   });
+}
+
+/* ---- visits and members, at the foot (stats.sql) ---- */
+function noteVisit() {
+  var id = null; try { id = localStorage.getItem("dtp-vid"); if (!id) { id = window.crypto && crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2); localStorage.setItem("dtp-vid", id); } } catch (e) {}
+  sb.rpc("note_visit", { p_client: id }).then(function (r) {
+    var c = !r.error && (Array.isArray(r.data) ? r.data[0] : r.data); if (!c) return;
+    var fmt = function (n) { try { return new Intl.NumberFormat(LOCALE[LANG]).format(n); } catch (e) { return String(n); } };
+    var chip = function (n, one, many) { return "<span><b>" + esc(fmt(n)) + "</b> " + esc(Number(n) === 1 ? one : many) + "</span>"; };
+    $("siteStats").innerHTML = chip(c.visits, t("visit"), t("visits")) + chip(c.members, t("member"), t("members")); $("siteStats").hidden = false;
+  }, function () {});
 }
 
 /* ---- boot ---- */
