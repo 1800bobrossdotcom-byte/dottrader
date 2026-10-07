@@ -51,4 +51,10 @@ Category names live in `site/i18n/cats.json` and are shared by every page.
   The build stops if any English on the page has no translation, or a translation's English is gone.
 - Public pages (categories, listings, page frame): `api/_i18n.js`.
 - Ways-to-trade pages: `api/_trade_text.js`.
-- Tests (`npm run test:pages`, `npm run test:i18n`) fail if English leaks into a translated page.
+- The board (the app): every sentence is written in English in the code as `t("…")`, and translated in
+  `i18n/app.<lang>.json`; `node scripts/i18n-app.mjs` builds `site/js/strings.js` and refuses to if any
+  sentence has no translation, or a translation drops a `{placeholder}`.
+- Emails: `supabase/functions/notify/index.ts` (the `W` table), sent in the language on the
+  recipient's profile (`profiles.lang`).
+- Tests (`npm run test:pages`, `npm run test:i18n`, the browser suite `app-languages`) fail if English
+  leaks into a translated page or screen.

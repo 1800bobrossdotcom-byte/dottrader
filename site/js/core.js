@@ -38,7 +38,7 @@ var HUES = ["var(--rose)", "var(--have)", "var(--plum)", "var(--want)", "var(--t
 var CAT_HUE = {};
 GROUPS.forEach(function (g, gi) { g[1].forEach(function (c) { CAT_HUE[c] = HUES[gi]; }); });
 function hueOf(cat) { return CAT_HUE[cat] || "var(--line)"; }
-function initial(id) { var n = who(id); return n === "You" ? (profiles[id] && profiles[id].name ? profiles[id].name : "Y").charAt(0) : n.charAt(0); }
+function initial(id) { var n = who(id); return id && id === uid ? (profiles[id] && profiles[id].name ? profiles[id].name : "Y").charAt(0) : n.charAt(0); }
 var RANKS = [[0, "New trader"], [3, "Known"], [8, "Trusted"], [16, "Well vouched"], [30, "Pillar of the post"]];
 
 // Cross-chain works because nothing is swapped atomically: each side is simply checked on its

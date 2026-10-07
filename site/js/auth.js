@@ -13,14 +13,14 @@ var authBox = null, authEmail = "";
 function hasAccountHint() { try { return localStorage.getItem("dtp-has-account") === "1"; } catch (e) { return false; } }
 function pwAskedKey() { return "dtp-pw-asked-" + uid; }
 function authErr(e) {
-  var m = (e && e.message) || "That did not work.";
-  if (/rate limit/i.test(m)) return "Too many emails in a short time. Wait a minute and try again.";
-  if (/invalid login credentials/i.test(m)) return "That email and password don’t match. If you’ve only ever signed in with email links you don’t have a password yet — use “Email me a code”, then set one.";
-  if (/email not confirmed/i.test(m)) return "Confirm your email first — the confirmation is in your inbox. Or use “Email me a code”.";
-  if (/expired|invalid.*(otp|token)|token.*invalid/i.test(m)) return "That code is wrong or has expired. Send yourself a new one.";
-  if (/already (been )?registered/i.test(m)) return "There’s already an account with that email. Sign in instead.";
-  if (/password should be/i.test(m)) return "Use at least 8 characters for the password.";
-  if (/signups? (not allowed|disabled)/i.test(m)) return "New accounts are switched off on this board right now.";
+  var m = (e && e.message) || t("That did not work.");
+  if (/rate limit/i.test(m)) return t("Too many emails in a short time. Wait a minute and try again.");
+  if (/invalid login credentials/i.test(m)) return t("That email and password don’t match. If you’ve only ever signed in with email links you don’t have a password yet — use “Email me a code”, then set one.");
+  if (/email not confirmed/i.test(m)) return t("Confirm your email first — the confirmation is in your inbox. Or use “Email me a code”.");
+  if (/expired|invalid.*(otp|token)|token.*invalid/i.test(m)) return t("That code is wrong or has expired. Send yourself a new one.");
+  if (/already (been )?registered/i.test(m)) return t("There’s already an account with that email. Sign in instead.");
+  if (/password should be/i.test(m)) return t("Use at least 8 characters for the password.");
+  if (/signups? (not allowed|disabled)/i.test(m)) return t("New accounts are switched off on this board right now.");
   return m;
 }
 function needAccount(reason, then) {
@@ -43,41 +43,36 @@ function openAuth(mode, reason) {
 }
 function paintAuth() {
   var b = authBox, f = b.form, m = b.mode;
-  var em = function (ac) { return '<div><label for="a-email">Email</label><input id="a-email" type="email" required autocomplete="' + (ac || "email") + '" value="' + esc(authEmail) + '" placeholder="you@example.com"></div>'; };
-  var pw = function (ac, label) { return '<div><label for="a-pass">' + (label || "Password") + '</label><input id="a-pass" type="password" required minlength="8" autocomplete="' + ac + '"' + (ac === "new-password" ? ' placeholder="At least 8 characters"' : "") + "></div>"; };
-  var links = function (l) { return '<div class="authlinks">' + l.map(function (x) { return '<button type="button" class="linkbtn" data-mode="' + x[0] + '">' + x[1] + "</button>"; }).join("") + "</div>"; };
-  var reason = b.reason ? '<p class="hint" style="margin:0">' + esc(b.reason) + "</p>" : "";
-  var close = m === "newpass" ? "" : '<button class="btn ghost" type="button" data-x>' + (m === "setpass" ? "Not now" : "Close") + "</button>";
+  var em = function (ac) { return '<div><label for="a-email">' + esc(t("Email")) + '</label><input id="a-email" type="email" required autocomplete="' + (ac || "email") + '" value="' + esc(authEmail) + '" placeholder="' + esc(t("you@example.com")) + '"></div>'; };
+  var pw = function (ac, label) { return '<div><label for="a-pass">' + esc(label || t("Password")) + '</label><input id="a-pass" type="password" required minlength="8" autocomplete="' + ac + '"' + (ac === "new-password" ? ' placeholder="' + esc(t("At least 8 characters")) + '"' : "") + "></div>"; };
+  var links = function (l) { return '<div class="authlinks">' + l.map(function (x) { return '<button type="button" class="linkbtn" data-mode="' + x[0] + '">' + esc(x[1]) + "</button>"; }).join("") + "</div>"; };
+  var hint = function (s) { return '<p class="hint" style="margin:0">' + s + "</p>"; };
+  var submit = function (s) { return '<div class="acts"><button class="btn ok" type="submit">' + esc(s) + "</button>" + close + "</div>"; };
+  var reason = b.reason ? hint(esc(b.reason)) : "";
+  var close = m === "newpass" ? "" : '<button class="btn ghost" type="button" data-x>' + esc(t(m === "setpass" ? "Not now" : "Close")) + "</button>";
+  var code = function (label, req) { return '<div><label for="a-code">' + esc(label) + '</label><input id="a-code" class="codein" inputmode="numeric" autocomplete="one-time-code"' + (req ? " required" : "") + ' pattern="[0-9]{6,10}" maxlength="10" placeholder="123456"></div>'; };
   var h = "";
-  if (m === "signin") h = "<h3>Sign in</h3>" + reason + em() + pw("current-password") + msgSlot() +
-    '<div class="acts"><button class="btn ok" type="submit">Sign in</button>' + close + "</div>" +
-    links([["forgot", "Forgot password?"], ["code", "Email me a code instead"], ["signup", "New here? Create an account"]]);
-  else if (m === "signup") h = "<h3>Create an account</h3>" + reason + em() + pw("new-password") + msgSlot() +
-    '<p class="hint" style="margin:0">We email you once to confirm it’s really you. After that you just sign in with your password.</p>' +
-    '<div class="acts"><button class="btn ok" type="submit">Create account</button>' + close + "</div>" +
-    links([["signin", "Already have an account? Sign in"]]);
-  else if (m === "code" && !b.sent) h = "<h3>Sign in with a code</h3>" + reason + em() + msgSlot() +
-    '<p class="hint" style="margin:0">We email you a short code. Type it here — it works in any browser, so it doesn’t matter where your mail app opens links.</p>' +
-    '<div class="acts"><button class="btn ok" type="submit">Email me a code</button>' + close + "</div>" +
-    links([["signin", "Use my password instead"]]);
-  else if (m === "code") h = "<h3>Enter your code</h3>" +
-    '<p class="hint" style="margin:0">Sent to <b>' + esc(authEmail) + "</b>. The email has a link too — either works.</p>" +
-    '<div><label for="a-code">Code</label><input id="a-code" class="codein" inputmode="numeric" autocomplete="one-time-code" required pattern="[0-9]{6,10}" maxlength="10" placeholder="123456"></div>' + msgSlot() +
-    '<div class="acts"><button class="btn ok" type="submit">Sign in</button>' + close + "</div>" +
-    links([["code-again", "Send a new code"], ["code-other", "Use a different email"]]);
-  else if (m === "checkemail") h = "<h3>Check your inbox</h3>" +
-    '<p class="hint" style="margin:0">We sent a confirmation to <b>' + esc(authEmail) + "</b>. Tap its link, or type the code from it here. You only do this once — from then on it’s just your password.</p>" +
-    '<div><label for="a-code">Code from the email</label><input id="a-code" class="codein" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6,10}" maxlength="10" placeholder="123456"></div>' + msgSlot() +
-    '<div class="acts"><button class="btn ok" type="submit">Confirm</button>' + close + "</div>";
-  else if (m === "forgot") h = "<h3>Reset your password</h3>" + em() + msgSlot() +
-    '<p class="hint" style="margin:0">We email you a link that brings you back here to choose a new one. If you never set a password, this sets your first.</p>' +
-    '<div class="acts"><button class="btn ok" type="submit">Email me a reset link</button>' + close + "</div>" +
-    links([["signin", "Back to sign in"]]);
-  else if (m === "newpass") h = "<h3>Choose a new password</h3>" + pw("new-password", "New password") + msgSlot() +
-    '<div class="acts"><button class="btn ok" type="submit">Save password</button></div>';
-  else if (m === "setpass") h = "<h3>You’re in. Make next time one step?</h3>" +
-    '<p class="hint" style="margin:0">Set a password and you can sign straight back in, on any device, without waiting for an email.</p>' +
-    pw("new-password") + msgSlot() + '<div class="acts"><button class="btn ok" type="submit">Set password</button>' + close + "</div>";
+  if (m === "signin") h = "<h3>" + esc(t("Sign in")) + "</h3>" + reason + em() + pw("current-password") + msgSlot() + submit(t("Sign in")) +
+    links([["forgot", t("Forgot password?")], ["code", t("Email me a code instead")], ["signup", t("New here? Create an account")]]);
+  else if (m === "signup") h = "<h3>" + esc(t("Create an account")) + "</h3>" + reason + em() + pw("new-password") + msgSlot() +
+    hint(esc(t("We email you once to confirm it’s really you. After that you just sign in with your password."))) + submit(t("Create account")) +
+    links([["signin", t("Already have an account? Sign in")]]);
+  else if (m === "code" && !b.sent) h = "<h3>" + esc(t("Sign in with a code")) + "</h3>" + reason + em() + msgSlot() +
+    hint(esc(t("We email you a short code. Type it here — it works in any browser, so it doesn’t matter where your mail app opens links."))) + submit(t("Email me a code")) +
+    links([["signin", t("Use my password instead")]]);
+  else if (m === "code") h = "<h3>" + esc(t("Enter your code")) + "</h3>" +
+    hint(t("Sent to {email}. The email has a link too — either works.", { email: "<b>" + esc(authEmail) + "</b>" })) + code(t("Code"), true) + msgSlot() + submit(t("Sign in")) +
+    links([["code-again", t("Send a new code")], ["code-other", t("Use a different email")]]);
+  else if (m === "checkemail") h = "<h3>" + esc(t("Check your inbox")) + "</h3>" +
+    hint(t("We sent a confirmation to {email}. Tap its link, or type the code from it here. You only do this once — from then on it’s just your password.", { email: "<b>" + esc(authEmail) + "</b>" })) +
+    code(t("Code from the email"), false) + msgSlot() + submit(t("Confirm"));
+  else if (m === "forgot") h = "<h3>" + esc(t("Reset your password")) + "</h3>" + em() + msgSlot() +
+    hint(esc(t("We email you a link that brings you back here to choose a new one. If you never set a password, this sets your first."))) + submit(t("Email me a reset link")) +
+    links([["signin", t("Back to sign in")]]);
+  else if (m === "newpass") h = "<h3>" + esc(t("Choose a new password")) + "</h3>" + pw("new-password", t("New password")) + msgSlot() + submit(t("Save password"));
+  else if (m === "setpass") h = "<h3>" + esc(t("You’re in. Make next time one step?")) + "</h3>" +
+    hint(esc(t("Set a password and you can sign straight back in, on any device, without waiting for an email."))) +
+    pw("new-password") + msgSlot() + submit(t("Set password"));
   f.innerHTML = h;
   var e1 = f.querySelector("#a-email"); if (e1) e1.addEventListener("input", function () { authEmail = e1.value.trim(); });
   Array.prototype.forEach.call(f.querySelectorAll("[data-mode]"), function (x) {
@@ -117,7 +112,7 @@ function submitAuth() {
       if (r.data && r.data.session) { markPwAsked(); return closeAuth(); }
       // Supabase answers an existing address with an empty identity list rather than an error.
       if (r.data && r.data.user && r.data.user.identities && r.data.user.identities.length === 0)
-        return say("There’s already an account with that email. Sign in — or if you’ve only ever used email links, use “Email me a code”.", true);
+        return say(t("There’s already an account with that email. Sign in — or if you’ve only ever used email links, use “Email me a code”."), true);
       openAuth("checkemail");
     });
   } else if (m === "code" && !b.sent) {
@@ -127,7 +122,7 @@ function submitAuth() {
     });
   } else if (m === "code" || m === "checkemail") {
     var token = val("#a-code").replace(/\D/g, "");
-    if (!token) { busy(false); return say("Type the code from the email, or tap the link in it.", true); }
+    if (!token) { busy(false); return say(t("Type the code from the email, or tap the link in it."), true); }
     sb.auth.verifyOtp({ email: authEmail, token: token, type: "email" }).then(function (r) {
       return r.error && m === "checkemail" ? sb.auth.verifyOtp({ email: authEmail, token: token, type: "signup" }) : r;
     }).then(done).then(function (r) {
@@ -139,12 +134,12 @@ function submitAuth() {
   } else if (m === "forgot") {
     sb.auth.resetPasswordForEmail(authEmail, { redirectTo: redirect }).then(done).then(function (r) {
       if (r.error) return say(authErr(r.error), true);
-      say("Sent. The link in that email brings you back here to choose a password.");
+      say(t("Sent. The link in that email brings you back here to choose a password."));
     });
   } else if (m === "newpass" || m === "setpass") {
     sb.auth.updateUser({ password: val("#a-pass") }).then(done).then(function (r) {
       if (r.error) return say(authErr(r.error), true);
-      markPwAsked(); closeAuth(); toast("Password saved. Next time, just sign in with it.");
+      markPwAsked(); closeAuth(); toast(t("Password saved. Next time, just sign in with it."));
     });
   }
 }
@@ -155,12 +150,12 @@ Array.prototype.forEach.call(document.querySelectorAll("[data-auth]"), function 
 });
 $("npBtn").addEventListener("click", function () {
   var pw = $("np-pass").value;
-  if (pw.length < 8) return toast("Use at least 8 characters.");
+  if (pw.length < 8) return toast(t("Use at least 8 characters."));
   var b = $("npBtn"); b.disabled = true;
   sb.auth.updateUser({ password: pw }).then(function (r) {
     b.disabled = false;
     if (r.error) return fail(r.error);
-    $("np-pass").value = ""; markPwAsked(); toast("Password set. Next time you can sign in with it.");
+    $("np-pass").value = ""; markPwAsked(); toast(t("Password set. Next time you can sign in with it."));
   });
 });
 $("signOut").addEventListener("click", function () {
@@ -183,12 +178,12 @@ function enter(session) {
   $("signInTop").hidden = signedIn;
   applyCaps();
   if (!changed) return;
-  profTouched = false; profNotifySet = false; threadOpen = {}; drafts = {};
+  profTouched = false; profNotifySet = false; langSynced = false; threadOpen = {}; drafts = {};
   ["p-name", "p-area", "p-note"].forEach(function (id) { $(id).value = ""; });
   if (signedIn) {
     try { localStorage.setItem("dtp-has-account", "1"); } catch (e) {}
     loadSeen();
-    $("meName").textContent = "Signed in as " + myEmail;
+    $("meName").textContent = t("Signed in as {email}", { email: myEmail });
     show("browse");
   } else {
     $("post").hidden = true; $("mine").hidden = true; $("activity").hidden = true; $("profile").hidden = true; $("browse").hidden = false;
@@ -197,9 +192,9 @@ function enter(session) {
   load().then(function () {
     if (signedIn && (stripeBack.session || stripeBack.cancelled || stripeBack.payout)) {
       var sb2 = stripeBack; stripeBack = {};
-      if (sb2.cancelled) toast("No hold was placed.");
+      if (sb2.cancelled) toast(t("No hold was placed."));
       if (sb2.session) bondCall({ action: "confirm", session_id: sb2.session }).then(function (j) {
-        toast(j.status === "held" ? "Your bond is in place — the other side can see it." : "The card hold didn’t go through. Nothing was charged."); show("mine"); load();
+        toast(t(j.status === "held" ? "Your bond is in place — the other side can see it." : "The card hold didn’t go through. Nothing was charged.")); show("mine"); load();
       }).catch(fail);
       if (sb2.payout) { show("mine"); claimPayout(); }
     }

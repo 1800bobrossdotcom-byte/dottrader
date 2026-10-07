@@ -82,7 +82,7 @@ function assetMeta(a) {
 // Shared minting contracts (OpenSea's storefront, Rarible's, Manifold-style factories) put every
 // artist under one name; that name says nothing about the piece, so it is left off.
 function genericCollection(n) { return /shared storefront|^rarible|^opensea collections?$|^mintable/i.test(n || ""); }
-function shortId(t) { t = String(t == null ? "" : t); return t.length > 14 ? t.slice(0, 6) + "\u2026" + t.slice(-4) : t; }
+function shortId(v) { v = String(v == null ? "" : v); return v.length > 14 ? v.slice(0, 6) + "\u2026" + v.slice(-4) : v; }
 var pendingMeta = [];
 function runMeta() {
   var jobs = pendingMeta; pendingMeta = [];
@@ -102,7 +102,7 @@ function runMeta() {
         if (m && m.image) {
           art.innerHTML = '<img src="' + esc(m.image) + '" alt="' + esc(m.name || "") + '" loading="lazy">';
         } else {
-          art.innerHTML = '<div class="artph">' + (m && m.partial ? "Artwork not reachable from here" : "No artwork on chain") + "</div>";
+          art.innerHTML = '<div class="artph">' + esc(t(m && m.partial ? "Artwork not reachable from here" : "No artwork on chain")) + "</div>";
         }
       }
     });

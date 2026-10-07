@@ -16,7 +16,7 @@ function paintThumbs() {
     var w = document.createElement("div"); w.className = "thumb";
     var img = document.createElement("img"); img.src = u; img.alt = "";
     var x = document.createElement("button"); x.type = "button"; x.className = "thumbx"; x.textContent = "×";
-    x.title = "Remove";
+    x.title = t("Remove");
     x.addEventListener("click", function () { pendingPhotos.splice(i, 1); paintThumbs(); });
     w.appendChild(img); w.appendChild(x); host.appendChild(w);
   });
@@ -26,11 +26,11 @@ $("f-photos").addEventListener("change", function (e) {
   var files = Array.prototype.slice.call(e.target.files || []);
   e.target.value = "";
   if (!files.length) return;
-  if (!uid || !sb) { toast("Sign in first."); return; }
+  if (!uid || !sb) { toast(t("Sign in first.")); return; }
   var room = 4 - pendingPhotos.length;
-  if (files.length > room) { toast(room ? "Only " + room + " more photo" + (room === 1 ? "" : "s") + " fit." : "Four photos is the limit."); files = files.slice(0, room); }
+  if (files.length > room) { toast(room ? tn(room, "Only {n} more photo fits.", "Only {n} more photos fit.") : t("Four photos is the limit.")); files = files.slice(0, room); }
   if (!files.length) return;
-  toast("Uploading " + files.length + " photo" + (files.length === 1 ? "" : "s") + "…");
+  toast(tn(files.length, "Uploading {n} photo…", "Uploading {n} photos…"));
   var P = window.DTP_PHOTOS;
   Promise.all(files.map(function (f) {
     return P.upload(sb, uid, f).then(function (u) { return { ok: true, url: u }; },
@@ -40,10 +40,10 @@ $("f-photos").addEventListener("change", function (e) {
     rs.forEach(function (r) { if (r.ok && pendingPhotos.length < 4) pendingPhotos.push(r.url); });
     paintThumbs();
     if (bad.length) {
-      var em = bad[0].err && bad[0].err.message ? bad[0].err.message : "A photo failed to upload.";
-      if (/bucket not found/i.test(em)) em = "Photo storage is not set up on this project yet — run supabase/storage.sql in the SQL editor.";
+      var em = bad[0].err && bad[0].err.message ? bad[0].err.message : t("A photo failed to upload.");
+      if (/bucket not found/i.test(em)) em = t("Photo storage is not set up on this project yet — run supabase/storage.sql in the SQL editor.");
       toast(em);
     }
-    else toast("Added.");
+    else toast(t("Added."));
   });
 });

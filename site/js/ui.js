@@ -51,9 +51,9 @@ function level(n) { var lv = 0; RANKS.forEach(function (x) { if (n >= x[0]) lv++
 // One lit circle per dot, up to five, then the exact count beside them. (The circles used to show
 // rank, which read as a dot count: going from 2 dots to 5 lit only one more.)
 function dotRow(n) {
-  var h = '<span class="dots" title="' + n + (n === 1 ? " dot" : " dots") + " \u2014 " + esc(rankOf(n)) + '">';
+  var h = '<span class="dots" title="' + esc(tn(n, "{n} dot", "{n} dots")) + " \u2014 " + esc(t(rankOf(n))) + '">';
   for (var i = 0; i < 5; i++) h += "<s" + (i < n ? ' class="on"' : "") + "></s>";
-  return h + "<em>" + n + (n === 1 ? " dot" : " dots") + "</em></span>";
+  return h + "<em>" + esc(tn(n, "{n} dot", "{n} dots")) + "</em></span>";
 }
 
 function show(which) {
@@ -66,12 +66,12 @@ function show(which) {
 }
 ["browse", "post", "mine", "activity"].forEach(function (k) {
   $("t-" + k).addEventListener("click", function () {
-    if (!uid && (k === "post" || k === "mine")) return needAccount(k === "post" ? "Make an account to post. It takes a minute." : "Make an account to trade. It takes a minute.", function () { show(k); });
+    if (!uid && (k === "post" || k === "mine")) return needAccount(k === "post" ? t("Make an account to post. It takes a minute.") : t("Make an account to trade. It takes a minute."), function () { show(k); });
     show(k);
   });
 });
 $("postCta").addEventListener("click", function () {
-  if (!uid) return needAccount("Make an account to post. It takes a minute.", function () { show("post"); });
+  if (!uid) return needAccount(t("Make an account to post. It takes a minute."), function () { show("post"); });
   show("post"); setTimeout(function () { $("f-title").focus(); }, 30);
 });
 function openProfile() {
@@ -84,7 +84,7 @@ document.addEventListener("click", function (e) {
   var go = e.target && e.target.getAttribute && e.target.getAttribute("data-go");
   if (!go) return;
   if (go === "clear") { filter.cat = ""; filter.q = ""; filter.radius = 0; $("q").value = ""; $("radius").value = "0"; syncCats(); render(); refilter(); return; }
-  if (!uid && (go === "post" || go === "loc" || go === "mine" || go === "profile")) return needAccount("Make an account to post. It takes a minute.", function () { show(go === "loc" ? "profile" : go); });
+  if (!uid && (go === "post" || go === "loc" || go === "mine" || go === "profile")) return needAccount(t("Make an account to post. It takes a minute."), function () { show(go === "loc" ? "profile" : go); });
   if (go === "loc") { show("profile"); setTimeout(function () { $("locBtn").scrollIntoView({ block: "center", behavior: "smooth" }); }, 30); return; }
   show(go);
 });
@@ -92,26 +92,26 @@ document.addEventListener("click", function (e) {
 function groupedOptions(sel, allLabel) {
   if (allLabel) { var a = document.createElement("option"); a.value = ""; a.textContent = allLabel; sel.appendChild(a); }
   GROUPS.forEach(function (g) {
-    var og = document.createElement("optgroup"); og.label = g[0];
-    g[1].forEach(function (c) { var o = document.createElement("option"); o.value = c; o.textContent = c; og.appendChild(o); });
+    var og = document.createElement("optgroup"); og.label = groupName(g[0]);
+    g[1].forEach(function (c) { var o = document.createElement("option"); o.value = c; o.textContent = catName(c); og.appendChild(o); });
     sel.appendChild(og);
   });
 }
 (function buildCats() {
   var wrap = $("cats");
   var all = document.createElement("button");
-  all.className = "chip all"; all.type = "button"; all.textContent = "All";
+  all.className = "chip all"; all.type = "button"; all.textContent = t("All");
   all.setAttribute("aria-pressed", "true");
   all.addEventListener("click", function () { filter.cat = ""; syncCats(); render(); refilter(); });
   wrap.appendChild(all);
   QUICK.forEach(function (c) {
     var b = document.createElement("button");
-    b.className = "chip"; b.type = "button"; b.textContent = c; b.dataset.cat = c; b.style.setProperty("--c", hueOf(c));
+    b.className = "chip"; b.type = "button"; b.textContent = catName(c); b.dataset.cat = c; b.style.setProperty("--c", hueOf(c));
     b.setAttribute("aria-pressed", "false");
     b.addEventListener("click", function () { filter.cat = filter.cat === c ? "" : c; syncCats(); render(); refilter(); });
     wrap.appendChild(b);
   });
-  groupedOptions($("catPick"), "All categories");
+  groupedOptions($("catPick"), t("All categories"));
   $("catPick").addEventListener("change", function (e) { filter.cat = e.target.value; syncCats(); render(); refilter(); });
   groupedOptions($("f-cat"), null);
   $("f-cat").value = "Other";
@@ -126,7 +126,7 @@ function syncCats() {
 $("q").addEventListener("input", function (e) { filter.q = e.target.value.trim().toLowerCase(); render(); refilter(); });
 $("radius").addEventListener("change", function (e) {
   filter.radius = Number(e.target.value) || 0;
-  if (filter.radius && !locOf(uid)) toast("Set your location on your Profile first.");
+  if (filter.radius && !locOf(uid)) toast(t("Set your location on your Profile first."));
   render(); refilter();
 });
 
@@ -148,9 +148,9 @@ function setPostKind(nft) {
   $("f-assetfields").hidden = !nft;
   $("f-localwrap").hidden = !caps.local || nft;
   if (nft) $("f-local").checked = false;
-  $("f-photohint").textContent = nft ? "— optional for an NFT: the artwork comes from the chain" : "— up to 4 · location data is removed before upload";
-  $("f-titlelbl").textContent = nft ? "Name it" : "What are you offering?";
-  $("f-title").placeholder = nft ? "Filled in from the chain — or name it yourself" : "Charizard holo, 1999 base set";
+  $("f-photohint").textContent = t(nft ? "— optional for an NFT: the artwork comes from the chain" : "— up to 4 · location data is removed before upload");
+  $("f-titlelbl").textContent = t(nft ? "Name it" : "What are you offering?");
+  $("f-title").placeholder = t(nft ? "Filled in from the chain — or name it yourself" : "Charizard holo, 1999 base set");
   var cat = $("f-cat"), nftOpt = cat.querySelector('option[value="NFTs"]');
   if (nftOpt) nftOpt.hidden = !nft;
   if (nft) cat.value = "NFTs"; else if (cat.value === "NFTs") cat.value = "Other";
@@ -167,24 +167,24 @@ function previewAsset() {
     var box = $("f-preview"), kind = $("f-kind").value, contract = $("f-contract").value.trim(), tok = $("f-tokid").value.trim();
     if (!/^0x[0-9a-fA-F]{40}$/.test(contract) || (kind !== "erc20" && !/^\d+$/.test(tok))) { box.hidden = true; return; }
     var seq = ++previewSeq;
-    box.hidden = false; box.innerHTML = '<div class="artph small">Looking it up…</div>';
+    box.hidden = false; box.innerHTML = '<div class="artph small">' + esc(t("Looking it up…")) + "</div>";
     chainsWithCode(contract).then(function (found) {
       if (seq !== previewSeq) return;
       var chosen = Number($("f-chain").value);
       if (found.length && found.indexOf(chosen) < 0) {
         $("f-chain").value = String(found[0]);
-        toast("That contract lives on " + CHAINS[found[0]].name + " — switched the chain for you.");
+        toast(t("That contract lives on {chain} — switched the chain for you.", { chain: CHAINS[found[0]].name }));
       } else if (!found.length) {
-        box.innerHTML = '<div class="artph small">No contract at that address on any chain we know. Check the address.</div>';
+        box.innerHTML = '<div class="artph small">' + esc(t("No contract at that address on any chain we know. Check the address.")) + "</div>";
         return;
       }
       var a = { asset_kind: kind, asset_chain: Number($("f-chain").value), asset_contract: contract.toLowerCase(), asset_token_id: kind === "erc20" ? null : tok };
       return assetMeta(a).then(function (m) {
         if (seq !== previewSeq) return;
-        if (!m) { box.innerHTML = '<div class="artph small">Found the contract, but could not read this token.</div>'; return; }
+        if (!m) { box.innerHTML = '<div class="artph small">' + esc(t("Found the contract, but could not read this token.")) + "</div>"; return; }
         var title = [genericCollection(m.collection) ? "" : m.collection, m.name].filter(Boolean).join(" · ");
         box.innerHTML = (m.image ? '<img src="' + esc(m.image) + '" alt="">' : '<span class="wi">&#9679;</span>') +
-          "<div><b>" + esc(m.name || m.symbol || "Found it") + "</b><span>" + esc(genericCollection(m.collection) ? "" : (m.collection || "")) + " · " + esc(CHAINS[a.asset_chain].name) + "</span></div>";
+          "<div><b>" + esc(m.name || m.symbol || t("Found it")) + "</b><span>" + esc(genericCollection(m.collection) ? "" : (m.collection || "")) + " · " + esc(CHAINS[a.asset_chain].name) + "</span></div>";
         if (!$("f-title").value.trim() && (m.name || m.symbol)) $("f-title").value = (m.name || m.symbol).slice(0, 80);
       });
     });
@@ -196,8 +196,8 @@ function readAsset(scope, on) {
   if (!on) return { asset_kind: null, asset_chain: null, asset_contract: null, asset_token_id: null };
   var kind = scope.kind.value;
   var contract = scope.contract.value.trim();
-  if (!/^0x[0-9a-fA-F]{40}$/.test(contract)) throw new Error("That contract address does not look right.");
+  if (!/^0x[0-9a-fA-F]{40}$/.test(contract)) throw new Error(t("That contract address does not look right."));
   var tok = kind === "erc20" ? null : scope.tokid.value.trim();
-  if (kind !== "erc20" && !/^\d+$/.test(tok || "")) throw new Error("Token ID should be a number.");
+  if (kind !== "erc20" && !/^\d+$/.test(tok || "")) throw new Error(t("Token ID should be a number."));
   return { asset_kind: kind, asset_chain: Number(scope.chain.value), asset_contract: contract.toLowerCase(), asset_token_id: tok };
 }

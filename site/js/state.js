@@ -11,7 +11,7 @@ var profTouched = false, profNotifySet = false;
 // What this project has switched on. Each is probed once at boot, so the board never offers a
 // button whose back end is missing (the old failure: write the note, take the photo, then hear
 // the checker does not exist).
-var caps = { photos: true, location: true, messages: true, verify: true, trades: false, bond: null, matching: false, notify: false, giveItems: false, history: false, local: false, paging: false, stats: false };
+var caps = { photos: true, location: true, messages: true, verify: true, trades: false, bond: null, matching: false, notify: false, giveItems: false, history: false, local: false, paging: false, stats: false, lang: false };
 // Resolves once the probes have run, so the first load knows which way to fetch.
 var probing = Promise.resolve();
 // The board a page at a time (scale.sql): what the database returned for the current filters, and
@@ -31,25 +31,32 @@ function miles(a, b, c, d) {
 }
 function locOf(id) { var p = profiles[id]; return p && typeof p.lat === "number" && typeof p.lng === "number" ? { lat: p.lat, lng: p.lng } : null; }
 function distTo(id) { var me = locOf(uid), them = locOf(id); return me && them ? miles(me.lat, me.lng, them.lat, them.lng) : null; }
-function fmtMiles(m) { return m < 1 ? "under a mile" : Math.round(m) + " mi"; }
+function fmtMiles(m) {
+  if (LANG === "en") return m < 1 ? "under a mile" : Math.round(m) + " mi";
+  var k = m * 1.609; return k < 1 ? t("under a kilometre") : t("{n} km", { n: Math.round(k) });
+}
 
 function esc(s) {
   return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
     return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
   });
 }
-function ago(t) {
-  if (!t) return "";
-  var s = (Date.now() - new Date(t).getTime()) / 1000;
-  if (s < 90) return "just now";
+function ago(when) {
+  if (!when) return "";
+  var s = (Date.now() - new Date(when).getTime()) / 1000;
+  if (s < 90) return t("just now");
+  if (LANG !== "en" && window.Intl && Intl.RelativeTimeFormat) {
+    var rt = new Intl.RelativeTimeFormat(LOCALE[LANG], { numeric: "auto", style: "short" });
+    return s < 5400 ? rt.format(-Math.round(s / 60), "minute") : s < 172800 ? rt.format(-Math.round(s / 3600), "hour") : rt.format(-Math.round(s / 86400), "day");
+  }
   if (s < 5400) return Math.round(s / 60) + "m ago";
   if (s < 172800) return Math.round(s / 3600) + "h ago";
   return Math.round(s / 86400) + "d ago";
 }
 function who(id) {
-  if (id && uid && id === uid) return "You";
+  if (id && uid && id === uid) return t("You");
   var p = profiles[id];
-  return (p && p.name) || "Someone";
+  return (p && p.name) || t("Someone");
 }
 var toastT = null;
 // One polite live region for everything the board says in a toast, so screen readers hear it.

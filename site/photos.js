@@ -17,6 +17,8 @@
 // returned unchanged so an upload is never corrupted — the MIME allowlist decides what is attempted.
 (function () {
   "use strict";
+  // Errors in the visitor's language when the board's translations are loaded (js/i18n.js).
+  var tr = function (s) { return typeof window.t === "function" ? window.t(s) : s; };
 
   var ALLOWED = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
   var MAX_BYTES = 8 * 1024 * 1024;
@@ -145,15 +147,15 @@
   // bucket, to the storage path, since a private object has no public address.
   function upload(sb, uid, file, bucket) {
     bucket = bucket || "photos";
-    if (!uid) return Promise.reject(new Error("Sign in to add photos."));
-    if (!ALLOWED[file.type]) return Promise.reject(new Error("Photos need to be JPEG, PNG or WebP."));
+    if (!uid) return Promise.reject(new Error(tr("Sign in to add photos.")));
+    if (!ALLOWED[file.type]) return Promise.reject(new Error(tr("Photos need to be JPEG, PNG or WebP.")));
     return compress(file).then(function (blob) {
       var type = blob.type || file.type;
       if (!ALLOWED[type]) type = file.type;
       return blob.arrayBuffer().then(function (ab) {
         var bytes = strip(new Uint8Array(ab), type);
-        if (!matchesMime(bytes, type)) throw new Error("That file is not the kind of image it says it is.");
-        if (bytes.length > MAX_BYTES) throw new Error("That photo is still over 8 MB after compression.");
+        if (!matchesMime(bytes, type)) throw new Error(tr("That file is not the kind of image it says it is."));
+        if (bytes.length > MAX_BYTES) throw new Error(tr("That photo is still over 8 MB after compression."));
         var path = uid + "/" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 8) + "." + ALLOWED[type];
         return sb.storage.from(bucket).upload(path, new Blob([bytes], { type: type }), { contentType: type, upsert: false })
           .then(function (r) {

@@ -77,4 +77,15 @@ ok("a kind switched off isn't sent", j.sent === 0);
 T.offers.push({ id: "77777777-7777-7777-7777-777777777777", item_id: "11111111-1111-1111-1111-111111111111", owner_id: A, from_id: B, give: "Game Boy", msg: "", status: "pending" });
 [s, j] = await call({ kind: "offer", id: "77777777-7777-7777-7777-777777777777" });
 ok("…while the others still are", j.sent === 1 && last().to[0] === "alice@x.com");
+// Each email in the recipient's own language, with links that keep it.
+T.profiles[1].lang = "ja";
+T.items.push({ id: "88888888-8888-8888-8888-888888888888", title: "Game Boy Color", owner_id: B, status: "open" });
+T.offers.push({ id: "99999999-0000-4000-8000-000000000009", item_id: "88888888-8888-8888-8888-888888888888", owner_id: B, from_id: A, give: "Pikachu", msg: "", status: "pending" });
+[s, j] = await call({ kind: "offer", id: "99999999-0000-4000-8000-000000000009" });
+ok("a Japanese trader's email is in Japanese, and its links stay Japanese", j.sent === 1 && last().to[0] === "bob@x.com" && /新しいオファー/.test(last().subject) &&
+  /Aliceさんが/.test(last().html) && /lang="ja"/.test(last().html) && /app\?lang=ja#mine/.test(last().html) && /app\?lang=ja#profile/.test(last().text), last().subject);
+T.profiles[1].lang = "pt"; T.offers[T.offers.length - 1].status = "agreed"; T.offers[T.offers.length - 1].ship_by = "2026-10-10T12:00:00Z";
+T.profiles[0].lang = "es";
+[s, j] = await call({ kind: "accepted", id: "99999999-0000-4000-8000-000000000009" });
+ok("…and a Spanish one in Spanish, with the date written the Spanish way", j.sent === 1 && last().to[0] === "alice@x.com" && /aceptó tu oferta/.test(last().subject) && /sábado/.test(last().html), last().subject);
 console.log(res.join("\n")); if (res.some(r => !r.startsWith("PASS"))) process.exitCode = 1;

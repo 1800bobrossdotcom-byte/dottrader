@@ -15,10 +15,10 @@ function paintWallet() {
   var w = myWallet();
   var btn = $("connectBtn"), el = $("walletState");
   var broken = !w && profiles[uid] && profiles[uid].wallet_address;
-  el.textContent = w ? shortAddr(w) : (broken ? "Reconnect wallet" : "Connect wallet");
+  el.textContent = w ? shortAddr(w) : t(broken ? "Reconnect wallet" : "Connect wallet");
   btn.className = "wal" + (w ? " on" : "");
-  btn.title = w ? "Wallet " + w + " is linked to your account. Click to switch or unlink." :
-    (broken ? "The saved signature did not verify — connect again." : "Connect a wallet to list or offer digital assets");
+  btn.title = w ? t("Wallet {addr} is linked to your account. Click to switch or unlink.", { addr: w }) :
+    t(broken ? "The saved signature did not verify — connect again." : "Connect a wallet to list or offer digital assets");
 }
 var wallets = [];
 window.addEventListener("eip6963:announceProvider", function (e) {
@@ -57,7 +57,7 @@ function sheet(title, bodyHtml) {
   var veil = document.createElement("div"); veil.className = "veil";
   var box = document.createElement("div"); box.className = "sheet";
   box.innerHTML = "<h3>" + title + "</h3>" + bodyHtml +
-    '<div class="acts"><button class="btn ghost" type="button" data-x>Close</button></div>';
+    '<div class="acts"><button class="btn ghost" type="button" data-x>' + esc(t("Close")) + "</button></div>";
   veil.appendChild(box); document.body.appendChild(veil);
   var close = function () { veil.remove(); };
   box.querySelector("[data-x]").addEventListener("click", close);
@@ -66,7 +66,7 @@ function sheet(title, bodyHtml) {
 }
 
 function pickWallet(list) {
-  var sh = sheet("Which wallet?", '<div class="wlist" id="wlist"></div>');
+  var sh = sheet(t("Which wallet?"), '<div class="wlist" id="wlist"></div>');
   var host = sh.box.querySelector("#wlist");
   list.forEach(function (w) {
     var b = document.createElement("button"); b.type = "button";
@@ -80,18 +80,18 @@ function pickWallet(list) {
 function noWallet() {
   var here = location.host + location.pathname;
   if (isPhone()) {
-    sheet("Open the board inside your wallet app",
-      '<p class="hint" style="margin:0">Phone browsers cannot see wallet apps. Open this page in the wallet’s own browser and connect there. You will sign in with your email again inside it.</p>' +
+    sheet(t("Open the board inside your wallet app"),
+      '<p class="hint" style="margin:0">' + esc(t("Phone browsers cannot see wallet apps. Open this page in the wallet’s own browser and connect there. You will sign in with your email again inside it.")) + "</p>" +
       '<div class="wlist">' +
-        '<a href="https://metamask.app.link/dapp/' + esc(here) + '"><span class="wi">&#129418;</span><span>Open in MetaMask<small>Needs the MetaMask app installed</small></span></a>' +
-        '<a href="https://go.cb-w.com/dapp?cb_url=' + encodeURIComponent(location.href) + '"><span class="wi">&#128309;</span><span>Open in Coinbase Wallet</span></a>' +
+        '<a href="https://metamask.app.link/dapp/' + esc(here) + '"><span class="wi">&#129418;</span><span>' + esc(t("Open in MetaMask")) + "<small>" + esc(t("Needs the MetaMask app installed")) + "</small></span></a>" +
+        '<a href="https://go.cb-w.com/dapp?cb_url=' + encodeURIComponent(location.href) + '"><span class="wi">&#128309;</span><span>' + esc(t("Open in Coinbase Wallet")) + "</span></a>" +
       "</div>");
   } else {
-    var sh = sheet("No wallet answered",
-      '<p class="hint" style="margin:0">No wallet extension replied to this page. If MetaMask is installed: click its icon in the toolbar, unlock it, then try again. Some browsers also need the extension allowed on this site.</p>' +
+    var sh = sheet(t("No wallet answered"),
+      '<p class="hint" style="margin:0">' + esc(t("No wallet extension replied to this page. If MetaMask is installed: click its icon in the toolbar, unlock it, then try again. Some browsers also need the extension allowed on this site.")) + "</p>" +
       '<div class="wlist">' +
-        '<button type="button" data-retry><span class="wi">&#8635;</span><span>Try again</span></button>' +
-        '<a href="https://metamask.io/download/" target="_blank" rel="noopener"><span class="wi">&#129418;</span><span>Get MetaMask<small>Free browser extension</small></span></a>' +
+        '<button type="button" data-retry><span class="wi">&#8635;</span><span>' + esc(t("Try again")) + "</span></button>" +
+        '<a href="https://metamask.io/download/" target="_blank" rel="noopener"><span class="wi">&#129418;</span><span>' + esc(t("Get MetaMask")) + "<small>" + esc(t("Free browser extension")) + "</small></span></a>" +
       "</div>");
     sh.box.querySelector("[data-retry]").addEventListener("click", function () { sh.close(); startConnect(); });
   }
@@ -100,18 +100,18 @@ function noWallet() {
 // With a wallet already linked, the pill opens choices instead of launching a new connection.
 function walletMenu() {
   var w = myWallet();
-  var sh = sheet("Your wallet",
-    '<p class="hint" style="margin:0">Linked to this account: <b style="font-family:var(--mono)">' + esc(w) + '</b>. ' +
-    "It stays linked across sign-ins until you unlink it. Unlinking does not sign you out.</p>" +
+  var sh = sheet(t("Your wallet"),
+    '<p class="hint" style="margin:0">' + t("Linked to this account: {addr}.", { addr: '<b style="font-family:var(--mono)">' + esc(w) + "</b>" }) + " " +
+    esc(t("It stays linked across sign-ins until you unlink it. Unlinking does not sign you out.")) + "</p>" +
     '<div class="wlist">' +
-      '<button type="button" data-switch><span class="wi">&#8646;</span><span>Link a different wallet<small>Sign a message with the new one</small></span></button>' +
-      '<button type="button" data-unlink><span class="wi">&#10005;</span><span>Unlink this wallet<small>Digital listings will show “no wallet linked” until you link one</small></span></button>' +
+      '<button type="button" data-switch><span class="wi">&#8646;</span><span>' + esc(t("Link a different wallet")) + "<small>" + esc(t("Sign a message with the new one")) + "</small></span></button>" +
+      '<button type="button" data-unlink><span class="wi">&#10005;</span><span>' + esc(t("Unlink this wallet")) + "<small>" + esc(t("Digital listings will show “no wallet linked” until you link one")) + "</small></span></button>" +
     "</div>");
   sh.box.querySelector("[data-switch]").addEventListener("click", function () { sh.close(); startConnect(); });
   sh.box.querySelector("[data-unlink]").addEventListener("click", function () {
     sh.close();
     sb.from("profiles").upsert({ id: uid, wallet_address: null, wallet_msg: null, wallet_sig: null, updated_at: new Date().toISOString() })
-      .then(function (r) { if (r.error) return fail(r.error); sigCache = {}; toast("Wallet unlinked. You are still signed in."); load(); });
+      .then(function (r) { if (r.error) return fail(r.error); sigCache = {}; toast(t("Wallet unlinked. You are still signed in.")); load(); });
   });
 }
 $("connectBtn").addEventListener("click", function () {
@@ -119,7 +119,7 @@ $("connectBtn").addEventListener("click", function () {
   startConnect();
 });
 function startConnect() {
-  if (!window.ethers) { toast("Still loading — try again in a second."); return; }
+  if (!window.ethers) { toast(t("Still loading — try again in a second.")); return; }
   // Ask again at click time: some wallets inject after the page has finished loading.
   window.dispatchEvent(new Event("eip6963:requestProvider"));
   setTimeout(function () {
@@ -136,7 +136,7 @@ function connectWith(w) {
   eth.request({ method: "eth_requestAccounts" })
     .then(function (accts) {
       addr = accts && accts[0];
-      if (!addr) throw new Error("No account selected in " + w.info.name + ".");
+      if (!addr) throw new Error(t("No account selected in {wallet}.", { wallet: w.info.name }));
       // Signed, not just typed: the message names this account, so the signature proves control
       // of the address rather than knowledge of it.
       var msg = "Dot Trading Post\nLinking this wallet to my account\n" + uid + "\n" + new Date().toISOString();
@@ -153,18 +153,18 @@ function connectWith(w) {
       btn.disabled = false;
       if (r.error) return fail(r.error);
       sigCache = {};
-      toast(w.info.name + " connected and verified.");
+      toast(t("{wallet} connected and verified.", { wallet: w.info.name }));
       load();
     })
     .catch(function (e) {
       btn.disabled = false;
       var code = e && (e.code || (e.error && e.error.code));
-      if (code === 4001 || code === "ACTION_REJECTED") return toast("You closed the wallet prompt — nothing was linked.");
-      if (code === -32002) return toast(w.info.name + " already has a request open. Click its icon to finish.");
+      if (code === 4001 || code === "ACTION_REJECTED") return toast(t("You closed the wallet prompt — nothing was linked."));
+      if (code === -32002) return toast(t("{wallet} already has a request open. Click its icon to finish.", { wallet: w.info.name }));
       var m = e && e.message ? e.message : "";
       toast(/dynamically imported module|chrome-extension|moz-extension/i.test(m)
-        ? w.info.name + " is not working in this browser — pick a different wallet."
-        : (m ? m.slice(0, 90) : "Could not connect."));
+        ? t("{wallet} is not working in this browser — pick a different wallet.", { wallet: w.info.name })
+        : (m ? m.slice(0, 90) : t("Could not connect.")));
       // Another wallet may well work: bring the list straight back.
       var others = installedWallets().filter(function (x) { return x.provider !== w.provider; });
       if (others.length) setTimeout(function () { pickWallet(installedWallets()); }, 900);

@@ -456,3 +456,9 @@ h2 { font-family:var(--display); font-weight:700; font-size:28px; letter-spacing
 .kindpick input:focus-visible + span { outline:3px solid var(--blue); outline-offset:2px; }
 @media (max-width:420px){ .kindpick small { display:none; } }
 .bridgenote { margin:0 0 12px; padding:9px 12px; border:2px solid var(--ink); border-radius:6px; background:#E9DEFF; font-size:13.5px; }
+
+/* Language links at the foot of the board. */
+.sitefoot { flex-direction:column; align-items:center; gap:14px; }
+.sitefoot .langs { display:flex; flex-wrap:wrap; justify-content:center; gap:6px 16px; font-size:14px; }
+.sitefoot .langs a { color:var(--muted); text-decoration:none; font-weight:600; }
+.sitefoot .langs a[aria-current] { color:var(--ink); text-decoration:underline; text-underline-offset:3px; }

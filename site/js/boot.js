@@ -33,13 +33,15 @@ function probe() {
     has(sb.from("items").select("local_only").limit(1)),
     has(sb.rpc("board_page", { p_limit: 1 })),
     has(sb.rpc("trader_stats", { p_ids: [] })),
+    has(sb.from("profiles").select("lang").limit(1)),
     // The bond function answers a plain GET with its price; 401 means it is there behind JWT checks.
     fetch(fnUrl("bond")).then(function (r) {
       if (r.status === 200) return r.json();
       return r.status === 404 ? null : { bond_cents: 2500, fee_cents: 150 };
     }, function () { return null; })
   ]).then(function (r) {
-    caps = { photos: r[0], location: r[1], messages: r[2], verify: r[3], trades: r[4], bond: r[4] && r[5] && r[13] ? r[13] : null, matching: r[6], notify: r[7], giveItems: r[8], history: r[9], local: r[10], paging: r[11], stats: r[12] };
+    caps = { photos: r[0], location: r[1], messages: r[2], verify: r[3], trades: r[4], bond: r[4] && r[5] && r[14] ? r[14] : null, matching: r[6], notify: r[7], giveItems: r[8], history: r[9], local: r[10], paging: r[11], stats: r[12], lang: r[13] };
+    syncLang();
     applyCaps(); render(); loadMatches(); loadHistory();
     if (caps.bond) sb.channel("bonds").on("postgres_changes", { event: "*", schema: "public", table: "bonds" }, load).subscribe();
     if (caps.messages) {
@@ -61,7 +63,7 @@ var stripeBack = { session: qs.get("bond") === "ok" ? qs.get("session_id") : nul
 
 (function boot() {
   if (!cfg.url || cfg.url.indexOf("PASTE_") === 0) {
-    note("This board is not connected to its database yet. Paste the Supabase project URL and anon key into <b>site/config.js</b>.", "bad");
+    note(t("This board is not connected to its database yet. Paste the Supabase project URL and anon key into {file}.", { file: "<b>site/config.js</b>" }), "bad");
     return;
   }
   if (qs.get("bond") || qs.get("payout")) { try { history.replaceState(null, "", location.pathname + location.hash); } catch (e) {} }
@@ -77,7 +79,7 @@ var stripeBack = { session: qs.get("bond") === "ok" ? qs.get("session_id") : nul
   if (linkFailed) {
     try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {}
     setTimeout(function () {
-      openAuth("code", "That email link had expired or was already used \u2014 links only work once. Get a code instead; it works in any browser.");
+      openAuth("code", t("That email link had expired or was already used — links only work once. Get a code instead; it works in any browser."));
     }, 400);
   }
 

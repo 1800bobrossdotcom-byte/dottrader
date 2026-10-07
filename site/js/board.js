@@ -36,18 +36,19 @@ function renderInner() {
   $("saveSearch").hidden = !(uid && caps.matching && (filter.q || filter.cat));
   fill($("feed"), $("feedEmpty"), shown, function (it) { return itemCard(it); });
   if (mapOn) paintMap();
+  var empty = function (h, p, cls, go, b) { return "<strong>" + esc(h) + "</strong>" + esc(p) + '<br><button class="btn ' + cls + '" type="button" data-go="' + go + '">' + esc(b) + "</button>"; };
   $("feedEmpty").innerHTML = !open.length
-    ? '<strong>Nothing on the board yet</strong>Post something you would trade and it shows up here for everyone.<br><button class="btn ok" type="button" data-go="post">Post the first item</button>'
+    ? empty(t("Nothing on the board yet"), t("Post something you would trade and it shows up here for everyone."), "ok", "post", t("Post the first item"))
     : (filter.radius && !locOf(uid)
-        ? '<strong>Set your location first</strong>“Near me” needs a rough location on your profile. It is rounded to about a kilometre.<br><button class="btn ok" type="button" data-go="loc">Set location</button>'
-        : '<strong>No matches</strong>Nothing here fits that search. Try another word, widen the distance, or clear the filter.<br><button class="btn ghost" type="button" data-go="clear">Clear filters</button>');
+        ? empty(t("Set your location first"), t("“Near me” needs a rough location on your profile. It is rounded to about a kilometre."), "ok", "loc", t("Set location"))
+        : empty(t("No matches"), t("Nothing here fits that search. Try another word, widen the distance, or clear the filter."), "ghost", "clear", t("Clear filters")));
   var myName = profiles[uid] && profiles[uid].name;
   $("nudge").hidden = !(uid && (!myName || /^Trader [0-9A-F]{4}$/.test(myName)));
   if (uid) {
     var ini = (myName || myEmail || "?").charAt(0).toUpperCase();
     $("profAv").textContent = ini; $("profAvBig").textContent = ini;
-    $("profName").textContent = myName || "Profile";
-    $("profTitle").textContent = myName || "Your profile";
+    $("profName").textContent = myName || t("Profile");
+    $("profTitle").textContent = myName || t("Your profile");
   }
 
   var myItems = uid ? items.filter(function (it) { return it.owner_id === uid && it.status !== "removed"; }) : [];
@@ -73,13 +74,14 @@ function renderInner() {
   var sc = scoreOf(uid);
   $("myDots").textContent = sc.dots;
   $("myDotRow").innerHTML = dotRow(sc.dots).replace(/^<span class="dots"[^>]*>/, "").replace(/<em>.*<\/em><\/span>$/, "");
-  $("myRank").textContent = rankOf(sc.dots);
+  $("myRank").textContent = t(rankOf(sc.dots));
   $("myLedger").innerHTML =
-    row(Math.floor(sc.tradePts), sc.trades + (sc.trades === 1 ? " completed trade" : " completed trades") + " with " + sc.partners + (sc.partners === 1 ? " person" : " different people") + " \u2014 two dots for the first with each person, one for the second, none after") +
-    row(Math.floor(sc.verifiedPts), sc.verified + " verified \u2014 tracked both ways or swapped on chain") +
-    row(sc.vouches, sc.vouches === 1 ? "person pressed their dot for you" : "different people pressed their dot for you") +
-    row(sc.profile, "profile filled in") +
-    (sc.noShows ? row(-3 * sc.noShows, sc.noShows + (sc.noShows === 1 ? " trade" : " trades") + " agreed and never sent — three dots each") : "");
+    row(Math.floor(sc.tradePts), t("{trades} with {people} — two dots for the first with each person, one for the second, none after",
+      { trades: tn(sc.trades, "{n} completed trade", "{n} completed trades"), people: tn(sc.partners, "{n} person", "{n} different people") })) +
+    row(Math.floor(sc.verifiedPts), t("{n} verified — tracked both ways or swapped on chain", { n: sc.verified })) +
+    row(sc.vouches, t(sc.vouches === 1 ? "person pressed their dot for you" : "different people pressed their dot for you")) +
+    row(sc.profile, t("profile filled in")) +
+    (sc.noShows ? row(-3 * sc.noShows, tn(sc.noShows, "{n} trade agreed and never sent — three dots each", "{n} trades agreed and never sent — three dots each")) : "");
   paintWallet();
   runChecks();
   runMeta();
@@ -95,26 +97,28 @@ function openOffer(it, give) {
   var veil = document.createElement("div"); veil.className = "veil";
   var form = document.createElement("form"); form.className = "sheet f";
   form.innerHTML =
-    "<h3>Offer a trade</h3>" +
-    '<div style="font-size:13px;color:var(--muted)">For <b style="color:var(--ink)">' + esc(it.title) +
-      '</b> — they want <b style="color:var(--ink)">' + esc(wantText(it)) + "</b></div>" +
-    (it.local_only ? '<p class="localnote"><b>Local pickup only.</b> ' + esc(who(it.owner_id)) + " won\u2019t post it \u2014 you\u2019ll meet up to swap" +
-      (profiles[it.owner_id] && profiles[it.owner_id].area ? ", around <b>" + esc(profiles[it.owner_id].area) + "</b>" : "") +
-      (function () { var d = distTo(it.owner_id); return d === null ? "" : " (" + esc(fmtMiles(d)) + " from you)"; })() + ".</p>" : "") +
-    (mineOpen.length ? '<div><span class="lbl" id="o-minelbl">Offer something you have posted <span class="hint">— tap one or more</span></span>' +
+    "<h3>" + esc(t("Offer a trade")) + "</h3>" +
+    '<div style="font-size:13px;color:var(--muted)">' + t("For {title} — they want {want}", { title: '<b style="color:var(--ink)">' + esc(it.title) + "</b>", want: '<b style="color:var(--ink)">' + esc(wantText(it)) + "</b>" }) + "</div>" +
+    (it.local_only ? '<p class="localnote"><b>' + esc(t("Local pickup only.")) + "</b> " + (function () {
+      var area = profiles[it.owner_id] && profiles[it.owner_id].area, d = distTo(it.owner_id);
+      var line = area ? t("{who} won’t post it — you’ll meet up to swap, around {area}", { who: esc(who(it.owner_id)), area: "<b>" + esc(area) + "</b>" })
+        : t("{who} won’t post it — you’ll meet up to swap", { who: esc(who(it.owner_id)) });
+      return line + (d === null ? "" : " (" + esc(t("{d} from you", { d: fmtMiles(d) })) + ")") + ".";
+    })() + "</p>" : "") +
+    (mineOpen.length ? '<div><span class="lbl" id="o-minelbl">' + esc(t("Offer something you have posted")) + ' <span class="hint">' + esc(t("— tap one or more")) + "</span></span>" +
       '<div class="pickmine" id="o-mine" role="group" aria-labelledby="o-minelbl"></div></div>' : "") +
-    '<div><label for="o-give">' + (mineOpen.length ? "Or describe what you are offering" : "What you are offering") + '</label><input id="o-give" maxlength="80" required placeholder="Retro console, boxed"></div>' +
-    '<div class="assetbox"><label class="tick"><input type="checkbox" id="o-isasset"> <span>I\u2019m offering an NFT</span></label>' +
-      '<div id="o-assetfields" hidden><p class="bridgenote"><b>Any chain works \u2014 no bridge.</b> ' + (it.asset_kind && CHAINS[it.asset_chain]
-        ? "Theirs is on " + esc(CHAINS[it.asset_chain].name) + "; yours can be on any chain. "
-        : "") + "Each of you sends on your own chain, and the board checks both transfers on chain.</p>" +
-      '<div class="rowf"><div><label for="o-chain">Chain</label><select id="o-chain"></select></div>' +
-      '<div><label for="o-kind">Type</label><select id="o-kind"><option value="erc721">Single (ERC-721)</option>' +
-      '<option value="erc1155">Edition (ERC-1155)</option></select></div></div>' +
-      '<div class="rowf" style="margin-top:14px"><div><label for="o-contract">Contract address</label><input id="o-contract" maxlength="42" placeholder="0x\u2026" autocomplete="off" spellcheck="false"></div>' +
-      '<div id="o-tokidwrap"><label for="o-tokid">Token ID</label><input id="o-tokid" maxlength="78" placeholder="1234" inputmode="numeric" autocomplete="off"></div></div></div></div>' +
-    '<div><label for="o-msg">Message <span class="hint">— optional</span></label><textarea id="o-msg" maxlength="400" placeholder="Happy to meet halfway this week."></textarea></div>' +
-    '<div class="acts"><button class="btn ok" type="submit">Send offer</button><button class="btn ghost" type="button" data-x>Cancel</button></div>';
+    '<div><label for="o-give">' + esc(t(mineOpen.length ? "Or describe what you are offering" : "What you are offering")) + '</label><input id="o-give" maxlength="80" required placeholder="' + esc(t("Retro console, boxed")) + '"></div>' +
+    '<div class="assetbox"><label class="tick"><input type="checkbox" id="o-isasset"> <span>' + esc(t("I’m offering an NFT")) + "</span></label>" +
+      '<div id="o-assetfields" hidden><p class="bridgenote"><b>' + esc(t("Any chain works — no bridge.")) + "</b> " + (it.asset_kind && CHAINS[it.asset_chain]
+        ? esc(t("Theirs is on {chain}; yours can be on any chain.", { chain: CHAINS[it.asset_chain].name })) + " "
+        : "") + esc(t("Each of you sends on your own chain, and the board checks both transfers on chain.")) + "</p>" +
+      '<div class="rowf"><div><label for="o-chain">' + esc(t("Chain")) + '</label><select id="o-chain"></select></div>' +
+      '<div><label for="o-kind">' + esc(t("Type")) + '</label><select id="o-kind"><option value="erc721">' + esc(t("Single (ERC-721)")) + "</option>" +
+      '<option value="erc1155">' + esc(t("Edition (ERC-1155)")) + "</option></select></div></div>" +
+      '<div class="rowf" style="margin-top:14px"><div><label for="o-contract">' + esc(t("Contract address")) + '</label><input id="o-contract" maxlength="42" placeholder="0x\u2026" autocomplete="off" spellcheck="false"></div>' +
+      '<div id="o-tokidwrap"><label for="o-tokid">' + esc(t("Token ID")) + '</label><input id="o-tokid" maxlength="78" placeholder="1234" inputmode="numeric" autocomplete="off"></div></div></div></div>' +
+    '<div><label for="o-msg">' + esc(t("Message")) + ' <span class="hint">' + esc(t("— optional")) + '</span></label><textarea id="o-msg" maxlength="400" placeholder="' + esc(t("Happy to meet halfway this week.")) + '"></textarea></div>' +
+    '<div class="acts"><button class="btn ok" type="submit">' + esc(t("Send offer")) + '</button><button class="btn ghost" type="button" data-x>' + esc(t("Cancel")) + "</button></div>";
   veil.appendChild(form); document.body.appendChild(veil);
   CHAIN_IDS.forEach(function (id) {
     var o = document.createElement("option"); o.value = id; o.textContent = CHAINS[id].name;
@@ -129,11 +133,11 @@ function openOffer(it, give) {
   var giveIn = form.querySelector("#o-give"), autoGive = "";
   // Picking listings writes the offer's words for you, until you type your own.
   function syncGive() {
-    var t = picked.map(function (id) { return (itemById(id) || {}).title || ""; }).filter(Boolean).join(" + ");
-    if (t.length > 80) t = t.slice(0, 79) + "\u2026";
-    if (giveIn.value === autoGive) giveIn.value = t;
-    autoGive = t;
-    form.querySelector("label[for=o-give]").textContent = picked.length ? "Your offer, in a few words" : mineOpen.length ? "Or describe what you are offering" : "What you are offering";
+    var words = picked.map(function (id) { return (itemById(id) || {}).title || ""; }).filter(Boolean).join(" + ");
+    if (words.length > 80) words = words.slice(0, 79) + "\u2026";
+    if (giveIn.value === autoGive) giveIn.value = words;
+    autoGive = words;
+    form.querySelector("label[for=o-give]").textContent = t(picked.length ? "Your offer, in a few words" : mineOpen.length ? "Or describe what you are offering" : "What you are offering");
   }
   if (mineOpen.length) {
     var host = form.querySelector("#o-mine");
@@ -145,7 +149,7 @@ function openOffer(it, give) {
       b.setAttribute("aria-pressed", String(picked.indexOf(m.id) >= 0));
       b.addEventListener("click", function () {
         var i = picked.indexOf(m.id);
-        if (i >= 0) picked.splice(i, 1); else if (picked.length >= 6) return toast("Six listings is the most one offer can hold."); else picked.push(m.id);
+        if (i >= 0) picked.splice(i, 1); else if (picked.length >= 6) return toast(t("Six listings is the most one offer can hold.")); else picked.push(m.id);
         b.setAttribute("aria-pressed", String(i < 0));
         syncGive();
       });
@@ -161,7 +165,7 @@ function openOffer(it, give) {
     if (!give) return;
     var msg = form.querySelector("#o-msg").value.trim();
     var isAsset = form.querySelector("#o-isasset").checked;
-    if (isAsset && !myWallet()) { toast("Connect your wallet first — a digital offer is checked against it."); return; }
+    if (isAsset && !myWallet()) { toast(t("Connect your wallet first — a digital offer is checked against it.")); return; }
     var asset;
     try {
       asset = readAsset({
@@ -181,9 +185,9 @@ function openOffer(it, give) {
     }
     sb.from("offers").insert(rec)
       .then(function (r) {
-        if (r.error && /give_items/.test(r.error.message || "")) return toast("Offering your own posts isn't switched on for this board yet \u2014 describe it in words for now.");
+        if (r.error && /give_items/.test(r.error.message || "")) return toast(t("Offering your own posts isn't switched on for this board yet — describe it in words for now."));
         if (r.error) return fail(r.error);
-        toast("Offer sent."); load();
+        toast(t("Offer sent.")); load();
       });
   });
 }

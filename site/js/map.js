@@ -17,7 +17,7 @@ function loadLeaflet() {
     document.head.appendChild(css);
     var js = document.createElement("script"); js.src = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js";
     js.integrity = "sha384-NElt3Op+9NBMCYaef5HxeJmU4Xeard/Lku8ek6hoPTvYkQPh3zLIrJP7KiRocsxO"; js.crossOrigin = "anonymous";
-    js.onload = res; js.onerror = function () { leafletP = null; rej(new Error("Could not load the map.")); };
+    js.onload = res; js.onerror = function () { leafletP = null; rej(new Error(t("Could not load the map."))); };
     document.head.appendChild(js);
   });
   return leafletP;
@@ -48,12 +48,12 @@ function paintMap() {
     var lat = l.lat + Math.sin(ang) * r, lng = l.lng + Math.cos(ang) * r;
     var m = window.L.circleMarker([lat, lng], { radius: 9, color: "#121212", weight: 2, fillColor: cssColor(hueOf(it.cat)), fillOpacity: 1 });
     m.bindPopup("<b>" + esc(it.title) + "</b>" + esc(who(it.owner_id)) + (profiles[it.owner_id] && profiles[it.owner_id].area ? " · " + esc(profiles[it.owner_id].area) : "") +
-      '<br><a href="#" data-jump="' + esc(it.id) + '">See the listing →</a>');
+      '<br><a href="#" data-jump="' + esc(it.id) + '">' + esc(t("See the listing →")) + "</a>");
     mapLayer.addLayer(m); pts.push([lat, lng]);
   });
   var me = locOf(uid);
   if (me) {
-    mapLayer.addLayer(window.L.circleMarker([me.lat, me.lng], { radius: 7, color: "#121212", weight: 2, fillColor: "#FFD23F", fillOpacity: 1 }).bindTooltip("You (roughly)"));
+    mapLayer.addLayer(window.L.circleMarker([me.lat, me.lng], { radius: 7, color: "#121212", weight: 2, fillColor: "#FFD23F", fillOpacity: 1 }).bindTooltip(t("You (roughly)")));
     pts.push([me.lat, me.lng]);
   }
   if (pts.length) map.fitBounds(pts, { padding: [30, 30], maxZoom: 12 });
@@ -77,31 +77,31 @@ var pendingLoc; // undefined = untouched, null = clear, {lat,lng} = set
 function round2(n) { return Math.round(n * 100) / 100; }
 function paintLoc() {
   var l = pendingLoc !== undefined ? pendingLoc : locOf(uid);
-  $("locState").textContent = l ? "Set · " + l.lat.toFixed(2) + ", " + l.lng.toFixed(2) + (pendingLoc !== undefined ? " (save to keep)" : "") : "Not set";
+  $("locState").textContent = l ? t("Set · {where}", { where: l.lat.toFixed(2) + ", " + l.lng.toFixed(2) }) + (pendingLoc !== undefined ? " " + t("(save to keep)") : "") : t("Not set");
   $("locClear").hidden = !l;
 }
 $("locBtn").addEventListener("click", function () {
-  if (!navigator.geolocation) return toast("This browser cannot share a location. Try “Find from the area above”.");
-  var b = $("locBtn"); b.disabled = true; b.textContent = "Locating…";
+  if (!navigator.geolocation) return toast(t("This browser cannot share a location. Try “Find from the area above”."));
+  var b = $("locBtn"); b.disabled = true; b.textContent = t("Locating…");
   navigator.geolocation.getCurrentPosition(function (pos) {
-    b.disabled = false; b.textContent = "Use my location";
+    b.disabled = false; b.textContent = t("Use my location");
     pendingLoc = { lat: round2(pos.coords.latitude), lng: round2(pos.coords.longitude) }; paintLoc();
-    toast("Got it — rounded to about a kilometre. Save your profile to keep it.");
+    toast(t("Got it — rounded to about a kilometre. Save your profile to keep it."));
   }, function (err) {
-    b.disabled = false; b.textContent = "Use my location";
-    toast(err && err.code === 1 ? "Location was blocked. You can type an area above and use “Find from the area above”." : "Could not get a location.");
+    b.disabled = false; b.textContent = t("Use my location");
+    toast(t(err && err.code === 1 ? "Location was blocked. You can type an area above and use “Find from the area above”." : "Could not get a location."));
   }, { enableHighAccuracy: false, timeout: 12000, maximumAge: 600000 });
 });
 $("locFind").addEventListener("click", function () {
-  var q = $("p-area").value.trim(); if (!q) return toast("Type a town or area in “Where you trade” first.");
+  var q = $("p-area").value.trim(); if (!q) return toast(t("Type a town or area in “Where you trade” first."));
   var b = $("locFind"); b.disabled = true;
   fetch("https://nominatim.openstreetmap.org/search?format=json&limit=1&q=" + encodeURIComponent(q), { headers: { "Accept": "application/json" } })
     .then(function (r) { return r.json(); })
     .then(function (j) {
       b.disabled = false;
-      if (!j || !j[0]) return toast("Could not find that place. Try adding the country or state.");
+      if (!j || !j[0]) return toast(t("Could not find that place. Try adding the country or state."));
       pendingLoc = { lat: round2(Number(j[0].lat)), lng: round2(Number(j[0].lon)) }; paintLoc();
-      toast("Found " + (j[0].display_name || q).split(",").slice(0, 2).join(",") + ". Save your profile to keep it.");
-    }).catch(function () { b.disabled = false; toast("The place lookup did not answer. Try again in a moment."); });
+      toast(t("Found {place}. Save your profile to keep it.", { place: (j[0].display_name || q).split(",").slice(0, 2).join(",") }));
+    }).catch(function () { b.disabled = false; toast(t("The place lookup did not answer. Try again in a moment.")); });
 });
 $("locClear").addEventListener("click", function () { pendingLoc = null; paintLoc(); });

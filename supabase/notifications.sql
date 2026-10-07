@@ -17,6 +17,11 @@ alter table public.profiles add column if not exists email_notify boolean not nu
 alter table public.profiles add column if not exists email_prefs jsonb not null default '{}';
 alter table public.profiles drop constraint if exists profiles_email_prefs_object;
 alter table public.profiles add constraint profiles_email_prefs_object check (jsonb_typeof(email_prefs) = 'object');
+-- The language the board and its emails speak to this trader in (English, Spanish, Japanese,
+-- Brazilian Portuguese). Empty until the board first sets it.
+alter table public.profiles add column if not exists lang text;
+alter table public.profiles drop constraint if exists profiles_lang_known;
+alter table public.profiles add constraint profiles_lang_known check (lang is null or lang in ('en', 'es', 'ja', 'pt'));
 
 -- What has been sent. Written only by the notify function (service role); no policies.
 create table if not exists public.notifications_sent (

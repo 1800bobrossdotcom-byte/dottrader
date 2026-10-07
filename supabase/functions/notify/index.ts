@@ -44,29 +44,120 @@ async function claim(key: string, userId: string, kind: string) {
 // Each kind of email answers to one of the settings a trader can switch off in their profile.
 const PREF: Record<string, string> = { offer: "offers", accepted: "trades", noshow: "trades", message: "messages", search: "matches", mutual: "matches", shipby: "reminders" };
 
+// Each email goes out in the language on the recipient's profile (profiles.lang: en, es, ja, pt),
+// written to the same glossary as the board (i18n/GLOSSARY.md).
+type Lang = "en" | "es" | "ja" | "pt";
+const LANGS: Lang[] = ["en", "es", "ja", "pt"];
+const LOCALE: Record<Lang, string> = { en: "en-US", es: "es-ES", ja: "ja-JP", pt: "pt-BR" };
+
 async function recipient(userId: string, kind: string) {
-  const p = await one(`profiles?id=eq.${userId}&select=name,email_notify,email_prefs`);
+  const p = await one(`profiles?id=eq.${userId}&select=*`);
   if (p && p.email_notify === false) return null;
   const prefs = (p?.email_prefs ?? {}) as Record<string, unknown>;
   if (PREF[kind] && prefs[PREF[kind]] === false) return null;
   const r = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${userId}`, { headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` } });
   if (!r.ok) return null;
   const u = await r.json();
-  return u?.email ? { email: String(u.email), name: (p?.name as string) || "" } : null;
+  const lang = (LANGS.includes(p?.lang as Lang) ? p?.lang : "en") as Lang;
+  return u?.email ? { email: String(u.email), name: (p?.name as string) || "", lang } : null;
 }
-const nameOf = async (userId: string) => ((await one(`profiles?id=eq.${userId}&select=name`))?.name as string) || "Someone";
+const nameOf = async (userId: string) => ((await one(`profiles?id=eq.${userId}&select=name`))?.name as string) || "";
 
 const esc = (s: unknown) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] as string));
 
-function page(headline: string, lines: string[], cta: string, href: string) {
+// Where the links go, in the recipient's language.
+const boardUrl = (l: Lang) => `${SITE}/app${l === "en" ? "" : "?lang=" + l}#mine`;
+const prefsUrl = (l: Lang) => `${SITE}/app${l === "en" ? "" : "?lang=" + l}#profile`;
+const itemUrl = (id: string, l: Lang) => `${SITE}${l === "en" ? "" : "/" + l}/item/${id}`;
+const day = (iso: string, l: Lang) => new Date(iso).toLocaleDateString(LOCALE[l], { weekday: "long", month: "short", day: "numeric", timeZone: "UTC" });
+
+type Mail = { subject: string; headline: string; lines: string[]; cta: string; href: string };
+// The words of every email. Names and titles arrive already escaped where they go into HTML lines;
+// subjects and headlines are plain text (the page escapes the headline).
+const W = {
+  en: {
+    why: "You get these because you trade on Dot Trading Post.", choose: "Choose which emails you get", someone: "Someone", listing: "listing", item: "an item", theItem: "item",
+    delivered: (sender: string, note: string) => ({ subject: `${sender}'s NFT arrived`, headline: `${sender}'s NFT is in your wallet`,
+      lines: [`Checked on chain: ${note}.`, "Once you've received everything, press your dot to finish the trade."], cta: "Open the trade" }),
+    offer: (from: string, title: string, give: string, msg: string): Omit<Mail, "href"> => ({ subject: `New offer on ${title || "your listing"}`, headline: `${from} wants to trade for your ${title || "listing"}`,
+      lines: [`They're offering: <b>${give}</b>`, ...(msg ? [`“${msg}”`] : [])], cta: "See the offer" }),
+    accepted: (owner: string, give: string, title: string, by: string) => ({ subject: `${owner} accepted your offer`, headline: `It's a trade: your ${give} for their ${title || "item"}`,
+      lines: [by ? `Send your side by <b>${by}</b> and mark it sent. Sort out the details in your messages.` : "Sort out the details in your messages."], cta: "Open the trade" }),
+    noshow: (title: string) => ({ subject: "A trade was closed as a no-show", headline: `Your trade for ${title || "an item"} was closed`,
+      lines: ["The ship-by date passed without your side being marked sent, so the other trader closed it. It shows on your profile as a no-show."], cta: "See your trades" }),
+    message: (sender: string, body: string) => ({ subject: `${sender} sent you a message`, headline: `${sender} wrote:`, lines: [`“${body}”`], cta: "Reply" }),
+    search: (title: string, label: string) => ({ subject: `New: ${title}`, headline: "Something you're looking for just went up",
+      lines: [`<b>${esc(title)}</b> fits your saved search “${esc(label)}”.`], cta: "Take a look" }),
+    mutual: (title: string, label: string) => ({ subject: `A mutual match for your ${label}`, headline: "Someone has what you want, and wants what you have",
+      lines: [`<b>${esc(title)}</b> was just listed by someone who'd take your <b>${esc(label)}</b> — and you said you'd take theirs.`], cta: "Make an offer" }),
+    shipby: (by: string, title: string) => ({ subject: "Your trade's ship-by date is tomorrow", headline: `Send by ${by}`,
+      lines: [`Your side of the trade for <b>${title}</b> isn't marked sent yet. After the date, the other trader can close it as a no-show.`], cta: "Mark it sent" }),
+  },
+  es: {
+    why: "Recibes estos correos porque intercambias en Dot Trading Post.", choose: "Elige qué correos recibes", someone: "Alguien", listing: "anuncio", item: "un artículo", theItem: "artículo",
+    delivered: (sender: string, note: string) => ({ subject: `Llegó el NFT de ${sender}`, headline: `El NFT de ${sender} ya está en tu wallet`,
+      lines: [`Comprobado en la cadena: ${note}.`, "Cuando hayas recibido todo, pulsa tu punto para terminar el intercambio."], cta: "Abrir el intercambio" }),
+    offer: (from: string, title: string, give: string, msg: string) => ({ subject: `Nueva oferta por ${title || "tu anuncio"}`, headline: `${from} quiere intercambiar por tu ${title || "anuncio"}`,
+      lines: [`Ofrece: <b>${give}</b>`, ...(msg ? [`«${msg}»`] : [])], cta: "Ver la oferta" }),
+    accepted: (owner: string, give: string, title: string, by: string) => ({ subject: `${owner} aceptó tu oferta`, headline: `Trato hecho: tu ${give} por su ${title || "artículo"}`,
+      lines: [by ? `Envía tu parte antes del <b>${by}</b> y márcala como enviada. Concreten los detalles por mensajes.` : "Concreten los detalles por mensajes."], cta: "Abrir el intercambio" }),
+    noshow: (title: string) => ({ subject: "Un intercambio se cerró como plantón", headline: `Se cerró tu intercambio por ${title || "un artículo"}`,
+      lines: ["Pasó la fecha límite de envío sin que marcaras tu parte como enviada, así que la otra persona lo cerró. Aparece en tu perfil como un plantón."], cta: "Ver tus intercambios" }),
+    message: (sender: string, body: string) => ({ subject: `${sender} te envió un mensaje`, headline: `${sender} escribió:`, lines: [`«${body}»`], cta: "Responder" }),
+    search: (title: string, label: string) => ({ subject: `Nuevo: ${title}`, headline: "Acaban de publicar algo que buscas",
+      lines: [`<b>${esc(title)}</b> encaja con tu búsqueda guardada «${esc(label)}».`], cta: "Echar un vistazo" }),
+    mutual: (title: string, label: string) => ({ subject: `Una coincidencia mutua para tu ${label}`, headline: "Alguien tiene lo que quieres, y quiere lo que tienes",
+      lines: [`Alguien que aceptaría tu <b>${esc(label)}</b> acaba de publicar <b>${esc(title)}</b>, y tú dijiste que aceptarías lo suyo.`], cta: "Hacer una oferta" }),
+    shipby: (by: string, title: string) => ({ subject: "Mañana vence la fecha límite de envío de tu intercambio", headline: `Envía antes del ${by}`,
+      lines: [`Tu parte del intercambio por <b>${title}</b> todavía no está marcada como enviada. Pasada la fecha, la otra persona puede cerrarlo como plantón.`], cta: "Marcar como enviado" }),
+  },
+  ja: {
+    why: "Dot Trading Postで交換をしているため、このメールをお送りしています。", choose: "受け取るメールを選ぶ", someone: "誰か", listing: "出品", item: "品物", theItem: "品物",
+    delivered: (sender: string, note: string) => ({ subject: `${sender}さんのNFTが届きました`, headline: `${sender}さんのNFTがあなたのウォレットに届きました`,
+      lines: [`オンチェーンで確認済み：${note}。`, "すべて受け取ったら、ドットを押して交換を完了しましょう。"], cta: "取引を開く" }),
+    offer: (from: string, title: string, give: string, msg: string) => ({ subject: `${title || "あなたの出品"}に新しいオファー`, headline: `${from}さんが${title || "あなたの出品"}との交換を希望しています`,
+      lines: [`オファー内容：<b>${give}</b>`, ...(msg ? [`「${msg}」`] : [])], cta: "オファーを見る" }),
+    accepted: (owner: string, give: string, title: string, by: string) => ({ subject: `${owner}さんがオファーを承認しました`, headline: `交換成立：あなたの${give}と相手の${title || "品物"}`,
+      lines: [by ? `<b>${by}</b>までに自分の分を送り、発送済みにしてください。詳細はメッセージで決めましょう。` : "詳細はメッセージで決めましょう。"], cta: "取引を開く" }),
+    noshow: (title: string) => ({ subject: "交換が「未発送」として終了しました", headline: `${title || "品物"}の交換が終了しました`,
+      lines: ["発送期限までにあなたの分が発送済みにならなかったため、相手が取引を終了しました。プロフィールに未発送として表示されます。"], cta: "取引を見る" }),
+    message: (sender: string, body: string) => ({ subject: `${sender}さんからメッセージが届きました`, headline: `${sender}さんより：`, lines: [`「${body}」`], cta: "返信する" }),
+    search: (title: string, label: string) => ({ subject: `新着：${title}`, headline: "探しているものが出品されました",
+      lines: [`<b>${esc(title)}</b>が、保存した検索「${esc(label)}」に一致しました。`], cta: "見てみる" }),
+    mutual: (title: string, label: string) => ({ subject: `あなたの${label}に相互マッチ`, headline: "欲しいものを持っていて、あなたのものを欲しがっている人がいます",
+      lines: [`あなたの<b>${esc(label)}</b>を欲しがっている人が<b>${esc(title)}</b>を出品しました。あなたもそれを希望しています。`], cta: "オファーする" }),
+    shipby: (by: string, title: string) => ({ subject: "明日が交換の発送期限です", headline: `${by}までに発送`,
+      lines: [`<b>${title}</b>の交換で、あなたの分がまだ発送済みになっていません。期限を過ぎると、相手が「未発送」として終了できます。`], cta: "発送済みにする" }),
+  },
+  pt: {
+    why: "Você recebe estes e-mails porque troca no Dot Trading Post.", choose: "Escolha quais e-mails receber", someone: "Alguém", listing: "anúncio", item: "um item", theItem: "item",
+    delivered: (sender: string, note: string) => ({ subject: `O NFT de ${sender} chegou`, headline: `O NFT de ${sender} está na sua carteira`,
+      lines: [`Conferido na blockchain: ${note}.`, "Quando você tiver recebido tudo, aperte seu ponto para concluir a troca."], cta: "Abrir a troca" }),
+    offer: (from: string, title: string, give: string, msg: string) => ({ subject: `Nova proposta por ${title || "seu anúncio"}`, headline: `${from} quer trocar pelo seu ${title || "anúncio"}`,
+      lines: [`A proposta: <b>${give}</b>`, ...(msg ? [`“${msg}”`] : [])], cta: "Ver a proposta" }),
+    accepted: (owner: string, give: string, title: string, by: string) => ({ subject: `${owner} aceitou sua proposta`, headline: `Troca fechada: seu ${give} pelo ${title || "item"}`,
+      lines: [by ? `Envie a sua parte até <b>${by}</b> e marque como enviada. Combinem os detalhes pelas mensagens.` : "Combinem os detalhes pelas mensagens."], cta: "Abrir a troca" }),
+    noshow: (title: string) => ({ subject: "Uma troca foi encerrada como furo", headline: `Sua troca por ${title || "um item"} foi encerrada`,
+      lines: ["O prazo de envio passou sem a sua parte ser marcada como enviada, então a outra pessoa encerrou a troca. Isso aparece no seu perfil como um furo."], cta: "Ver suas trocas" }),
+    message: (sender: string, body: string) => ({ subject: `${sender} te mandou uma mensagem`, headline: `${sender} escreveu:`, lines: [`“${body}”`], cta: "Responder" }),
+    search: (title: string, label: string) => ({ subject: `Novo: ${title}`, headline: "Acabou de aparecer algo que você procura",
+      lines: [`<b>${esc(title)}</b> combina com sua busca salva “${esc(label)}”.`], cta: "Dar uma olhada" }),
+    mutual: (title: string, label: string) => ({ subject: `Uma combinação mútua para seu ${label}`, headline: "Alguém tem o que você quer, e quer o que você tem",
+      lines: [`<b>${esc(title)}</b> acabou de ser anunciado por alguém que aceitaria seu <b>${esc(label)}</b> — e você disse que aceitaria o dela.`], cta: "Fazer uma proposta" }),
+    shipby: (by: string, title: string) => ({ subject: "O prazo de envio da sua troca é amanhã", headline: `Envie até ${by}`,
+      lines: [`A sua parte da troca por <b>${title}</b> ainda não está marcada como enviada. Depois do prazo, a outra pessoa pode encerrar como furo.`], cta: "Marcar como enviada" }),
+  },
+};
+
+function page(l: Lang, m: Mail) {
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f3ead3;padding:28px 12px;">
-<tr><td align="center"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:480px;background:#fffcf4;border:3px solid #121212;border-radius:8px;">
+<tr><td align="center"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:480px;background:#fffcf4;border:3px solid #121212;border-radius:8px;" lang="${l === "pt" ? "pt-BR" : l}">
 <tr><td style="padding:22px 26px 0;"><img src="${SITE}/icon-192.png?v=5" width="32" height="32" alt="" style="display:block;border:0;"></td></tr>
-<tr><td style="padding:16px 26px 0;font-family:Helvetica,Arial,sans-serif;font-size:21px;line-height:1.2;font-weight:bold;color:#121212;">${esc(headline)}</td></tr>
-${lines.map((l) => `<tr><td style="padding:10px 26px 0;font-family:Helvetica,Arial,sans-serif;font-size:15px;line-height:1.5;color:#4b4740;">${l}</td></tr>`).join("")}
+<tr><td style="padding:16px 26px 0;font-family:Helvetica,Arial,sans-serif;font-size:21px;line-height:1.2;font-weight:bold;color:#121212;">${esc(m.headline)}</td></tr>
+${m.lines.map((x) => `<tr><td style="padding:10px 26px 0;font-family:Helvetica,Arial,sans-serif;font-size:15px;line-height:1.5;color:#4b4740;">${x}</td></tr>`).join("")}
 <tr><td style="padding:20px 26px 0;"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td style="background:#ffd23f;border:3px solid #121212;border-radius:999px;">
-<a href="${href}" style="display:inline-block;padding:11px 22px;font-family:Helvetica,Arial,sans-serif;font-size:12.5px;font-weight:bold;letter-spacing:1.5px;text-transform:uppercase;color:#121212;text-decoration:none;">${esc(cta)}</a></td></tr></table></td></tr>
-<tr><td style="padding:20px 26px 22px;font-family:Helvetica,Arial,sans-serif;font-size:12px;line-height:1.5;color:#8c867a;">You get these because you trade on Dot Trading Post. <a href="${SITE}/app#profile" style="color:#8c867a;">Choose which emails you get</a>.</td></tr>
+<a href="${m.href}" style="display:inline-block;padding:11px 22px;font-family:Helvetica,Arial,sans-serif;font-size:12.5px;font-weight:bold;letter-spacing:1.5px;text-transform:uppercase;color:#121212;text-decoration:none;">${esc(m.cta)}</a></td></tr></table></td></tr>
+<tr><td style="padding:20px 26px 22px;font-family:Helvetica,Arial,sans-serif;font-size:12px;line-height:1.5;color:#8c867a;">${esc(W[l].why)} <a href="${prefsUrl(l)}" style="color:#8c867a;">${esc(W[l].choose)}</a>.</td></tr>
 </table></td></tr></table>`;
 }
 
@@ -78,55 +169,47 @@ async function send(to: { email: string }, subject: string, html: string, text: 
   if (!r.ok) throw new Error(`resend ${r.status}: ${(await r.text()).slice(0, 200)}`);
 }
 
-// One email: claim the key first, so two racing calls can't both send.
-async function tell(userId: string, key: string, kind: string, subject: string, headline: string, lines: string[], cta: string, href: string) {
+// One email, written in the recipient's language: claim the key first, so two racing calls can't both send.
+async function tell(userId: string, key: string, kind: string, build: (l: Lang) => Mail | Promise<Mail>) {
   const to = await recipient(userId, kind);
   if (!to) return 0;
   if (!(await claim(key, userId, kind))) return 0;
-  await send(to, subject, page(headline, lines, cta, href), [headline, ...lines.map((l) => l.replace(/<[^>]+>/g, ""))].join("\n\n") + `\n\n${cta}: ${href}\n\nChoose which emails you get: ${SITE}/app#profile`);
+  const m = await build(to.lang);
+  await send(to, m.subject, page(to.lang, m), [m.headline, ...m.lines.map((l) => l.replace(/<[^>]+>/g, ""))].join("\n\n") + `\n\n${m.cta}: ${m.href}\n\n${W[to.lang].choose}: ${prefsUrl(to.lang)}`);
   return 1;
 }
-
-const board = `${SITE}/app#mine`;
-const item = (id: string) => `${SITE}/item/${id}`;
-const day = (iso: string) => new Date(iso).toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric", timeZone: "UTC" });
 
 async function handle(kind: string, id: string | null) {
   if (kind === "offer" && isId(id)) {
     const o = await one(`offers?id=eq.${id}&select=*`); if (!o || o.status !== "pending") return 0;
     const it = await one(`items?id=eq.${o.item_id}&select=title`); const from = await nameOf(o.from_id);
-    return tell(o.owner_id, `offer:${o.id}`, kind, `New offer on ${it?.title ?? "your listing"}`, `${from} wants to trade for your ${it?.title ?? "listing"}`,
-      [`They're offering: <b>${esc(o.give)}</b>`, ...(o.msg ? [`“${esc(o.msg)}”`] : [])], "See the offer", board);
+    return tell(o.owner_id, `offer:${o.id}`, kind, (l) => ({ ...W[l].offer(from || W[l].someone, it?.title ?? "", esc(o.give), o.msg ? esc(o.msg) : ""), href: boardUrl(l) }));
   }
   if (kind === "accepted" && isId(id)) {
     const o = await one(`offers?id=eq.${id}&select=*`); if (!o || o.status !== "agreed") return 0;
     const it = await one(`items?id=eq.${o.item_id}&select=title`); const owner = await nameOf(o.owner_id);
-    return tell(o.from_id, `accepted:${o.id}`, kind, `${owner} accepted your offer`, `It's a trade: your ${o.give} for their ${it?.title ?? "item"}`,
-      [o.ship_by ? `Send your side by <b>${day(o.ship_by)}</b> and mark it sent. Sort out the details in your messages.` : "Sort out the details in your messages."], "Open the trade", board);
+    return tell(o.from_id, `accepted:${o.id}`, kind, (l) => ({ ...W[l].accepted(owner || W[l].someone, o.give, it?.title ?? "", o.ship_by ? day(o.ship_by, l) : ""), href: boardUrl(l) }));
   }
   if (kind === "noshow" && isId(id)) {
     const o = await one(`offers?id=eq.${id}&select=*`); if (!o || !o.defaulted_by) return 0;
     const it = await one(`items?id=eq.${o.item_id}&select=title`);
-    return tell(o.defaulted_by, `noshow:${o.id}`, kind, "A trade was closed as a no-show", `Your trade for ${it?.title ?? "an item"} was closed`,
-      ["The ship-by date passed without your side being marked sent, so the other trader closed it. It shows on your profile as a no-show."], "See your trades", board);
+    return tell(o.defaulted_by, `noshow:${o.id}`, kind, (l) => ({ ...W[l].noshow(it?.title ?? ""), href: boardUrl(l) }));
   }
   if (kind === "message" && isId(id)) {
     const m = await one(`messages?id=eq.${id}&select=*`); if (!m) return 0;
     const o = await one(`offers?id=eq.${m.offer_id}&select=owner_id,from_id,item_id`); if (!o) return 0;
     const to = m.from_id === o.owner_id ? o.from_id : o.owner_id;
     const sender = await nameOf(m.from_id); const hour = new Date().toISOString().slice(0, 13);
-    return tell(to, `message:${m.offer_id}:${to}:${hour}`, kind, `${sender} sent you a message`, `${sender} wrote:`,
-      [`“${esc(String(m.body).slice(0, 280))}${String(m.body).length > 280 ? "…" : ""}”`], "Reply", board);
+    const body = esc(String(m.body).slice(0, 280)) + (String(m.body).length > 280 ? "…" : "");
+    return tell(to, `message:${m.offer_id}:${to}:${hour}`, kind, (l) => ({ ...W[l].message(sender || W[l].someone, body), href: boardUrl(l) }));
   }
   if (kind === "listing" && isId(id)) {
     const it = await one(`items?id=eq.${id}&select=id,title,owner_id,status`); if (!it || it.status !== "open") return 0;
     const targets = await db("rpc/listing_alert_targets", { method: "POST", body: { p_item: id } }) as Array<{ user_id: string; kind: string; label: string; other_item: string | null }>;
     let n = 0;
     for (const t of targets ?? []) {
-      if (t.kind === "search") n += await tell(t.user_id, `search:${id}:${t.user_id}`, "search", `New: ${it.title}`, `Something you're looking for just went up`,
-        [`<b>${esc(it.title)}</b> fits your saved search “${esc(t.label)}”.`], "Take a look", item(id));
-      else n += await tell(t.user_id, `mutual:${id}:${t.other_item}`, "mutual", `A mutual match for your ${t.label}`, `Someone has what you want, and wants what you have`,
-        [`<b>${esc(it.title)}</b> was just listed by someone who'd take your <b>${esc(t.label)}</b> — and you said you'd take theirs.`], "Make an offer", item(id));
+      if (t.kind === "search") n += await tell(t.user_id, `search:${id}:${t.user_id}`, "search", (l) => ({ ...W[l].search(it.title, t.label), href: itemUrl(id!, l) }));
+      else n += await tell(t.user_id, `mutual:${id}:${t.other_item}`, "mutual", (l) => ({ ...W[l].mutual(it.title, t.label), href: itemUrl(id!, l) }));
     }
     return n;
   }
@@ -138,8 +221,7 @@ async function handle(kind: string, id: string | null) {
       const it = await one(`items?id=eq.${o.item_id}&select=title`);
       for (const side of ["owner", "from"] as const) {
         if (o[`${side}_sent_at`] || (side === "owner" ? o.confirm_owner : o.confirm_from) || o.swap_tx) continue;
-        n += await tell(o[`${side}_id`], `shipby:${o.id}:${side}`, "shipby", "Your trade's ship-by date is tomorrow", `Send by ${day(o.ship_by)}`,
-          [`Your side of the trade for <b>${esc(it?.title ?? "an item")}</b> isn't marked sent yet. After the date, the other trader can close it as a no-show.`], "Mark it sent", board);
+        n += await tell(o[`${side}_id`], `shipby:${o.id}:${side}`, "shipby", (l) => ({ ...W[l].shipby(day(o.ship_by, l), esc(it?.title ?? W[l].item)), href: boardUrl(l) }));
       }
     }
     return n;
@@ -238,8 +320,7 @@ async function verifyOffer(offerId: string) {
     n++;
     if (v.state === "verified" && RESEND_KEY) {
       const sender = await nameOf(o[`${side}_id`]);
-      await tell(recipient, `delivered:${o.id}:${side}`, "accepted", `${sender}'s NFT arrived`, `${sender}'s NFT is in your wallet`,
-        [`Checked on chain: ${esc(v.note)}.`, "Once you've received everything, press your dot to finish the trade."], "Open the trade", board).catch(() => 0);
+      await tell(recipient, `delivered:${o.id}:${side}`, "accepted", (l) => ({ ...W[l].delivered(sender || W[l].someone, esc(v.note)), href: boardUrl(l) })).catch(() => 0);
     }
   }
   return n;

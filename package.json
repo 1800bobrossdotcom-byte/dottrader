@@ -13,7 +13,7 @@
     "test:browser": "node tests/browser/run.mjs",
     "test:delivery": "node --experimental-strip-types --no-warnings tests/delivery.test.mjs",
     "test:og": "node tests/og.test.mjs",
-    "test:i18n": "node scripts/i18n-home.mjs --check"
+    "test:i18n": "node scripts/i18n-home.mjs --check && node scripts/i18n-app.mjs --check"
   },
   "dependencies": {
     "@resvg/resvg-js": "^2.6.2",

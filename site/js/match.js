@@ -10,18 +10,23 @@
    it wants. The database does the matching — this file asks and shows the answers. */
 var matchData = { pairs: [], counts: {}, wants: [], hits: {} };
 
-function wantText(it) {
-  var bits = [];
+// `inSentence`: written to follow "wants", so "any Video Games" rather than "Any Video Games".
+function wantText(it, inSentence) {
+  var bits = [], cats = listJoin((it.want_cats || []).map(catName));
   if (it.want) bits.push(it.want);
-  if (it.want_cats && it.want_cats.length) bits.push((it.want ? "or any " : "Any ") + it.want_cats.join(", "));
-  if (!bits.length) return "Open to offers";
+  if (cats) bits.push(t(it.want ? "or any {cats}" : inSentence ? "any {cats}" : "Any {cats}", { cats: cats }));
+  if (!bits.length) return t("Open to offers");
   // "Open to offers" typed as the want already says it.
-  if (it.open_to_offers !== false && !/open to (other )?offers/i.test(it.want || "")) bits.push("open to other offers");
+  if (it.open_to_offers !== false && !/open to (other )?offers/i.test(it.want || "")) bits.push(t("open to other offers"));
   return bits.join(" · ");
 }
+function listJoin(a) { return a.join(LANG === "ja" ? "、" : ", "); }
 
-// The same thing as a phrase after someone's name: "Cara wants any Video Games".
-function wantsLine(it) { var t = wantText(it); return t === "Open to offers" ? "is open to offers" : "wants " + t.replace(/^Any /, "any "); }
+// The same thing as a sentence about someone: "Cara wants any Video Games".
+function whoWants(name, it) {
+  var open = !it.want && !(it.want_cats || []).length;
+  return open ? t("{who} is open to offers", { who: name }) : t("{who} wants {what}", { who: name, what: wantText(it, true) });
+}
 
 // Chips for the categories someone would take: the quick ones, plus any picked from the full list.
 function catPicker(host, selected) {
@@ -29,17 +34,17 @@ function catPicker(host, selected) {
   function paint() {
     host.innerHTML = "";
     QUICK.concat(sel.filter(function (c) { return QUICK.indexOf(c) < 0; })).forEach(function (c) {
-      var b = document.createElement("button"); b.type = "button"; b.className = "chip"; b.textContent = c;
+      var b = document.createElement("button"); b.type = "button"; b.className = "chip"; b.textContent = catName(c);
       b.style.setProperty("--c", hueOf(c)); b.setAttribute("aria-pressed", String(sel.indexOf(c) >= 0));
       b.addEventListener("click", function () {
         var i = sel.indexOf(c);
-        if (i >= 0) sel.splice(i, 1); else if (sel.length >= 8) return toast("Eight categories is plenty."); else sel.push(c);
+        if (i >= 0) sel.splice(i, 1); else if (sel.length >= 8) return toast(t("Eight categories is plenty.")); else sel.push(c);
         paint();
       });
       host.appendChild(b);
     });
-    var more = document.createElement("select"); more.className = "catpick"; more.setAttribute("aria-label", "Add another category");
-    groupedOptions(more, "More categories…");
+    var more = document.createElement("select"); more.className = "catpick"; more.setAttribute("aria-label", t("Add another category"));
+    groupedOptions(more, t("More categories…"));
     more.addEventListener("change", function () { var c = more.value; if (c && sel.indexOf(c) < 0 && sel.length < 8) sel.push(c); paint(); });
     host.appendChild(more);
   }
@@ -69,8 +74,8 @@ function loadMatches() {
 function wantedTag(it) {
   var c = matchData.counts[it.id]; if (!c) return "";
   var n = c.listings + c.searches; if (!n) return "";
-  return '<span class="tag want" title="' + esc((c.listings ? c.listings + (c.listings === 1 ? " listing wants" : " listings want") + " something like this. " : "") +
-    (c.searches ? c.searches + (c.searches === 1 ? " person is" : " people are") + " searching for it." : "")) + '">' + n + " want this</span>";
+  return '<span class="tag want" title="' + esc((c.listings ? tn(c.listings, "{n} listing wants something like this.", "{n} listings want something like this.") + " " : "") +
+    (c.searches ? tn(c.searches, "{n} person is searching for it.", "{n} people are searching for it.") : "")) + '">' + esc(t("{n} want this", { n: n })) + "</span>";
 }
 
 function paintMatches() {
@@ -85,27 +90,27 @@ function paintMatches() {
     var mineOpen = uid ? items.filter(function (it) { return it.owner_id === uid && it.status === "open"; }) : [];
     var saysWant = mineOpen.some(function (it) { return it.want || (it.want_cats && it.want_cats.length); });
     box.hidden = !(uid && caps.matching);
-    box.innerHTML = box.hidden ? "" : '<div class="sub">Matches for you</div><div class="mempty">' + (!mineOpen.length
-      ? "<span>Post something you'd trade, and Dot finds people who want it \u2014 especially people who have what you want.</span><button class=\"btn ok\" type=\"button\" data-go=\"post\">Post something</button>"
+    box.innerHTML = box.hidden ? "" : '<div class="sub">' + esc(t("Matches for you")) + '</div><div class="mempty">' + (!mineOpen.length
+      ? "<span>" + esc(t("Post something you'd trade, and Dot finds people who want it — especially people who have what you want.")) + '</span><button class="btn ok" type="button" data-go="post">' + esc(t("Post something")) + "</button>"
       : !saysWant
-        ? "<span>Say what you'd take on your listings \u2014 a few words or a category. That's what Dot matches on.</span><button class=\"btn ok\" type=\"button\" data-go=\"mine\">Edit my listings</button>"
-        : "<span>No matches yet. New listings are checked against yours as they're posted" + (caps.notify ? ", and you'll get an email when one fits." : ".") + "</span>") + "</div>";
+        ? "<span>" + esc(t("Say what you'd take on your listings — a few words or a category. That's what Dot matches on.")) + '</span><button class="btn ok" type="button" data-go="mine">' + esc(t("Edit my listings")) + "</button>"
+        : "<span>" + esc(t(caps.notify ? "No matches yet. New listings are checked against yours as they're posted, and you'll get an email when one fits." : "No matches yet. New listings are checked against yours as they're posted.")) + "</span>") + "</div>";
     return;
   }
   box.hidden = false;
   var mutual = pairs.filter(function (p) { return p.they_want_mine && p.i_want_theirs; }).length;
-  box.innerHTML = '<div class="sub">' + (mutual ? mutual + (mutual === 1 ? " mutual match" : " mutual matches") + " · " : "") + "Matches for you</div>";
+  box.innerHTML = '<div class="sub">' + esc((mutual ? tn(mutual, "{n} mutual match", "{n} mutual matches") + " · " : "") + t("Matches for you")) + "</div>";
   var row = document.createElement("div"); row.className = "mrow";
   pairs.slice(0, 12).forEach(function (p) {
     var mine = itemById(p.my_item), theirs = itemById(p.their_item);
-    var kind = p.they_want_mine && p.i_want_theirs ? ["mutual", "Both ways"] : p.they_want_mine ? ["wants", "Wants yours"] : ["you", "You might want"];
+    var kind = p.they_want_mine && p.i_want_theirs ? ["mutual", t("Both ways")] : p.they_want_mine ? ["wants", t("Wants yours")] : ["you", t("You might want")];
     var c = document.createElement("article"); c.className = "mcard"; c.style.setProperty("--c", hueOf(theirs.cat));
-    c.innerHTML = '<span class="mtags"><span class="mtag ' + kind[0] + '">' + kind[1] + "</span>" +
-      (p.nearby ? '<span class="mtag near">Nearby</span>' : "") + (badges[theirs.id] ? '<span class="mtag proof">Proof</span>' : "") + "</span>" +
+    c.innerHTML = '<span class="mtags"><span class="mtag ' + kind[0] + '">' + esc(kind[1]) + "</span>" +
+      (p.nearby ? '<span class="mtag near">' + esc(t("Nearby")) + "</span>" : "") + (badges[theirs.id] ? '<span class="mtag proof">' + esc(t("Proof")) + "</span>" : "") + "</span>" +
       '<a href="#" class="mtitle" data-jump="' + esc(theirs.id) + '">' + esc(theirs.title) + "</a>" +
-      '<span class="mby">' + esc(who(theirs.owner_id)) + " " + esc(wantsLine(theirs)) + "</span>" +
-      '<span class="mfor">for your <b>' + esc(mine.title) + "</b></span>";
-    var b = document.createElement("button"); b.type = "button"; b.className = "btn ok"; b.textContent = "Offer it";
+      '<span class="mby">' + esc(whoWants(who(theirs.owner_id), theirs)) + "</span>" +
+      '<span class="mfor">' + t("for your {title}", { title: "<b>" + esc(mine.title) + "</b>" }) + "</span>";
+    var b = document.createElement("button"); b.type = "button"; b.className = "btn ok"; b.textContent = t("Offer it");
     b.addEventListener("click", function () { openOffer(theirs, mine); });
     c.appendChild(b); row.appendChild(c);
   });
@@ -114,7 +119,7 @@ function paintMatches() {
 
 // Who wants one of my listings: the open listings whose wants fit it, each with a one-tap offer.
 function openWanting(it) {
-  var sh = sheet("Who wants your " + esc(it.title), '<div class="wlist" id="wantList"><p class="hint" style="margin:0">Looking…</p></div>');
+  var sh = sheet(esc(t("Who wants your {title}", { title: it.title })), '<div class="wlist" id="wantList"><p class="hint" style="margin:0">' + esc(t("Looking…")) + "</p></div>");
   sb.rpc("listings_wanting", { p_item: it.id }).then(function (r) {
     if (r.error) { sh.close(); return fail(r.error); }
     var ids = (Array.isArray(r.data) ? r.data : []).map(function (x) { return typeof x === "string" ? x : x.listings_wanting; });
@@ -122,11 +127,11 @@ function openWanting(it) {
     return (missing.length ? sb.from("items").select("*").in("id", missing) : Promise.resolve({ data: [] })).then(function (m) {
       (m.data || []).forEach(function (x) { items.push(x); });
       var host = sh.box.querySelector("#wantList"); host.innerHTML = "";
-      if (!ids.length) { host.innerHTML = '<p class="hint" style="margin:0">No listings want it yet. Saved searches that fit still count toward “want this”.</p>'; return; }
+      if (!ids.length) { host.innerHTML = '<p class="hint" style="margin:0">' + esc(t("No listings want it yet. Saved searches that fit still count toward “want this”.")) + "</p>"; return; }
       ids.forEach(function (id) {
         var y = itemById(id); if (!y) return;
         var b = document.createElement("button"); b.type = "button";
-        b.innerHTML = '<span class="wi" style="background:' + cssColor(hueOf(y.cat)) + '"></span><span>' + esc(y.title) + "<small>" + esc(who(y.owner_id)) + " " + esc(wantsLine(y)) + "</small></span>";
+        b.innerHTML = '<span class="wi" style="background:' + cssColor(hueOf(y.cat)) + '"></span><span>' + esc(y.title) + "<small>" + esc(whoWants(who(y.owner_id), y)) + "</small></span>";
         b.addEventListener("click", function () { sh.close(); openOffer(y, it); });
         host.appendChild(b);
       });
@@ -138,43 +143,43 @@ function openWanting(it) {
 function paintLooking() {
   var wrap = $("lookWrap"); wrap.hidden = !(uid && caps.matching); if (wrap.hidden) return;
   var host = $("lookList"); host.innerHTML = "";
-  if (!matchData.wants.length) { host.innerHTML = '<p class="hint" style="margin:0">Nothing saved yet. Save what you’re after and it collects every listing that fits.</p>'; return; }
+  if (!matchData.wants.length) { host.innerHTML = '<p class="hint" style="margin:0">' + esc(t("Nothing saved yet. Save what you’re after and it collects every listing that fits.")) + "</p>"; return; }
   matchData.wants.forEach(function (w) {
     var hits = (matchData.hits[w.id] || []).filter(function (id) { return itemById(id); });
     var row = document.createElement("div"); row.className = "look";
-    row.innerHTML = "<span><b>" + esc(w.label || w.cats.join(", ")) + "</b>" + (w.label && w.cats.length ? '<small>in ' + esc(w.cats.join(", ")) + "</small>" : "") + "</span>";
+    row.innerHTML = "<span><b>" + esc(w.label || listJoin(w.cats.map(catName))) + "</b>" + (w.label && w.cats.length ? "<small>" + esc(t("in {cats}", { cats: listJoin(w.cats.map(catName)) })) + "</small>" : "") + "</span>";
     var see = document.createElement("button"); see.type = "button"; see.className = "btn " + (hits.length ? "ok" : "ghost"); see.disabled = !hits.length;
-    see.textContent = hits.length ? hits.length + (hits.length === 1 ? " listing fits" : " listings fit") : "nothing yet";
+    see.textContent = hits.length ? tn(hits.length, "{n} listing fits", "{n} listings fit") : t("nothing yet");
     see.addEventListener("click", function () { openHits(w, hits); });
-    var x = document.createElement("button"); x.type = "button"; x.className = "linkbtn"; x.textContent = "remove";
+    var x = document.createElement("button"); x.type = "button"; x.className = "linkbtn"; x.textContent = t("remove");
     x.addEventListener("click", function () { sb.from("saved_wants").delete().eq("id", w.id).then(function (r) { if (r.error) return fail(r.error); loadMatches(); }); });
     row.appendChild(see); row.appendChild(x); host.appendChild(row);
   });
 }
 function openHits(w, ids) {
-  var sh = sheet(esc(w.label || w.cats.join(", ")), '<div class="wlist" id="hitList"></div>');
+  var sh = sheet(esc(w.label || listJoin(w.cats.map(catName))), '<div class="wlist" id="hitList"></div>');
   var host = sh.box.querySelector("#hitList");
   ids.forEach(function (id) {
     var y = itemById(id); if (!y) return;
     var b = document.createElement("button"); b.type = "button";
-    b.innerHTML = '<span class="wi" style="background:' + cssColor(hueOf(y.cat)) + '"></span><span>' + esc(y.title) + "<small>" + esc(who(y.owner_id)) + " " + esc(wantsLine(y)) + "</small></span>";
+    b.innerHTML = '<span class="wi" style="background:' + cssColor(hueOf(y.cat)) + '"></span><span>' + esc(y.title) + "<small>" + esc(whoWants(who(y.owner_id), y)) + "</small></span>";
     b.addEventListener("click", function () { sh.close(); openOffer(y); });
     host.appendChild(b);
   });
 }
 function saveSearch(label, cats) {
-  if (!uid) return needAccount("Make an account to save searches. It takes a minute.", null);
+  if (!uid) return needAccount(t("Make an account to save searches. It takes a minute."), null);
   sb.from("saved_wants").insert({ user_id: uid, label: (label || "").slice(0, 80), cats: cats || [] }).then(function (r) {
     if (r.error) return fail(r.error);
-    toast("Saved. Everything that fits collects under My trades → Looking for.");
+    toast(t("Saved. Everything that fits collects under My trades → Looking for."));
     loadMatches();
   });
 }
-groupedOptions($("look-cat"), "Any category");
+groupedOptions($("look-cat"), t("Any category"));
 $("lookForm").addEventListener("submit", function (e) {
   e.preventDefault();
   var q = $("look-q").value.trim(), c = $("look-cat").value;
-  if (!q && !c) return toast("Say what you’re looking for, or pick a category.");
+  if (!q && !c) return toast(t("Say what you’re looking for, or pick a category."));
   saveSearch(q, c ? [c] : []); $("look-q").value = ""; $("look-cat").value = "";
 });
 $("saveSearch").addEventListener("click", function () { saveSearch(filter.q, filter.cat ? [filter.cat] : []); });
