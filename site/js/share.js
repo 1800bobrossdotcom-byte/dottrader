@@ -3,6 +3,11 @@
 // a quiet offer of this page in the visitor's own language. Never a redirect: search engines and
 // people who chose a language get exactly the page they asked for.
 "use strict";
+// The language menu closes when you tap elsewhere or press Escape.
+Array.prototype.forEach.call(document.querySelectorAll("details.langmenu"), function (d) {
+  document.addEventListener("click", function (e) { if (d.open && !d.contains(e.target)) d.open = false; });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && d.open) { d.open = false; d.querySelector("summary").focus(); } });
+});
 // NFT artwork that can't be drawn turns back into the plain tile instead of a broken image.
 Array.prototype.forEach.call(document.querySelectorAll("img[data-art]"), function (img) {
   var swap = function () { var s = document.createElement("span"); s.className = "noimg"; s.setAttribute("aria-hidden", "true"); img.replaceWith(s); };
@@ -28,7 +33,7 @@ Array.prototype.forEach.call(document.querySelectorAll("img[data-art]"), functio
   var base = function (l) { return String(l || "").toLowerCase().slice(0, 2); };
   var here = base(document.documentElement.lang), store = function (k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } };
   // Choosing a language from the footer is remembered, and the offer stops.
-  Array.prototype.forEach.call(document.querySelectorAll(".langs a[hreflang]"), function (a) { a.addEventListener("click", function () { store("dtp-lang", base(a.getAttribute("hreflang"))); }); });
+  Array.prototype.forEach.call(document.querySelectorAll(".langs a[hreflang], .langmenu a[hreflang]"), function (a) { a.addEventListener("click", function () { store("dtp-lang", base(a.getAttribute("hreflang"))); }); });
   var chosen = store("dtp-lang"), want = chosen;
   if (!want) { var ls = navigator.languages || [navigator.language]; for (var i = 0; i < ls.length && !want; i++) if (OFFER[base(ls[i])]) want = base(ls[i]); }
   if (!want || want === here || chosen === here || store("dtp-lang-offer") === want) return;

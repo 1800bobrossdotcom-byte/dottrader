@@ -131,6 +131,7 @@ const lds = (b) => [...b.matchAll(/<script type="application\/ld\+json">([\s\S]*
     const bad = pages.filter(([, r]) => !(r.status === 200 && r.body.includes('<html lang="' + H + '">') && r.body.includes('<link rel="canonical" href="https://www.dottrader.app' + P + "/") &&
       ["en", "es", "ja", "pt-BR", "x-default"].every((h) => r.body.includes('hreflang="' + h + '"')))).map(([n]) => n);
     ok(lang + ": every page is in " + H + ", with its own address and every language's linked", !bad.length, bad.join(", "));
+    ok(lang + ": every page's header has the language menu, on " + H, pages.every(([, r]) => { const hd = r.body.split("</header>")[0]; return hd.includes('class="langmenu"') && hd.includes('lang="' + H + '" aria-current="true"'); }));
     const leaks = pages.flatMap(([n, r]) => { const seen = r.body.replace(/<script[\s\S]*?<\/script>/g, ""); return en.filter((w) => seen.includes(w)).map((w) => n + ": " + w.slice(0, 50)); });
     ok(lang + ": no English left on the pages", !leaks.length, leaks.slice(0, 4).join(" | "));
     ok(lang + ": links stay in " + H, pages.every(([, r]) => !/href="\/(c|trade|item)\//.test(r.body.split("<main")[1].split('<nav class="langs"')[0])) &&

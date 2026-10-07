@@ -71,6 +71,7 @@ function wantText(it, lang) {
   return bits.join(" · ");
 }
 
+const GLOBE = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9.5"/><path d="M2.5 12h19M12 2.5c2.8 2.6 4.2 5.8 4.2 9.5s-1.4 6.9-4.2 9.5c-2.8-2.6-4.2-5.8-4.2-9.5S9.2 5.1 12 2.5z"/></svg>';
 const LOGO = '<svg viewBox="0 0 40 40" aria-hidden="true" width="34" height="34"><path d="M9 5h11a15 15 0 0 1 0 30H9z" fill="#FFD23F" stroke="#121212" stroke-width="3" stroke-linejoin="round"/><circle cx="20" cy="20" r="5.5" fill="#E8392B" stroke="#121212" stroke-width="3"/></svg>';
 
 // The whole page around a body. `path` is the page's address in English (/c/nfts); in another
@@ -108,10 +109,11 @@ function page(o) {
     '<meta name="theme-color" content="#F3EAD3">\n' +
     '<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n' +
     '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">\n' +
-    '<link rel="stylesheet" href="/css/page.css?v=5">\n' +
+    '<link rel="stylesheet" href="/css/page.css?v=6">\n' +
     (o.ld || []).map((x) => '<script type="application/ld+json">' + jsonLd(x) + "</script>\n").join("") +
     "</head>\n<body>\n" +
     '<header class="top"><div class="wrap bar"><a class="brand" href="' + (P || "") + '/">' + LOGO + '<span class="t">Dot Trading Post<small>' + esc(tt("brand.small")) + "</small></span></a>" +
+    '<details class="langmenu"><summary aria-label="' + esc(tt("foot.lang")) + '">' + GLOBE + '<span class="lm-cur">' + esc(I.META[lang].name) + '</span></summary><div class="lm-list">' + langLinks + "</div></details>" +
     '<a class="navbtn" href="' + appHref(lang) + '">' + esc(tt("nav.board")) + "</a></div></header>\n" +
     '<main class="wrap">\n' + o.body + "\n</main>\n" +
     '<footer class="wrap foot"><a href="' + (P || "") + '/">' + esc(tt("foot.how")) + '</a><a href="' + appHref(lang) + '">' + esc(tt("foot.board")) + "</a>" +
@@ -119,7 +121,7 @@ function page(o) {
       '<a href="' + P + '/trade">' + esc(tt("foot.ways")) + '</a><a href="/stickers">' + esc(tt("foot.stickers")) + "</a>" +
       '<a class="makers" href="https://cbuy.ing" target="_blank" rel="noopener"><span>' + esc(tt("foot.makers")) + '</span><img src="/cbuy.png?v=1" alt="cbuy" width="75" height="32"></a>' +
       '<nav class="langs" aria-label="' + esc(tt("foot.lang")) + '">' + langLinks + "</nav></footer>\n" +
-    '<script src="/js/share.js?v=3" defer></script>\n</body>\n</html>\n';
+    '<script src="/js/share.js?v=4" defer></script>\n</body>\n</html>\n';
 }
 // The board in a language: it reads ?lang= on arrival and remembers it.
 function appHref(lang, hash) { return "/app" + (lang && lang !== "en" ? "?lang=" + lang : "") + (hash || ""); }

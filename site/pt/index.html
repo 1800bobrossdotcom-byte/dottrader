@@ -185,6 +185,16 @@
   .makers img { height:32px; width:auto; display:block; transition:transform .15s; }
   .makers:hover img { transform:rotate(-4deg) scale(1.06); }
   .makers:hover span { color:var(--ink); }
+  .langmenu { position:relative; }
+  .langmenu summary { list-style:none; cursor:pointer; display:flex; align-items:center; gap:6px; border:2px solid var(--ink); border-radius:999px; padding:6px 11px; background:var(--card); color:var(--ink); font-weight:700; font-size:13px; line-height:1; box-shadow:2px 2px 0 var(--ink); white-space:nowrap; }
+  .langmenu summary::-webkit-details-marker { display:none; }
+  .langmenu summary::after { content:""; width:6px; height:6px; border-right:2px solid currentColor; border-bottom:2px solid currentColor; transform:rotate(45deg) translate(-2px,-2px); margin-left:2px; }
+  .langmenu[open] summary { background:var(--yellow); }
+  .langmenu .lm-list { position:absolute; right:0; top:calc(100% + 8px); z-index:60; display:grid; min-width:160px; padding:5px; background:var(--card); border:2px solid var(--ink); border-radius:8px; box-shadow:4px 4px 0 var(--ink); }
+  .langmenu .lm-list a { padding:9px 12px; border-radius:5px; color:var(--ink); text-decoration:none; font-weight:600; font-size:14.5px; }
+  .langmenu .lm-list a:hover { background:var(--sunk); }
+  .langmenu .lm-list a[aria-current] { background:var(--yellow); }
+  @media (max-width:420px){ .langmenu .lm-cur { display:none; } .langmenu summary { padding:7px 9px; } }
   .langs { display:flex; flex-wrap:wrap; gap:6px 14px; }
   .langs a { color:var(--muted); text-decoration:none; font-weight:600; }
   .langs a[aria-current] { color:var(--ink); text-decoration:underline; text-underline-offset:3px; }
@@ -210,6 +220,7 @@
     <a class="navlink" href="#safe">Troque com segurança</a>
     <a class="navlink" href="#dots">Como funcionam os pontos</a>
     <a class="navlink" href="#stickers">Adesivos</a>
+    <details class="langmenu"><summary aria-label="Idioma"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9.5"/><path d="M2.5 12h19M12 2.5c2.8 2.6 4.2 5.8 4.2 9.5s-1.4 6.9-4.2 9.5c-2.8-2.6-4.2-5.8-4.2-9.5S9.2 5.1 12 2.5z"/></svg><span class="lm-cur">Português</span></summary><div class="lm-list"><a href="/" hreflang="en" lang="en">English</a><a href="/es/" hreflang="es" lang="es">Español</a><a href="/ja/" hreflang="ja" lang="ja">日本語</a><a href="/pt/" hreflang="pt-BR" lang="pt-BR" aria-current="true">Português</a></div></details>
     <a class="navbtn" href="/app?lang=pt">Abrir o mural</a>
   </nav>
 
@@ -363,6 +374,6 @@
   </footer>
 
 </div>
-<script src="/js/share.js?v=3" defer></script>
+<script src="/js/share.js?v=4" defer></script>
 </body>
 </html>

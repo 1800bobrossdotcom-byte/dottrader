@@ -36,6 +36,17 @@ for (const [lang, h, word] of [["es", "es", "Cambia"], ["ja", "ja", "なんで�
   await ctx.close();
 }
 {
+  const { ctx, p } = await open("/ja/", "ja", 375);
+  ok("the header has a language menu showing the page's language", (await p.textContent(".langmenu summary")).includes("日本語") && !(await p.isVisible(".langmenu .lm-list")));
+  await p.click(".langmenu summary");
+  ok("…which opens to every language, the current one marked", await p.isVisible('.langmenu .lm-list a[hreflang="es"]') && (await p.textContent(".langmenu [aria-current]")) === "日本語");
+  await p.click("h1"); await p.waitForTimeout(100);
+  ok("…and closes when you tap elsewhere", !(await p.isVisible(".langmenu .lm-list")));
+  await p.click(".langmenu summary"); await p.click('.langmenu a[hreflang="es"]'); await p.waitForTimeout(400);
+  ok("…and goes to that language", p.url().endsWith("/es/") && (await p.evaluate(() => localStorage.getItem("dtp-lang"))) === "es");
+  await ctx.close();
+}
+{
   const { ctx, p } = await open("/es/", "en-US");
   await p.click('.langs a[hreflang="pt-BR"]'); await p.waitForTimeout(400);
   ok("choosing a language in the footer goes there and is remembered", p.url().endsWith("/pt/") && (await p.evaluate(() => localStorage.getItem("dtp-lang"))) === "pt" && !(await p.$("[role=region][lang]")));

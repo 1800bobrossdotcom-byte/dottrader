@@ -349,7 +349,10 @@ function saveLang(l) {
 function chooseLang(l) { if (l !== LANG) saveLang(l).then(function () { setLang(l); }); }
 $("p-lang").value = LANG;
 $("p-lang").addEventListener("change", function (e) { chooseLang(e.target.value); });
-Array.prototype.forEach.call(document.querySelectorAll("#langLinks a"), function (a) {
+$("langTop").querySelector(".lm-cur").textContent = LANG_NAME[LANG];
+document.addEventListener("click", function (e) { var d = $("langTop"); if (d.open && !d.contains(e.target)) d.open = false; });
+document.addEventListener("keydown", function (e) { var d = $("langTop"); if (e.key === "Escape" && d.open) { d.open = false; d.querySelector("summary").focus(); } });
+Array.prototype.forEach.call(document.querySelectorAll("#langLinks a, #langTop a"), function (a) {
   if (a.getAttribute("data-lang") === LANG) a.setAttribute("aria-current", "true");
   a.addEventListener("click", function (e) { e.preventDefault(); chooseLang(a.getAttribute("data-lang")); });
 });

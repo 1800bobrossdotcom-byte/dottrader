@@ -14,6 +14,7 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const SITE = "https://www.dottrader.app";
+const NAMES = { es: "Español", ja: "日本語", pt: "Português" };
 const LANGS = { es: { hreflang: "es", og: "es_ES" }, ja: { hreflang: "ja", og: "ja_JP" }, pt: { hreflang: "pt-BR", og: "pt_BR" } };
 const CATS = JSON.parse(fs.readFileSync(path.join(ROOT, "site/i18n/cats.json"), "utf8")).cats;
 const en = fs.readFileSync(path.join(ROOT, "site/index.html"), "utf8");
@@ -61,8 +62,9 @@ for (const [lang, meta] of Object.entries(LANGS)) {
     .replace('<link rel="canonical" href="' + SITE + '/">', '<link rel="canonical" href="' + SITE + "/" + lang + '/">')
     .replace('<meta property="og:url" content="' + SITE + '/">', '<meta property="og:url" content="' + SITE + "/" + lang + '/">')
     .replace('<meta property="og:locale" content="en_US">', '<meta property="og:locale" content="' + meta.og + '">')
-    .replace(' aria-current="true">English', ">English")
-    .replace('hreflang="' + meta.hreflang + '" lang="' + meta.hreflang + '">', 'hreflang="' + meta.hreflang + '" lang="' + meta.hreflang + '" aria-current="true">')
+    .split(' aria-current="true">English').join(">English")
+    .split('hreflang="' + meta.hreflang + '" lang="' + meta.hreflang + '">').join('hreflang="' + meta.hreflang + '" lang="' + meta.hreflang + '" aria-current="true">')
+    .replace('<span class="lm-cur">English</span>', '<span class="lm-cur">' + NAMES[lang] + "</span>")
     .replace(/"inLanguage":"en"/g, '"inLanguage":"' + meta.hreflang + '"');
   out = out.replace("<!doctype html>", "<!doctype html>\n<!-- Built from site/index.html and i18n/home." + lang + ".json by scripts/i18n-home.mjs. Edit those, not this. -->");
   const left = phrases(out).filter((p) => phrases(en).includes(p) && !tr[p] && !SAME.test(p));

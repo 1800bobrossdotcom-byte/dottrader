@@ -73,6 +73,7 @@ for (const [lang, h, word] of [["ja", "ja", "ボード"], ["es", "es", "Tablón"
   const { ctx, p } = await open(lang, true, posts);
   const bad = [];
   const look = async (where) => { const l = leaks(lang, await seen(p)); if (l.length) bad.push(where + ": " + l.slice(0, 3).join(" | ")); };
+  ok(lang + ": the header's language menu names it", (await p.textContent("#langTop summary")).includes({ ja: "日本語", es: "Español", pt: "Português" }[lang]) && (await p.getAttribute('#langTop a[data-lang="' + lang + '"]', "aria-current")) === "true");
   ok(lang + ": the board opens in " + h, (await p.evaluate(() => document.documentElement.lang)) === h && (await p.textContent("#t-browse")).includes(word), await p.textContent("#t-browse"));
   await look("board");
   await p.click("#t-post"); await p.waitForTimeout(150); await look("post a thing");
