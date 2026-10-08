@@ -8,8 +8,9 @@
 // A chain chip that links to the explorer, plus a badge the viewer's own browser fills in once
 // the chain has answered. It starts as "checking" rather than as a verdict, because claiming an
 // asset is unheld before the RPC replies would smear honest listings.
-// `heldBy` names whoever should hold it: the lister on a listing, the offerer on an offer.
-function assetRow(a, holder, heldBy) {
+// `holders` is every wallet that person has linked; `heldBy` names them: the lister on a listing,
+// the offerer on an offer. On your own, a miss says which wallet it is in, so you can link that one.
+function assetRow(a, holders, heldBy, mine) {
   if (!a || !a.asset_kind) return "";
   var c = CHAINS[a.asset_chain];
   var label = a.asset_kind === "erc20" ? esc(t("Tokens")) : (a.asset_kind === "erc1155" ? esc(t("Edition #")) : "#") + esc(shortId(a.asset_token_id));
@@ -21,7 +22,7 @@ function assetRow(a, holder, heldBy) {
             : '<span class="chain">' + esc(t("chain {id}", { id: String(a.asset_chain) })) + "</span>";
   h += '<span class="held" data-held="' + id + '">' + esc(t("checking…")) + "</span>";
   h += '<span class="assetmeta" title="' + esc(a.asset_kind === "erc20" ? a.asset_contract : t("Token {id} on {contract}", { id: a.asset_token_id, contract: a.asset_contract })) + '">' + label + " · " + esc(shortAddr(a.asset_contract)) + "</span></div>";
-  pendingChecks.push({ id: id, asset: a, holder: holder, heldBy: heldBy || t("the lister") });
+  pendingChecks.push({ id: id, asset: a, holders: holders || [], heldBy: heldBy || t("the lister"), mine: !!mine });
   return h;
 }
 var pendingChecks = [];
@@ -30,14 +31,18 @@ function runChecks() {
   jobs.forEach(function (j) {
     var el = document.querySelector('[data-held="' + j.id + '"]');
     if (!el) return;
-    if (!j.holder) { el.textContent = t("no wallet linked"); return; }
-    checkOwnership(j.asset, j.holder).then(function (ok) {
+    if (!j.holders.length) { el.textContent = t("no wallet linked"); return; }
+    heldByAny(j.asset, j.holders).then(function (ok) {
       var e2 = document.querySelector('[data-held="' + j.id + '"]');
       if (!e2) return;
       if (ok === null) { e2.textContent = t("could not check"); e2.className = "held"; return; }
       if (ok === "nocontract") { e2.textContent = t("not on {chain}", { chain: (CHAINS[j.asset.asset_chain] || {}).name }); e2.className = "held no"; e2.title = t("Nothing lives at that address on this chain. The listing probably picked the wrong chain — edit it."); return; }
-      e2.textContent = ok ? t("held by {who}", { who: j.heldBy }) : t("no longer held");
+      e2.textContent = ok ? t("held by {who}", { who: j.heldBy }) : t(j.mine ? "not in your linked wallets" : "no longer held");
       e2.className = "held " + (ok ? "yes" : "no");
+      if (!ok && j.mine) holderOf(j.asset).then(function (h) {
+        e2.title = h ? t("It is in {addr}. If that wallet is yours, link it too: tap the wallet button at the top.", { addr: h })
+                     : t("If another wallet of yours holds it, link that one too: tap the wallet button at the top.");
+      });
     });
   });
 }
@@ -68,7 +73,7 @@ function itemCard(it, opts) {
   }
   h += "<h3>" + esc(it.title) + "</h3>";
   if (it.descr) h += '<p class="desc">' + esc(it.descr) + "</p>";
-  h += assetRow(it, verifiedWallet(profiles[it.owner_id]));
+  h += assetRow(it, walletsOf(it.owner_id), null, mine);
   h += '<div class="sides"><div class="side h"><span class="k">' + esc(t("Offering")) + '</span><span class="v">' + esc(it.title) + "</span></div>" +
     '<div class="arrow" aria-hidden="true"></div>' +
     '<div class="side w"><span class="k">' + esc(t("Wants")) + '</span><span class="v">' + esc(wantText(it)) + "</span></div></div>";
@@ -189,7 +194,7 @@ function offerCard(o, dir) {
       var pic = g.photos && g.photos[0];
       return '<a href="' + esc(itemPath(g)) + '" target="_blank" rel="noopener">' + (pic ? '<img src="' + esc(pic) + '" alt="">' : '<span class="pi" style="background:' + hueOf(g.cat) + '">' + esc(g.title.charAt(0).toUpperCase()) + "</span>") + "<span>" + esc(g.title) + "</span></a>";
     }).join("") + "</div>";
-  h += assetRow(o, verifiedWallet(profiles[o.from_id]), o.from_id === uid ? t("you") : who(o.from_id));
+  h += assetRow(o, walletsOf(o.from_id), o.from_id === uid ? t("you") : who(o.from_id), o.from_id === uid);
   if (o.msg) h += '<div class="msg">' + esc(o.msg) + "</div>";
   el.innerHTML = h;
 

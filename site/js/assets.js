@@ -110,18 +110,31 @@ function runMeta() {
 }
 
 // The signature is public, so each viewer recovers the address themselves rather than taking
-// the stored `wallet_address` at its word.
+// the stored address at its word. The message must also name the account: otherwise anyone
+// could copy another trader's message and signature onto their own profile and claim the wallet.
 var sigCache = {};
-function verifiedWallet(p) {
-  if (!p || !p.wallet_address || !p.wallet_sig || !p.wallet_msg) return null;
-  var key = p.wallet_sig;
+function signedBy(owner, addr, msg, sig) {
+  if (!owner || !addr || !msg || !sig) return null;
+  var key = owner + "|" + sig;
   if (key in sigCache) return sigCache[key];
   var ok = false;
   try {
-    ok = window.ethers &&
-      window.ethers.utils.verifyMessage(p.wallet_msg, p.wallet_sig).toLowerCase() === p.wallet_address.toLowerCase();
+    ok = !!window.ethers && msg.split("\n").indexOf(owner) >= 0 &&
+      window.ethers.utils.verifyMessage(msg, sig).toLowerCase() === addr.toLowerCase();
   } catch (e) { ok = false; }
-  sigCache[key] = ok ? p.wallet_address : null;
+  sigCache[key] = ok ? addr.toLowerCase() : null;
   return sigCache[key];
+}
+// A trader's main wallet: where the board points others when they send something.
+function verifiedWallet(p) { return p ? signedBy(p.id, p.wallet_address, p.wallet_msg, p.wallet_sig) : null; }
+// Every wallet a trader has linked, main one first. A listing is held if any of them holds it.
+function walletsOf(id) {
+  var out = [], main = verifiedWallet(profiles[id]);
+  if (main) out.push(main);
+  (linkedBy[id] || []).forEach(function (w) {
+    var a = signedBy(id, w.address, w.msg, w.sig);
+    if (a && out.indexOf(a) < 0) out.push(a);
+  });
+  return out;
 }
 function shortAddr(a) { return a ? a.slice(0, 6) + "…" + a.slice(-4) : ""; }

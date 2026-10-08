@@ -22,31 +22,42 @@ $("postForm").addEventListener("submit", function (e) {
   if (!uid) return;
   var title = $("f-title").value.trim(); if (!title) return;
   var isAsset = $("f-isasset").checked;
-  if (isAsset && !myWallet()) { toast(t("Connect your wallet first — a digital listing is checked against it.")); return; }
+  if (isAsset && !myWallets().length) { toast(t("Connect your wallet first — a digital listing is checked against it.")); return; }
   var asset;
   try {
     asset = readAsset({ kind: $("f-kind"), chain: $("f-chain"), contract: $("f-contract"), tokid: $("f-tokid") }, isAsset);
   } catch (e) { toast(e.message); return; }
   var btn = $("postBtn"); btn.disabled = true;
-  var rec = {
-    owner_id: uid, title: title, descr: $("f-desc").value.trim(),
-    want: $("f-want").value.trim(), cat: $("f-cat").value
-  };
-  // Only sent when there are photos, so a project that has not run storage.sql can still post.
-  if (pendingPhotos.length) rec.photos = pendingPhotos.slice(0, 4);
-  if (caps.matching) { rec.want_cats = postPicker.get(); rec.open_to_offers = $("f-open").checked; }
-  if (caps.local) rec.local_only = !isAsset && $("f-local").checked;
-  Object.keys(asset).forEach(function (k) { rec[k] = asset[k]; });
-  sb.from("items").insert(rec).then(function (r) {
-    btn.disabled = false;
-    if (r.error) {
-      if (/'photos' column/.test(r.error.message || "")) return toast(t("Photo storage is not set up on this project yet — run supabase/storage.sql in the SQL editor."));
-      return fail(r.error);
+  // An NFT none of your linked wallets holds would show as not held the moment it posts, so say
+  // where it actually is instead. If the chain can't be reached, post anyway.
+  var held = isAsset ? heldByAny(asset, myWallets()).then(function (ok) { return ok === false ? holderOf(asset).then(function (h) { return { h: h }; }) : null; }) : Promise.resolve(null);
+  held.then(function (miss) {
+    if (miss) {
+      btn.disabled = false;
+      toast(miss.h ? t("None of your linked wallets holds that NFT — it is in {addr}. Link that wallet first: tap the wallet button at the top.", { addr: shortAddr(miss.h) })
+                   : t("None of your linked wallets holds that NFT. Link the wallet that does first: tap the wallet button at the top."));
+      return;
     }
-    $("postForm").reset(); $("f-cat").value = "Other"; setPostKind(false);
-    pendingPhotos = []; paintThumbs();
-    postPicker.set([]); $("f-open").checked = true;
-    toast(t("Posted to the board.")); show("browse"); load();
+    var rec = {
+      owner_id: uid, title: title, descr: $("f-desc").value.trim(),
+      want: $("f-want").value.trim(), cat: $("f-cat").value
+    };
+    // Only sent when there are photos, so a project that has not run storage.sql can still post.
+    if (pendingPhotos.length) rec.photos = pendingPhotos.slice(0, 4);
+    if (caps.matching) { rec.want_cats = postPicker.get(); rec.open_to_offers = $("f-open").checked; }
+    if (caps.local) rec.local_only = !isAsset && $("f-local").checked;
+    Object.keys(asset).forEach(function (k) { rec[k] = asset[k]; });
+    sb.from("items").insert(rec).then(function (r) {
+      btn.disabled = false;
+      if (r.error) {
+        if (/'photos' column/.test(r.error.message || "")) return toast(t("Photo storage is not set up on this project yet — run supabase/storage.sql in the SQL editor."));
+        return fail(r.error);
+      }
+      $("postForm").reset(); $("f-cat").value = "Other"; setPostKind(false);
+      pendingPhotos = []; paintThumbs();
+      postPicker.set([]); $("f-open").checked = true;
+      toast(t("Posted to the board.")); show("browse"); load();
+    });
   });
 });
 
@@ -196,9 +207,11 @@ function loadPeople() {
   return Promise.all([
     byIds("profiles", "id", ids),
     caps.stats ? sb.rpc("trader_stats", { p_ids: ids }) : Promise.resolve({ data: [] }),
-    byIds("verification_badges", "item_id", items.map(function (it) { return it.id; }))
+    byIds("verification_badges", "item_id", items.map(function (it) { return it.id; })),
+    caps.wallets ? byIds("linked_wallets", "owner_id", ids) : Promise.resolve({ data: [] })
   ]).then(function (p) {
     (p[0].data || []).forEach(function (x) { profiles[x.id] = x; });
+    linkedBy = {}; (p[3].error ? [] : (p[3].data || [])).forEach(function (w) { (linkedBy[w.owner_id] = linkedBy[w.owner_id] || []).push(w); });
     (Array.isArray(p[1].data) ? p[1].data : []).forEach(function (s) { statsBy[s.user_id] = s; });
     if (!p[2].error) (p[2].data || []).forEach(function (b) { badges[b.item_id] = b; });
   });
@@ -275,13 +288,15 @@ function loadAll() {
     // Only threads the viewer is part of — messages.sql makes sure of that.
     uid && caps.messages ? sb.from("messages").select("*").order("created_at", { ascending: true }).limit(3000) : Promise.resolve({ data: [] }),
     uid && caps.bond ? sb.from("bonds").select("*").limit(2000) : Promise.resolve({ data: [] }),
-    uid && caps.bond ? sb.from("payouts").select("*").limit(200) : Promise.resolve({ data: [] })
+    uid && caps.bond ? sb.from("payouts").select("*").limit(200) : Promise.resolve({ data: [] }),
+    caps.wallets ? sb.from("linked_wallets").select("*").limit(2000) : Promise.resolve({ data: [] })
   ]).then(function (r) {
     if (r[0].error || r[1].error || r[2].error) {
       note(esc(t("Could not load the board. If this is the first run, check the schema was applied in Supabase.")), "bad");
       return;
     }
     items = r[0].data || []; offers = r[1].data || [];
+    linkedBy = {}; (r[8].error ? [] : (r[8].data || [])).forEach(function (w) { (linkedBy[w.owner_id] = linkedBy[w.owner_id] || []).push(w); });
     // If privacy.sql has not been run yet the view is missing; fall back to what we can see so
     // the board still works, just with dots counted only from the viewer's own trades.
     signals = r[3].error ? offers : (r[3].data || []);

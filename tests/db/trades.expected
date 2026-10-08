@@ -13,7 +13,14 @@ S12 anyone can count no-shows: 1
 W1 wrong item offered: refused: the order does not offer the listed item
 W2 extra thing asked of the other side: refused: the second item may only be the fee
 W3 paid to someone else: refused: the order does not ask for the offered item
-W4 not from the linked wallet: refused: the order must come from your linked wallet
+W4 not from the linked wallet: refused: the order must come from one of your linked wallets
+L1 link a second wallet: ok
+L2 a message that names another account: refused: new row for relation "linked_wallets" violates check constraint "linked_wallets_names_account"
+W4b from Alice's second wallet, paid back to it: ok
+W4c from her second wallet, paid to her main one: refused: the order does not ask for the offered item
+L3 someone else links a wallet to Alice: refused: new row violates row-level security policy for table "linked_wallets"
+L4 or unlinks hers: ok, still there: 1
+L5 anyone can see which wallets Alice linked: 0xaaaa000000000000000000000000000000000001, 0xcccc000000000000000000000000000000000003
 W5 non-lister posts order: refused: the lister sets up the swap
 W6 correct order: ok
 W7 lister records the fill: refused: the person filling the swap records it

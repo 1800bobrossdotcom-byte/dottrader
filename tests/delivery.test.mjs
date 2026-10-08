@@ -4,6 +4,8 @@ const env = { SUPABASE_URL: "https://proj.supabase.co", SUPABASE_SERVICE_ROLE_KE
 let handler; globalThis.Deno = { env: { get: (k) => env[k] }, serve: (h) => { handler = h; } };
 const A = "a0000000-0000-0000-0000-000000000001", B = "b0000000-0000-0000-0000-000000000002";
 const WA = "0x" + "a1".repeat(20), WB = "0x" + "b2".repeat(20), OTHER = "0x" + "c3".repeat(20);
+const WA2 = "0x" + "d4".repeat(20);  // a second wallet Alice has linked
+let aliceLinked = [{ address: WA }, { address: WA2 }];
 const NFT = "0x" + "11".repeat(20), NFT2 = "0x" + "22".repeat(20);
 const T721 = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
 const T1155 = "0xc3d58168c5ae7397731d063d5bbf3d657854427343f4c083240f7aacaa2d0f62";
@@ -25,6 +27,7 @@ mined(tx(3), [transfer721(NFT, OTHER, 7)]);
 mined(tx(4), [transfer721(NFT2, WA, 7)]);
 mined(tx(5), [transfer721(NFT, WA, 7)], { status: "0x0" });
 mined(tx(6), [transfer721(NFT, WA, 7)], { ts: blockBefore });
+mined("0x" + "cd".repeat(32), [transfer721(NFT, WA2, 7)]);
 chain[tx(7)] = null;  // not mined yet
 chain[tx(8)] = null;  // never mined, sent long ago
 mined(tx(9), [{ address: NFT, topics: [T1155, topicAddr(WB), topicAddr(WB), topicAddr(WA)], data: hex(7, 1) }]);
@@ -55,6 +58,7 @@ globalThis.fetch = async (url, init = {}) => {
     return R([offers[q.get("id").slice(3)]].filter(Boolean));
   }
   if (t === "items") return R([{ title: "Charizard", asset_kind: null }]);
+  if (t === "linked_wallets") return R(q.get("owner_id") === "eq." + A ? aliceLinked : []);
   if (t === "profiles") {
     if (q.get("id") && q.get("id").startsWith("in.")) return R(profiles.filter((p) => q.get("id").includes(p.id)));
     return R(profiles.filter((p) => q.get("id") === "eq." + p.id));
@@ -71,6 +75,8 @@ const id = (n) => "f0000000-0000-0000-0000-" + String(n).padStart(12, "0");
 await verify(offer(id(1), tx(1)));
 ok("the right NFT to the right wallet is confirmed", last().p_ok === true && last().p_side === "from" && /NFT #7 reached Alice's wallet 0xa1a1…a1a1 on Base/.test(last().p_note), last().p_note);
 ok("…and Alice is told it arrived", emails.length === 1 && emails[0].to[0] === "alice@x.com" && /Bob's NFT arrived/.test(emails[0].subject));
+await verify(offer(id(30), "0x" + "cd".repeat(32)));
+ok("…and so is one sent to another wallet Alice has linked", last().p_ok === true && /reached Alice's wallet 0xd4d4…d4d4/.test(last().p_note), last().p_note);
 await verify(offer(id(2), tx(2)));
 ok("a different token from the same collection is rejected", last().p_ok === false && /different token/.test(last().p_note), last().p_note);
 await verify(offer(id(3), tx(3)));
@@ -90,7 +96,7 @@ await verify(offer(id(9), tx(9), { asset_kind: "erc1155" }));
 ok("an ERC-1155 TransferSingle is confirmed", last().p_ok === true, last().p_note);
 await verify(offer(id(10), "0x" + "ab".repeat(32), { asset_kind: "erc1155" }));
 ok("an ERC-1155 TransferBatch containing it is confirmed", last().p_ok === true, last().p_note);
-profiles[0].wallet_address = null;
+profiles[0].wallet_address = null; aliceLinked = [];
 await verify(offer(id(11), tx(1)));
 ok("with no wallet linked on the receiving side, it's rejected and says why", last().p_ok === false && /Alice has no wallet linked/.test(last().p_note), last().p_note);
 profiles[0].wallet_address = WA;

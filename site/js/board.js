@@ -165,7 +165,7 @@ function openOffer(it, give) {
     if (!give) return;
     var msg = form.querySelector("#o-msg").value.trim();
     var isAsset = form.querySelector("#o-isasset").checked;
-    if (isAsset && !myWallet()) { toast(t("Connect your wallet first — a digital offer is checked against it.")); return; }
+    if (isAsset && !myWallets().length) { toast(t("Connect your wallet first — a digital offer is checked against it.")); return; }
     var asset;
     try {
       asset = readAsset({

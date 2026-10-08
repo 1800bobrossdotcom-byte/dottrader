@@ -106,3 +106,19 @@ function checkOwnership(a, holder) {
   return p.then(function (v) { ownCache[key] = v; return v; })
           .catch(function (e) { return e && e.nocontract ? "nocontract" : null; });
 }
+// The same question for a trader with several wallets: true if any holds it, false only when
+// every one of them answered no.
+function heldByAny(a, holders) {
+  if (!holders || !holders.length) return Promise.resolve(false);
+  return Promise.all(holders.map(function (h) { return checkOwnership(a, h); })).then(function (rs) {
+    if (rs.indexOf(true) >= 0) return true;
+    if (rs.indexOf("nocontract") >= 0) return "nocontract";
+    return rs.indexOf(null) >= 0 ? null : false;
+  });
+}
+// Who holds an ERC-721 right now, so "not in your wallets" can say where it is instead.
+function holderOf(a) {
+  if (!a || a.asset_kind !== "erc721" || !CHAINS[a.asset_chain]) return Promise.resolve(null);
+  return rpc(a.asset_chain, a.asset_contract, "0x6352211e" + pad32(BigInt(a.asset_token_id).toString(16)))
+    .then(function (res) { return "0x" + res.slice(-40).toLowerCase(); }, function () { return null; });
+}

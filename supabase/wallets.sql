@@ -48,3 +48,49 @@ alter table public.offers add constraint offers_asset_complete check (
   or (asset_chain is not null and asset_contract is not null
       and (asset_kind = 'erc20' or asset_token_id is not null))
 );
+
+-- ---------------------------------------------------------------- several wallets per account
+--
+-- People keep NFTs in more than one wallet. Each wallet linked to an account is a row here, with
+-- its own signed message, so a listing counts as held when any of them holds it. The wallet in
+-- profiles above stays the main one: the wallet the board points others to when they send you
+-- something. It is always one of these rows too.
+--
+-- The message must name the account it links to. A signature is public, so without that anyone
+-- could copy someone else's message and signature onto their own account and claim the wallet.
+create table if not exists public.linked_wallets (
+  owner_id uuid not null references public.profiles (id) on delete cascade,
+  address  text not null check (address ~ '^0x[0-9a-f]{40}$'),
+  msg      text not null check (length(msg) <= 400),
+  sig      text not null check (sig ~ '^0x[0-9a-fA-F]{130,132}$'),
+  added_at timestamptz not null default now(),
+  primary key (owner_id, address),
+  constraint linked_wallets_names_account check (position(owner_id::text in msg) > 0)
+);
+alter table public.linked_wallets enable row level security;
+
+drop policy if exists "linked wallets readable by everyone" on public.linked_wallets;
+create policy "linked wallets readable by everyone" on public.linked_wallets for select using (true);
+drop policy if exists "link own wallet" on public.linked_wallets;
+create policy "link own wallet" on public.linked_wallets for insert with check (auth.uid() = owner_id);
+drop policy if exists "re-sign own wallet" on public.linked_wallets;
+create policy "re-sign own wallet" on public.linked_wallets for update using (auth.uid() = owner_id) with check (auth.uid() = owner_id);
+drop policy if exists "unlink own wallet" on public.linked_wallets;
+create policy "unlink own wallet" on public.linked_wallets for delete using (auth.uid() = owner_id);
+grant select on public.linked_wallets to anon, authenticated;
+grant insert, update, delete on public.linked_wallets to authenticated;
+
+-- The wallet each account already had becomes its first row.
+insert into public.linked_wallets (owner_id, address, msg, sig)
+  select id, lower(wallet_address), wallet_msg, wallet_sig from public.profiles
+  where wallet_address ~* '^0x[0-9a-f]{40}$' and wallet_sig ~ '^0x[0-9a-fA-F]{130,132}$'
+    and length(wallet_msg) <= 400 and position(id::text in wallet_msg) > 0
+  on conflict do nothing;
+
+-- Every wallet an account has linked, the main one included. Read by the database's own checks.
+create or replace function public.wallets_of(p_user uuid)
+returns setof text language sql stable security definer set search_path = public as $$
+  select lower(wallet_address) from public.profiles where id = p_user and wallet_address is not null
+  union
+  select address from public.linked_wallets where owner_id = p_user
+$$;

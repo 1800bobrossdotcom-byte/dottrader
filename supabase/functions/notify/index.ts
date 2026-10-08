@@ -266,14 +266,15 @@ function batch(data: string) {
 }
 
 type Verdict = { state: "verified" | "rejected" | "pending"; note: string };
-export async function checkTransfer(a: { chain: number; contract: string; tokenId: string; kind: string }, tx: string, to: string, notBefore: number, whoTo: string): Promise<Verdict> {
+// `to` is every wallet the recipient has linked: arriving in any of them counts.
+export async function checkTransfer(a: { chain: number; contract: string; tokenId: string; kind: string }, tx: string, to: string | string[], notBefore: number, whoTo: string): Promise<Verdict> {
   if (!RPC[a.chain]) return { state: "rejected", note: "that chain isn't one the board can check" };
   const receipt = await rpc(a.chain, "eth_getTransactionReceipt", [tx]);
   if (!receipt) return { state: "pending", note: `not on ${CHAIN_NAME[a.chain]} yet` };
   if (receipt.status !== "0x1") return { state: "rejected", note: "that transaction failed on chain, so nothing moved" };
   const block = await rpc(a.chain, "eth_getBlockByNumber", [receipt.blockNumber, false]);
   if (block && Number(BigInt(block.timestamp)) * 1000 < notBefore) return { state: "rejected", note: "that transaction happened before this trade was agreed" };
-  const contract = a.contract.toLowerCase(), id = BigInt(a.tokenId), want = to.toLowerCase();
+  const contract = a.contract.toLowerCase(), id = BigInt(a.tokenId), wants = (Array.isArray(to) ? to : [to]).map((x) => x.toLowerCase());
   let elsewhere = "", otherToken = false;
   for (const l of receipt.logs ?? []) {
     const t = (l.topics ?? []).map((x: string) => String(x).toLowerCase()), here = String(l.address).toLowerCase() === contract;
@@ -284,9 +285,9 @@ export async function checkTransfer(a: { chain: number; contract: string; tokenI
     else continue;
     const i = ids.findIndex((x) => x === id);
     if (here && i >= 0 && amounts[i] > 0n) {
-      if (rcpt === want) return { state: "verified", note: `NFT #${a.tokenId.length > 12 ? short(a.tokenId) : a.tokenId} reached ${whoTo}'s wallet ${short(want)} on ${CHAIN_NAME[a.chain]}` };
+      if (wants.includes(rcpt)) return { state: "verified", note: `NFT #${a.tokenId.length > 12 ? short(a.tokenId) : a.tokenId} reached ${whoTo}'s wallet ${short(rcpt)} on ${CHAIN_NAME[a.chain]}` };
       elsewhere = rcpt;
-    } else if (rcpt === want) otherToken = true;
+    } else if (wants.includes(rcpt)) otherToken = true;
   }
   if (elsewhere) return { state: "rejected", note: `that NFT went to ${short(elsewhere)}, not ${whoTo}'s linked wallet` };
   if (otherToken) return { state: "rejected", note: `a different token was sent to ${whoTo} — not the one in this trade` };
@@ -304,10 +305,13 @@ async function verifyOffer(offerId: string) {
   for (const side of ["owner", "from"] as const) {
     if (o[`${side}_sent_how`] !== "onchain" || o[`${side}_tx_status`] !== "checking") continue;
     const asset = side === "owner" ? it : o, recipient = side === "owner" ? o.from_id : o.owner_id;
-    const to = String(p(recipient).wallet_address ?? ""), whoTo = String(p(recipient).name || "the other trader");
+    const whoTo = String(p(recipient).name || "the other trader");
+    // The main wallet and any others they've linked (linked_wallets is missing until wallets.sql is re-run).
+    const more = await db(`linked_wallets?owner_id=eq.${recipient}&select=address`).catch(() => []) as Array<{ address: string }>;
+    const to = [String(p(recipient).wallet_address ?? "")].concat((Array.isArray(more) ? more : []).map((x) => String(x.address))).filter((x) => /^0x[0-9a-fA-F]{40}$/.test(x));
     let v: Verdict;
     if (!asset || !asset.asset_contract || !["erc721", "erc1155"].includes(asset.asset_kind)) v = { state: "rejected", note: "this side of the trade isn't an NFT" };
-    else if (!/^0x[0-9a-fA-F]{40}$/.test(to)) v = { state: "rejected", note: `${whoTo} has no wallet linked, so there's nowhere to check it arrived` };
+    else if (!to.length) v = { state: "rejected", note: `${whoTo} has no wallet linked, so there's nowhere to check it arrived` };
     else {
       try { v = await checkTransfer({ chain: Number(asset.asset_chain), contract: asset.asset_contract, tokenId: String(asset.asset_token_id), kind: asset.asset_kind }, o[`${side}_ref`], to, agreedAt, whoTo); }
       catch (e) { console.error("[verify]", (e as Error).message); continue; }  // the RPC hiccupped: the next sweep tries again

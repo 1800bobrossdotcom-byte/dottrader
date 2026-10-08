@@ -244,8 +244,9 @@ begin
   select * into it from public.items where id = o.item_id;
   if it.asset_kind not in ('erc721', 'erc1155') or o.asset_kind not in ('erc721', 'erc1155') then raise exception 'both sides must be NFTs'; end if;
   if it.asset_chain is distinct from o.asset_chain then raise exception 'both NFTs must be on the same chain'; end if;
-  select lower(wallet_address) into w from public.profiles where id = o.owner_id;
-  if w is null or lower(p_order->>'offerer') <> w then raise exception 'the order must come from your linked wallet'; end if;
+  -- Any wallet the lister has linked may sign it; the offered NFT comes back to that same wallet.
+  w := lower(p_order->>'offerer');
+  if w is null or w not in (select public.wallets_of(o.owner_id)) then raise exception 'the order must come from one of your linked wallets'; end if;
   if jsonb_array_length(p_order->'offer') <> 1 then raise exception 'the order must offer exactly your item'; end if;
   if lower(p_order->'offer'->0->>'token') <> lower(it.asset_contract) or p_order->'offer'->0->>'identifierOrCriteria' <> it.asset_token_id then
     raise exception 'the order does not offer the listed item'; end if;

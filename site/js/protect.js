@@ -104,7 +104,7 @@ function openSent(o) {
   var it0 = itemById(o.item_id) || {}, local = !!it0.local_only;
   // Only an NFT can be sent on chain: the listing's if you listed it, the offer's if you offered it.
   var mine = o.owner_id === uid ? it0 : o, nft = isNft(mine.asset_kind), ch = CHAINS[mine.asset_chain];
-  var them = who(o.owner_id === uid ? o.from_id : o.owner_id);
+  var them = who(o.owner_id === uid ? o.from_id : o.owner_id), dest = verifiedWallet(profiles[o.owner_id === uid ? o.from_id : o.owner_id]);
   var veil = document.createElement("div"); veil.className = "veil";
   var form = document.createElement("form"); form.className = "sheet f";
   form.innerHTML = "<h3>" + esc(t("Mark your side sent")) + "</h3>" +
@@ -116,7 +116,8 @@ function openSent(o) {
     '<div id="s-post" class="rowf"' + (local || nft ? " hidden" : "") + '><div><label for="s-car">' + esc(t("Carrier")) + '</label><select id="s-car">' + CARRIERS.map(function (c) { return '<option value="' + c[0] + '">' + esc(c[0] === "Other" ? t("Other") : c[0]) + "</option>"; }).join("") + "</select></div>" +
       '<div><label for="s-ref">' + esc(t("Tracking number")) + '</label><input id="s-ref" maxlength="80" autocomplete="off"></div></div>' +
     '<div id="s-chain"' + (nft ? "" : " hidden") + '><label for="s-tx">' + esc(t("Transaction hash")) + '</label><input id="s-tx" maxlength="66" placeholder="0x…" autocomplete="off">' +
-      (nft ? '<p class="hint" style="margin:8px 0 0">' + esc(t("Send the NFT to {who}’s linked wallet on {chain}, then paste the transaction. Dot reads it on chain and confirms that exact NFT reached them. No bridge needed — each NFT stays on its own chain.", { who: them, chain: ch ? ch.name : t("its chain") })) + "</p>" : "") + "</div>" +
+      (nft ? '<p class="hint" style="margin:8px 0 0">' + esc(t("Send the NFT to {who}’s linked wallet on {chain}, then paste the transaction. Dot reads it on chain and confirms that exact NFT reached them. No bridge needed — each NFT stays on its own chain.", { who: them, chain: ch ? ch.name : t("its chain") })) + "</p>" +
+        (dest ? '<p class="hint" style="margin:6px 0 0">' + t("Their main wallet: {addr}", { addr: '<b style="font-family:var(--mono);word-break:break-all">' + esc(dest) + "</b>" }) + "</p>" : "") : "") + "</div>" +
     '<p class="hint" style="margin:0">' + esc(t("{who} sees this straight away. Once it’s marked, you can’t cancel the trade — and if they never send theirs, you can close it as a no-show after the ship-by date.", { who: them })) + "</p>" +
     '<div class="acts"><button class="btn ok" type="submit">' + esc(t("Mark sent")) + '</button><button class="btn ghost" type="button" data-x>' + esc(t("Cancel")) + "</button></div>";
   veil.appendChild(form); document.body.appendChild(veil);
@@ -139,19 +140,21 @@ function openSent(o) {
   });
 }
 
-// The wallet that controls this account's linked address, on the right chain.
-function walletSigner(chainId) {
-  var want = myWallet();
+// A signer for one of this account's linked wallets, on the right chain. `wants` narrows it to the
+// wallets that can do the job (the one holding the NFT); the first is the one asked for.
+function walletSigner(chainId, wants) {
+  wants = (wants && wants.length ? wants : myWallets()).map(function (x) { return x.toLowerCase(); });
+  var want = wants[0];
   if (!want) return Promise.reject(new Error(t("Link your wallet first — tap the wallet button at the top.")));
   var list = installedWallets();
   if (!list.length) return Promise.reject(new Error(t("No wallet found in this browser. On a phone, open the board inside your wallet app.")));
   return Promise.all(list.map(function (w) {
     return w.provider.request({ method: "eth_accounts" }).then(function (a) { return { w: w, a: (a || []).map(function (x) { return String(x).toLowerCase(); }) }; }, function () { return { w: w, a: [] }; });
   })).then(function (rs) {
-    var hit = rs.filter(function (r) { return r.a.indexOf(want.toLowerCase()) >= 0; })[0];
+    var hit = rs.filter(function (r) { return r.a.some(function (a) { return wants.indexOf(a) >= 0; }); })[0];
     var w = (hit || rs[0]).w;
     return w.provider.request({ method: "eth_requestAccounts" }).then(function (acc) {
-      if (!acc || String(acc[0]).toLowerCase() !== want.toLowerCase()) throw new Error(t("Switch your wallet to {addr} — that’s the wallet linked to this account.", { addr: shortAddr(want) }));
+      if (!acc || wants.indexOf(String(acc[0]).toLowerCase()) < 0) throw new Error(t("Switch your wallet to {addr} — that’s the linked wallet holding this NFT.", { addr: shortAddr(want) }));
       return w.provider.request({ method: "wallet_switchEthereumChain", params: [{ chainId: "0x" + Number(chainId).toString(16) }] }).catch(function (e) {
         if (e && (e.code === 4902 || /unrecognized|not been added|not added/i.test(e.message || ""))) throw new Error(t("Add {chain} to your wallet first, then try again.", { chain: CHAINS[chainId].name }));
         throw e;
@@ -166,10 +169,18 @@ function walletFail(e) {
   console.error(e);
   toast(((e && (e.reason || e.message)) || t("The wallet didn’t finish.")).slice(0, 120));
 }
+// Which of my linked wallets hold this NFT; all of them if the chain can't say.
+function holdingWallets(a) {
+  var mine = myWallets();
+  return Promise.all(mine.map(function (w) { return checkOwnership(a, w); })).then(function (rs) {
+    var yes = mine.filter(function (w, i) { return rs[i] === true; });
+    return yes.length ? yes : mine;
+  });
+}
 function setupSwap(o) {
   var it = itemById(o.item_id), chain = Number(it.asset_chain), signer, addr;
   toast(t("Open your wallet…"));
-  walletSigner(chain).then(function (s) { signer = s; return s.getAddress(); })
+  holdingWallets(it).then(function (ws) { return walletSigner(chain, ws); }).then(function (s) { signer = s; return s.getAddress(); })
     .then(function (a) { addr = a; return window.DTP_SWAP.ensureApproval(signer, it.asset_contract, addr); })
     .then(function (approved) { if (approved) toast(t("Approved. Now sign the swap — signing is free.")); return window.DTP_SWAP.seaport(signer).getCounter(addr); })
     .then(function (counter) {
@@ -183,14 +194,16 @@ function setupSwap(o) {
 }
 function completeSwap(o) {
   var it = itemById(o.item_id), chain = Number(it.asset_chain), signer;
-  var lister = profiles[o.owner_id] && profiles[o.owner_id].wallet_address;
+  // The order may come from any wallet the lister has linked, but only from one of those.
+  var listers = walletsOf(o.owner_id), from = String((o.swap_order || {}).offerer || "").toLowerCase();
+  var lister = listers.indexOf(from) >= 0 ? from : listers[0];
   try {
     window.DTP_SWAP.check(o.swap_order, { counterparty: lister, fee: swapFeeFor(chain) || { recipient: "", wei: "0" },
       receive: { kind: it.asset_kind, contract: it.asset_contract, id: it.asset_token_id },
       pay: { kind: o.asset_kind, contract: o.asset_contract, id: o.asset_token_id } });
   } catch (e) { return toast(e.message); }
   toast(t("Open your wallet…"));
-  walletSigner(chain).then(function (s) { signer = s; return s.getAddress(); })
+  holdingWallets(o).then(function (ws) { return walletSigner(chain, ws); }).then(function (s) { signer = s; return s.getAddress(); })
     .then(function (addr) { return window.DTP_SWAP.ensureApproval(signer, o.asset_contract, addr); })
     .then(function () { toast(t("Confirm the swap in your wallet.")); return window.DTP_SWAP.fulfill(signer, o.swap_order, o.swap_sig); })
     .then(function (tx) { toast(t("Swapping — waiting for the chain…")); return tx.wait(); })

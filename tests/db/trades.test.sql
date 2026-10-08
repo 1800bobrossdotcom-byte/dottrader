@@ -46,6 +46,18 @@ select 'W1 wrong item offered: ' || pg_temp.try(format('select public.post_swap(
 select 'W2 extra thing asked of the other side: ' || pg_temp.try(format('select public.post_swap(%L, %L::jsonb, %L)', '20000000-0000-0000-0000-000000000002', replace(:GOOD, '"itemType":0,', '"itemType":2,'), :SIG));
 select 'W3 paid to someone else: ' || pg_temp.try(format('select public.post_swap(%L, %L::jsonb, %L)', '20000000-0000-0000-0000-000000000002', replace(:GOOD, '"recipient":"0xaaaa000000000000000000000000000000000001"', '"recipient":"0x9999000000000000000000000000000000000009"'), :SIG));
 select 'W4 not from the linked wallet: ' || pg_temp.try(format('select public.post_swap(%L, %L::jsonb, %L)', '20000000-0000-0000-0000-000000000002', replace(:GOOD, '"offerer":"0xAAAA', '"offerer":"0xDDDD'), :SIG));
+-- several wallets: one more linked to Alice, signed with a message naming her account
+\set MSG '''Dot Trading Post\nLinking this wallet to my account\na0000000-0000-0000-0000-000000000001\n2026-10-08T00:00:00Z'''
+select 'L1 link a second wallet: ' || pg_temp.try(format('insert into public.linked_wallets (owner_id, address, msg, sig) values (%L, %L, %L, %L)', 'a0000000-0000-0000-0000-000000000001', '0xcccc000000000000000000000000000000000003', :MSG, :SIG));
+select 'L2 a message that names another account: ' || pg_temp.try(format('insert into public.linked_wallets (owner_id, address, msg, sig) values (%L, %L, %L, %L)', 'a0000000-0000-0000-0000-000000000001', '0xcccc000000000000000000000000000000000004', replace(:MSG, 'a0000000', 'b0000000'), :SIG));
+select 'W4b from Alice''s second wallet, paid back to it: ' || pg_temp.try(format('select public.post_swap(%L, %L::jsonb, %L)', '20000000-0000-0000-0000-000000000002', replace(replace(:GOOD, '"offerer":"0xAAAA000000000000000000000000000000000001"', '"offerer":"0xcccc000000000000000000000000000000000003"'), '"recipient":"0xaaaa000000000000000000000000000000000001"', '"recipient":"0xcccc000000000000000000000000000000000003"'), :SIG));
+select 'W4c from her second wallet, paid to her main one: ' || pg_temp.try(format('select public.post_swap(%L, %L::jsonb, %L)', '20000000-0000-0000-0000-000000000002', replace(:GOOD, '"offerer":"0xAAAA000000000000000000000000000000000001"', '"offerer":"0xcccc000000000000000000000000000000000003"'), :SIG));
+select pg_temp.as_user('e0000000-0000-0000-0000-000000000003');
+select 'L3 someone else links a wallet to Alice: ' || pg_temp.try(format('insert into public.linked_wallets (owner_id, address, msg, sig) values (%L, %L, %L, %L)', 'a0000000-0000-0000-0000-000000000001', '0xeeee000000000000000000000000000000000005', :MSG, :SIG));
+select 'L4 or unlinks hers: ' || pg_temp.try($q$delete from public.linked_wallets where owner_id = 'a0000000-0000-0000-0000-000000000001'$q$) || ', still there: ' || (select count(*) from public.linked_wallets where owner_id = 'a0000000-0000-0000-0000-000000000001');
+reset role; set role anon; select pg_temp.as_user('');
+select 'L5 anyone can see which wallets Alice linked: ' || string_agg(w, ', ' order by w) from public.wallets_of('a0000000-0000-0000-0000-000000000001') w;
+reset role; set role authenticated;
 select pg_temp.as_user('b0000000-0000-0000-0000-000000000002');
 select 'W5 non-lister posts order: ' || pg_temp.try(format('select public.post_swap(%L, %L::jsonb, %L)', '20000000-0000-0000-0000-000000000002', :GOOD, :SIG));
 select pg_temp.as_user('a0000000-0000-0000-0000-000000000001');
