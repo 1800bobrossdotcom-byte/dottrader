@@ -130,7 +130,9 @@ let posted;
     const c = posted.body.p_order;
     const signer = ethers.utils.verifyTypedData({ name: "Seaport", version: "1.6", chainId: 1, verifyingContract: "0x0000000000000068F116a894984e2DB1123eB395" }, globalThis.window.DTP_SWAP.TYPES, c, posted.body.p_sig);
     ok("signature recovers to Alice's linked wallet", signer.toLowerCase() === W[A].addr);
-    ok("order: Alice's NFT for Bob's, paid to Alice, no fee while none is configured", c.offer[0].token === NFT_A.asset_contract && c.offer[0].identifierOrCriteria === NFT_A.asset_token_id && c.consideration.length === 1 && c.consideration[0].identifierOrCriteria === NFT_B.asset_token_id && c.consideration[0].recipient === W[A].addr);
+    ok("order: Alice's NFT for Bob's, paid to Alice", c.offer[0].token === NFT_A.asset_contract && c.offer[0].identifierOrCriteria === NFT_A.asset_token_id && c.consideration[0].identifierOrCriteria === NFT_B.asset_token_id && c.consideration[0].recipient === W[A].addr);
+    const fee = c.consideration[1];
+    ok("…plus the board's fee, 0.0005 ETH to the fee wallet", c.consideration.length === 2 && fee && Number(fee.itemType) === 0 && fee.startAmount === "500000000000000" && fee.endAmount === "500000000000000" && fee.recipient === "0x8455cf296e1265b494605207e97884813de21950", JSON.stringify(fee));
   }
   await ctx.close(); }
 
@@ -145,6 +147,7 @@ if (posted) {
   let decoded = null; try { decoded = iface.parseTransaction({ data: sent[0].data, value: sent[0].value || "0x0" }); } catch (e) {}
   ok("filler sends fulfillOrder to Seaport", sent.length === 1 && sent[0].to.toLowerCase() === "0x0000000000000068f116a894984e2db1123eb395" && decoded && decoded.name === "fulfillOrder");
   ok("…with the order exactly as signed", decoded && decoded.args.order.parameters.offerer.toLowerCase() === W[A].addr && decoded.args.order.signature === posted.body.p_sig);
+  ok("…paying the fee as the transaction's value", sent.length === 1 && BigInt(sent[0].value || "0x0") === 500000000000000n, sent[0] && String(sent[0].value));
   ok("the swap is recorded once mined", rpcs.some(x => x.fn === "record_swap" && /^0x(ab){32}$/.test(x.body.p_tx)));
   await ctx.close();
   const evil = JSON.parse(JSON.stringify(posted.body.p_order)); evil.consideration.push({ itemType: 2, token: "0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d", identifierOrCriteria: "1", startAmount: "1", endAmount: "1", recipient: W[A].addr });

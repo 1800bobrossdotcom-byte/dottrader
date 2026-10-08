@@ -17,7 +17,7 @@ window.DTP_CONFIG = {
   // to charge nothing. Amounts are in wei (1 ETH = 1000000000000000000). The defaults are roughly
   // $1.50–2 each at autumn-2026 prices; adjust as prices move.
   swapFee: {
-    recipient: "",
+    recipient: "0x8455cf296e1265b494605207e97884813de21950",
     wei: {
       1: "500000000000000",            // Ethereum  0.0005 ETH
       8453: "500000000000000",         // Base      0.0005 ETH
