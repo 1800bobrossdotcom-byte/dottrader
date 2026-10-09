@@ -38,3 +38,9 @@ B4 party marks own bond released: ok, still held: 1
 B5 alice sees her payout: 1
 B6 alice approves her own payout: ok, approved rows: 0
 B7 outsider sees bonds: 0
+P1 alice received bob's item and never sent; she can't call bob a no-show: refused: mark your own side sent first (an NFT send counts once the chain confirms it)
+P2 bob, whose item alice confirmed, can close it against her: ok
+P2b the no-show is on alice: true
+C1 bob cancels after alice posted hers: refused: they already marked their side sent — finish the trade, or it ends as a no-show after the ship-by date
+C2 alice cancels after posting: refused: you already marked your side sent
+C3 before anything has moved, either side can walk away: ok

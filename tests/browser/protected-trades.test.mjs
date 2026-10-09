@@ -63,7 +63,7 @@ async function open(browser, as, offers, { bondState = [], query = "" } = {}) {
   await p.route(/functions\/v1\/(verify-item|swift-processor)/, r => r.fulfill({ status: 401, body: "{}", headers: { "access-control-allow-origin": "*" } }));
   await p.route(/functions\/v1\/bond/, async r => {
     const req = r.request();
-    if (req.method() === "GET") return r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ bond_cents: 2500, fee_cents: 150 }), headers: { "access-control-allow-origin": "*" } });
+    if (req.method() === "GET") return r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ bond_cents: 2500, fee_cents: 300, handling_cents: 250, hold_days: 7 }), headers: { "access-control-allow-origin": "*" } });
     if (req.method() === "OPTIONS") return r.fulfill({ status: 200, body: "ok", headers: { "access-control-allow-origin": "*", "access-control-allow-headers": "authorization, apikey, content-type" } });
     const body = JSON.parse(req.postData()); bondCalls.push(body);
     const out = body.action === "start" ? { url: "https://checkout.stripe.com/c/pay/cs_test_9" } : body.action === "confirm" ? { status: "held" } : { settled: 1 };
@@ -90,18 +90,18 @@ const base = { owner_id: A, from_id: B, msg: "", confirm_owner: false, confirm_f
   const { p, ctx, rpcs, bondCalls } = await open(browser, B, offers);
   const panel = await p.$eval("#offersOut .protect", e => e.innerText).catch(() => "");
   ok("agreed trade shows ship-by date and both sides", /SEND BY/i.test(panel) && /not sent yet/.test(panel), panel.split("\n").slice(0, 3).join(" | "));
-  ok("bond price comes from the bond function", /\$25 each/i.test(panel) && /\$1\.50 fee/i.test(panel), panel.split(String.fromCharCode(10)).join(" | ").slice(0, 160));
+  ok("bond price comes from the bond function", /\$25 each/i.test(panel) && /\$3 fee/i.test(panel), panel.split(String.fromCharCode(10)).join(" | ").slice(0, 160));
   await p.click("#offersOut button:has-text('Mark my side sent')"); await p.waitForTimeout(150);
   await p.selectOption("#s-car", "UPS"); await p.fill("#s-ref", "1Z999AA10123456784"); await p.click(".sheet button[type=submit]"); await p.waitForTimeout(400);
   const ms = rpcs.find(x => x.fn === "mark_sent");
   ok("mark sent records carrier and tracking", ms && ms.body.p_how === "post" && ms.body.p_carrier === "UPS" && ms.body.p_ref === "1Z999AA10123456784");
-  await p.click("#offersOut button:has-text('Hold $25 on my card')"); await p.waitForTimeout(1200);
-  ok("Hold $25 opens Stripe checkout", bondCalls.some(c => c.action === "start" && c.offer_id === "o1") && /checkout\.stripe\.com/.test(p.url()));
+  await p.click("#offersOut button:has-text('Hold $28 on my card')"); await p.waitForTimeout(1200);
+  ok("Hold $28 (bond + fee) opens Stripe checkout", bondCalls.some(c => c.action === "start" && c.offer_id === "o1") && /checkout\.stripe\.com/.test(p.url()));
   await ctx.close(); }
 
 // 2. deadline passed, Bob sent, Alice didn't: Bob can close as a no-show; settle follows
 { const offers = [{ ...base, id: "o1", item_id: "i1", give: "Bob vinyl", ship_by: past, from_sent_at: past, from_sent_how: "post", from_carrier: "USPS", from_ref: "9400111" }];
-  const { p, ctx, rpcs, bondCalls } = await open(browser, B, offers, { bondState: [{ id: "b1", offer_id: "o1", user_id: A, amount_cents: 2500, fee_cents: 150, status: "held" }] });
+  const { p, ctx, rpcs, bondCalls } = await open(browser, B, offers, { bondState: [{ id: "b1", offer_id: "o1", user_id: A, amount_cents: 2500, fee_cents: 300, handling_cents: 250, status: "held" }] });
   const panel = await p.$eval("#offersOut .protect", e => e.innerText);
   ok("tracking shows as a carrier link", (await p.$eval("#offersOut .protect a", a => a.href)).includes("usps.com") && /SHIP-BY DATE PASSED/i.test(panel));
   ok("can't cancel after sending", !(await p.$("#offersOut button:has-text('Cancel trade')")));
@@ -122,7 +122,7 @@ let posted;
 { const offers = [{ ...base, id: "o2", item_id: "i2", give: "LOVEBEING OG #1169", ship_by: soon, ...NFT_B }];
   const { p, ctx, rpcs } = await open(browser, A, offers);
   const panel = await p.$eval("#offersIn .protect", e => e.innerText);
-  ok("NFT-for-NFT trade offers an on-chain swap instead of shipping", /SWAP ON CHAIN/i.test(panel) && !(await p.$("#offersIn button:has-text('Mark my side sent')")) && !(await p.$("#offersIn button:has-text('Hold $25')")));
+  ok("NFT-for-NFT trade offers an on-chain swap instead of shipping", /SWAP ON CHAIN/i.test(panel) && !(await p.$("#offersIn button:has-text('Mark my side sent')")) && !(await p.$("#offersIn button:has-text('Hold $2')")));
   ok("…and says who pays the board fee before anyone signs", /Bob pays the gas and a 0\.0005 ETH board fee/.test(panel), panel.slice(0, 300));
   await p.click("#offersIn button:has-text('Set up the swap')"); await p.waitForTimeout(2500);
   posted = rpcs.find(x => x.fn === "post_swap");

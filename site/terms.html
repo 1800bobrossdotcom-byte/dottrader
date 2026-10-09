@@ -64,32 +64,32 @@
     <tr><th>Thing</th><th>Price</th><th>Who pays, when</th></tr>
     <tr><td>Listing, matching, offers, messages, saved wants, local pickup, your record</td><td>Free</td><td>Nobody, ever. There are no listing fees, selling fees or percentages of value.</td></tr>
     <tr><td>Completing an NFT-for-NFT swap on chain</td><td>A flat amount in that chain's own coin (about $1.50–2 at the time of writing; the exact amount is shown before anyone signs)</td><td>The trader who completes the swap, in the same transaction that moves both NFTs. The trader who signs pays nothing.</td></tr>
-    <tr><td>Trade protection (a bond), where offered</td><td>$3.00 fee on a $25.00 card hold, per trader</td><td>Only a trader who chooses to put up a bond, and only when the trade completes. A called-off trade pays nothing.</td></tr>
+    <tr><td>Trade protection (a bond), where offered</td><td>$3.00 fee, per trader. The hold on your card is $28.00: the $25.00 bond plus the fee.</td><td>Only a trader who chooses to put up a bond. Taken when the trade completes, or on day six of your hold once you've marked your side sent (and refunded if the trade then ends without your getting theirs). A trade called off before anything is sent pays nothing.</td></tr>
     <tr><td>Handling on a forfeited bond</td><td>$2.50</td><td>Kept from a forfeited bond before the rest is paid to the trader who did send.</td></tr>
   </table>
   <p>Prices are shown on the board before you pay anything and are in US dollars unless they are in a chain's coin. If we change a price, trades already agreed keep the price they were agreed at.</p>
 
   <h2 id="protection">3. Trade protection and bonds</h2>
-  <p>On an agreed trade that isn't an on-chain swap, either trader can choose to put up a bond. A bond is a hold on your card for the bond plus the fee ($28.00 today), placed through Stripe. It is a hold, not a charge: nothing is taken until one of the outcomes below.</p>
+  <p>On an agreed trade that isn't an on-chain swap, either trader can choose to put up a bond. A bond is a hold on your card for the bond plus the fee ($28.00 today), placed through Stripe. It is a hold, not a charge: nothing is taken until one of the outcomes below, or day six (see <a href="#clock">the clock</a>).</p>
   <h3>How it ends</h3>
   <ul>
     <li><b>The trade completes</b> (both sides press their dot): the fee is kept and the rest of the hold is released.</li>
-    <li><b>The trade is called off</b> by either side before anyone has marked sent: the hold is released in full, no fee.</li>
-    <li><b>One side never sends.</b> The ship-by date passes with one trader having marked their side sent and the other not. The trader who sent can close the trade as a no-show. The other trader's whole hold is captured, and the bond amount, less the $2.50 handling fee, is owed to the trader who sent. The trader who sent pays no fee; if their fee had already been taken, it is refunded.</li>
+    <li><b>The trade is called off</b> by either side before anything has been sent or has arrived: the hold is released in full, no fee. Once one side has sent, the other can't call it off; the trade completes, or ends as a no-show.</li>
+    <li><b>One side never sends.</b> The ship-by date passes with one trader's side sent (marked sent, or confirmed arrived by the other trader) and the other's not. The trader who sent can close the trade as a no-show. The other trader's whole hold is captured, and the bond amount, less the $2.50 handling fee, is owed to the trader who sent. The trader who sent pays no fee; if their fee had already been taken, it is refunded.</li>
   </ul>
-  <h3>The clock</h3>
+  <h3 id="clock">The clock</h3>
   <p>Card holds last seven days from the moment the card is authorised; that is a limit set by card networks, not by Dot. The ship-by date on every trade is four days after it was agreed. Three things follow:</p>
   <ul>
     <li>Once you have marked your side sent, your bond has done its job, so on day six the fee is taken and the rest of your hold is released. You'll be emailed when that happens.</li>
-    <li>If the other trader hasn't sent by the ship-by date, close the no-show <b>before their hold lapses</b>. The board shows the date and emails you. After the hold lapses there is nothing to capture and nothing to pay out.</li>
+    <li>If the other trader hasn't sent by the ship-by date, close the no-show <b>before their hold lapses</b>. The board shows the date to close it by and emails you (that email can't be switched off while you are owed a bond). After the hold lapses there is nothing to capture and nothing to pay out.</li>
     <li>A hold that lapses with nobody acting is simply gone: no fee, no payout.</li>
   </ul>
   <h3>What a bond is</h3>
   <p>When you put up a bond you and the other trader are agreeing, in advance, that a side which never sends owes the other side the bond amount for the failed trade: the time, postage and lost opportunity of a trade that didn't happen. It is not a fine and it is not a payment to Dot. Dot keeps only the fee and the handling fee listed above.</p>
   <h3>Reviews, mistakes and disputes</h3>
   <ul>
-    <li>Before a forfeit is paid out, someone running the board looks at it. We may ask either trader for the tracking number, the receipt or photos. A no-show that turns out to be wrong (the item was sent and the proof is good) is reversed.</li>
-    <li>If you think a fee was taken or a bond forfeited by mistake, write to us within 7 days through the board. We'd much rather fix it than see a chargeback; a chargeback on a bond you agreed to may close your account.</li>
+    <li>Before a forfeit is paid out, someone running the board looks at it. We may ask either trader for the tracking number, the receipt or photos. A no-show that turns out to be wrong (the item was sent and the proof is good) is reversed by hand: we refund the captured hold, cancel the payout and take the no-show off the record.</li>
+    <li>If you think a fee was taken or a bond forfeited by mistake, email <a href="mailto:hello@dottrader.app">hello@dottrader.app</a> within 7 days. We'd much rather fix it than see a chargeback; a chargeback on a bond you agreed to may close your account.</li>
     <li>You must be 18 or over, and the cardholder, to put up a bond.</li>
   </ul>
 
@@ -119,14 +119,14 @@
   <p><b>What we store.</b> Your email address and sign-in; your profile (name, area, note, language, and a location only if you choose to share one); your listings and photos; offers and the messages between you and the other trader; linked wallet addresses with their signatures; trade records including tracking numbers and transaction hashes you enter; bond and payout records (amounts, status and Stripe's identifiers, never card numbers); and which emails we've sent you. Visits are counted as a daily hash of your network address and browser that can't be turned back into either.</p>
   <p><b>Who sees what.</b> Listings, profiles, dots and no-show records are public. Messages are visible only to the two traders in that trade and to us. Wallet addresses you link are public, because every viewer checks them on chain.</p>
   <p><b>Who helps us run it.</b> Supabase (database and sign-in), Vercel (the website), Stripe (card holds and payouts; your card details go to Stripe and never pass through Dot), Resend (email), and public blockchain nodes for on-chain checks, which see the usual connection details when your browser asks them. We don't sell your data and we don't run advertising.</p>
-  <p><b>Your choices.</b> You can edit your profile, unlink wallets, switch each kind of email off, and remove your listings at any time. To delete your account, message us through the board and we'll remove it; trade records that other traders' profiles depend on are kept in a form that no longer identifies you.</p>
+  <p><b>Your choices.</b> You can edit your profile, unlink wallets, switch each kind of email off, and remove your listings at any time. To delete your account, email <a href="mailto:hello@dottrader.app">hello@dottrader.app</a> from the address you sign in with and we'll remove it; trade records that other traders' profiles depend on are kept in a form that no longer identifies you.</p>
 
   <h2 id="rest">9. The rest</h2>
   <ul>
     <li>The board is provided as it is. We work hard on it, but we can't promise it will always be up or free of mistakes.</li>
     <li>We are not a party to any trade and are not responsible for what a trader sends, doesn't send, or says. Where the law lets us, our liability to you is limited to the fees you have paid us in the twelve months before the claim.</li>
     <li>We may change these terms. If we do, the date at the top changes and anything you've already paid for keeps the terms it was paid under.</li>
-    <li>Questions, mistakes, or anything that doesn't feel right: write to us through the board, or reply to any email the board has sent you.</li>
+    <li>Questions, mistakes, or anything that doesn't feel right: email <a href="mailto:hello@dottrader.app">hello@dottrader.app</a>, or reply to any email the board has sent you.</li>
   </ul>
 </main>
 

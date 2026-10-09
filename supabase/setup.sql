@@ -850,12 +850,14 @@ begin
   if not found then raise exception 'offer not found'; end if;
   if o.status <> 'agreed' then raise exception 'only an agreed trade can be claimed'; end if;
   if o.ship_by is null or now() <= o.ship_by then raise exception 'the ship-by date has not passed yet'; end if;
+  -- Pressing your dot says "theirs arrived", so a press is proof of the OTHER side's send:
+  -- confirm_owner (the owner received) counts for the offerer, confirm_from for the owner.
   if auth.uid() = o.owner_id then
-    me_done := public.side_sent(o.owner_sent_at, o.owner_sent_how, o.owner_tx_status, true) or o.confirm_owner;
-    them_done := public.side_sent(o.from_sent_at, o.from_sent_how, o.from_tx_status, false) or o.confirm_from; them := o.from_id;
+    me_done := public.side_sent(o.owner_sent_at, o.owner_sent_how, o.owner_tx_status, true) or o.confirm_from;
+    them_done := public.side_sent(o.from_sent_at, o.from_sent_how, o.from_tx_status, false) or o.confirm_owner; them := o.from_id;
   elsif auth.uid() = o.from_id then
-    me_done := public.side_sent(o.from_sent_at, o.from_sent_how, o.from_tx_status, true) or o.confirm_from;
-    them_done := public.side_sent(o.owner_sent_at, o.owner_sent_how, o.owner_tx_status, false) or o.confirm_owner; them := o.owner_id;
+    me_done := public.side_sent(o.from_sent_at, o.from_sent_how, o.from_tx_status, true) or o.confirm_owner;
+    them_done := public.side_sent(o.owner_sent_at, o.owner_sent_how, o.owner_tx_status, false) or o.confirm_from; them := o.owner_id;
   else
     raise exception 'you are not part of this trade';
   end if;
@@ -873,12 +875,17 @@ begin
   select * into o from public.offers where id = p_offer for update;
   if not found then raise exception 'offer not found'; end if;
   if o.status <> 'agreed' then raise exception 'only an agreed trade can be cancelled'; end if;
+  -- Walking away is for before anything has moved. Once either side has marked sent, or an item has
+  -- arrived, the trade finishes or ends as a no-show; otherwise the side that never sent could
+  -- cancel its way out of a bond after the other side posted.
   if auth.uid() = o.owner_id then
-    if o.confirm_owner then raise exception 'you already confirmed your side arrived'; end if;
-    if o.owner_sent_at is not null then raise exception 'you already marked your side sent'; end if;
+    if o.confirm_owner then raise exception 'you already confirmed their side arrived'; end if;
+    if o.owner_sent_at is not null or o.confirm_from then raise exception 'you already marked your side sent'; end if;
+    if o.from_sent_at is not null then raise exception 'they already marked their side sent — finish the trade, or it ends as a no-show after the ship-by date'; end if;
   elsif auth.uid() = o.from_id then
-    if o.confirm_from then raise exception 'you already confirmed your side arrived'; end if;
-    if o.from_sent_at is not null then raise exception 'you already marked your side sent'; end if;
+    if o.confirm_from then raise exception 'you already confirmed their side arrived'; end if;
+    if o.from_sent_at is not null or o.confirm_owner then raise exception 'you already marked your side sent'; end if;
+    if o.owner_sent_at is not null then raise exception 'they already marked their side sent — finish the trade, or it ends as a no-show after the ship-by date'; end if;
   else
     raise exception 'you are not part of this trade';
   end if;
@@ -1075,6 +1082,7 @@ create table if not exists public.bonds (
 -- When the card authorised (holds lapse seven days later), what became of the fee, and so what the
 -- board earned: 'released' alone can't say whether a fee was kept.
 alter table public.bonds
+  add column if not exists handling_cents     integer check (handling_cents is null or handling_cents >= 0),
   add column if not exists held_at            timestamptz,
   add column if not exists fee_captured_cents integer not null default 0 check (fee_captured_cents >= 0),
   add column if not exists fee_refunded_cents integer not null default 0 check (fee_refunded_cents >= 0);
@@ -1692,16 +1700,21 @@ revoke execute on function public.notify_event(text, uuid) from public, anon, au
 -- The bond function's address (see notify_function above), and the tick that drives it: Stripe's
 -- holds lapse on a clock, so the function's sweep runs every ten minutes while any bond is open.
 insert into public.app_config (key, value) values ('bond_function', 'bond') on conflict (key) do nothing;
+-- A secret only the database and the bond function know (app_config has no read policy, so the API
+-- can't see it; the function reads it with the service key). The sweep refuses calls without it.
+insert into public.app_config (key, value) values ('bond_sweep_key', md5(gen_random_uuid()::text || clock_timestamp()::text) || md5(gen_random_uuid()::text)) on conflict (key) do nothing;
 create or replace function public.bond_tick()
 returns void language plpgsql security definer set search_path = public as $$
-declare base text; fn text;
+declare base text; fn text; k text;
 begin
   if to_regproc('net.http_post') is null then return; end if;
   select value into base from public.app_config where key = 'functions_url';
   if base is null then return; end if;
   select value into fn from public.app_config where key = 'bond_function';
+  select value into k from public.app_config where key = 'bond_sweep_key';
   execute 'select net.http_post(url := $1, body := $2, headers := $3)'
-    using base || '/' || coalesce(nullif(btrim(fn), ''), 'bond'), '{"action": "sweep"}'::jsonb, '{"Content-Type": "application/json"}'::jsonb;
+    using base || '/' || coalesce(nullif(btrim(fn), ''), 'bond'), '{"action": "sweep"}'::jsonb,
+          jsonb_build_object('Content-Type', 'application/json', 'x-bond-key', coalesce(k, ''));
   perform public.notify_event('bond_sweep', null);
 exception when others then
   raise warning 'bond_tick failed: %', sqlerrm;
@@ -1781,7 +1794,10 @@ do $$ begin
   -- Bonds: finish checkouts, settle finished trades, take day-six fees, notice lapsed holds, and
   -- remind the honest side to close a no-show before the other side's hold lapses.
   perform cron.unschedule(jobid) from cron.job where jobname = 'dtp-bonds';
-  perform cron.schedule('dtp-bonds', '*/10 * * * *', $job$ select public.bond_tick() where exists (select 1 from public.bonds where status in ('pending', 'held') or (fee_captured_cents > 0 and settled_at > now() - interval '2 days')) $job$);
+  perform cron.schedule('dtp-bonds', '*/10 * * * *', $job$ select public.bond_tick() where exists (select 1 from public.bonds b join public.offers o on o.id = b.offer_id
+    where b.status in ('pending', 'held') or (b.fee_captured_cents > 0 and b.settled_at > now() - interval '2 days')
+       or (b.status = 'released' and b.fee_captured_cents > b.fee_refunded_cents and o.status = 'cancelled')
+       or (b.status = 'forfeited' and not exists (select 1 from public.payouts p where p.bond_id = b.id))) $job$);
 exception when others then raise notice 'pg_cron not available here: no ship-by reminders';
 end $$;
 

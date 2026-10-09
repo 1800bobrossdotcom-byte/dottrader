@@ -597,10 +597,10 @@
   "{who} pays the gas and a {fee} board fee.": "{who} paga o gas e uma taxa do mural de {fee}.",
   "You pay the gas and a {fee} board fee.": "Você paga o gas e uma taxa do mural de {fee}.",
   "A hold on your card, not a charge. If the trade completes, {fee} is kept as the fee and the rest is released. If you send and they don’t, their bond is paid to you, less a {handling} handling fee. Holds last {days} days: once you’ve marked sent, the fee is taken on day six and the rest released.": "Uma reserva no seu cartão, não uma cobrança. Se a troca for concluída, {fee} fica como taxa e o restante é liberado. Se você enviar e a outra pessoa não, a caução dela vai para você, menos {handling} de taxa de processamento. As reservas duram {days} dias: depois que você marcar o seu lado como enviado, a taxa é cobrada no sexto dia e o restante é liberado.",
-  "Close this trade as a no-show? {who} gets a no-show on their record and their bond is paid to you, less a {handling} handling fee. Your item goes back on the board.": "Fechar esta troca como falta? {who} fica com uma falta no histórico e a caução vai para você, menos {handling} de taxa de processamento. Seu item volta ao mural.",
+  "Close this trade as a no-show? {who} gets a no-show on their record and their bond is paid to you, less a {handling} handling fee. Your item goes back on the board.": "Fechar esta troca como furo? {who} fica com um furo no histórico e a caução vai para você, menos {handling} de taxa de processamento. Seu item volta ao mural.",
   "See the terms.": "Ver os termos.",
-  "Their hold lapses {date}. Close the no-show before then and their bond is paid to you.": "A reserva da pessoa expira em {date}. Feche a falta antes disso e a caução vai para você.",
   "released, {fee} fee kept": "liberada, taxa de {fee} cobrada",
   "until {date}": "até {date}",
-  "Terms": "Termos"
+  "Terms": "Termos",
+  "Close the no-show by {date} and their bond is paid to you, less the {handling} handling fee. After that their card hold lapses.": "Feche o furo até {date} e a caução vai para você, menos {handling} de taxa de processamento. Depois disso, a reserva no cartão expira."
 }

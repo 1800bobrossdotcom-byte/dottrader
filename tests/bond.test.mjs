@@ -3,12 +3,19 @@
 const env = { SUPABASE_URL: "https://proj.supabase.co", SUPABASE_SERVICE_ROLE_KEY: "service", STRIPE_SECRET_KEY: "sk_test_x" };
 let handler; globalThis.Deno = { env: { get: k => env[k] }, serve: h => { handler = h; } };
 const A = "a0000000-0000-0000-0000-000000000001", B = "b0000000-0000-0000-0000-000000000002", E = "e0000000-0000-0000-0000-000000000003";
-const T = { offers: [], bonds: [], payouts: [], stripe_accounts: [] };
+const T = { offers: [], bonds: [], payouts: [], stripe_accounts: [], app_config: [{ key: "bond_sweep_key", value: "k3y" }] };
 const stripeCalls = []; const idem = new Map(); let acctActive = false; let seq = 0;
 // What Stripe would say about a checkout session or a payment intent, when a test wants something other than "held".
 const sessionState = {}, piStatus = {};
 const tokens = { tA: A, tB: B, tE: E };
-function filt(rows, qs) { for (const [k, v] of qs) { if (["select", "on_conflict"].includes(k)) continue; const val = v.replace(/^eq\./, ""); rows = rows.filter(r => String(r[k]) === val); } return rows; }
+function filt(rows, qs) {
+  for (const [k, v] of qs) {
+    if (["select", "on_conflict"].includes(k)) continue;
+    const [op, ...rest] = v.split("."), val = rest.join(".");
+    rows = rows.filter(r => op === "eq" ? String(r[k]) === val : op === "gt" ? Number(r[k]) > Number(val) : op === "in" ? val.slice(1, -1).split(",").includes(String(r[k])) : true);
+  }
+  return rows;
+}
 globalThis.fetch = async (url, init = {}) => {
   url = String(url); const m = init.method || "GET"; const R = (b, s = 200) => new Response(typeof b === "string" ? b : JSON.stringify(b), { status: s });
   if (url.endsWith("/auth/v1/user")) { const t = (init.headers.Authorization || "").slice(7); return tokens[t] ? R({ id: tokens[t], email: t + "@x.com" }) : R({ msg: "bad jwt" }, 401); }
@@ -28,7 +35,8 @@ globalThis.fetch = async (url, init = {}) => {
     else if (path.startsWith("checkout/sessions/")) { const id = path.split("/")[2].split("?")[0]; const b = T.bonds.find(x => x.checkout_id === id);
       out = sessionState[id] || { id, status: "complete", client_reference_id: b && b.user_id, payment_intent: { id: "pi_" + id, status: "requires_capture", created: Math.floor(Date.now() / 1000) } }; }
     else if (/payment_intents\/.*\/(capture|cancel)/.test(path)) { const id = path.split("/")[1]; if (piStatus[id] === "canceled") return R({ error: { code: "payment_intent_unexpected_state", message: "lapsed" } }); out = { id, status: path.endsWith("capture") ? "succeeded" : "canceled" }; }
-    else if (/^payment_intents\/[^/]+$/.test(path) && m === "GET") out = { id: path.split("/")[1], status: piStatus[path.split("/")[1]] || "requires_capture" };
+    else if (/^payment_intents\/[^/]+$/.test(path) && m === "GET") out = { id: path.split("/")[1], status: piStatus[path.split("/")[1]] || "requires_capture", latest_charge: "ch_" + path.split("/")[1] };
+    else if (/^checkout\/sessions\/[^/]+\/expire$/.test(path)) out = { id: path.split("/")[2], status: "expired" };
     else if (path === "refunds") out = { id: "re_" + (++seq) };
     else if (path === "accounts") out = { id: "acct_1" };
     else if (path === "accounts/acct_1") out = { id: "acct_1", capabilities: { transfers: acctActive ? "active" : "inactive" } };
@@ -40,7 +48,8 @@ globalThis.fetch = async (url, init = {}) => {
   throw new Error("unexpected fetch " + url);
 };
 await import(new URL("../supabase/functions/bond/index.ts", import.meta.url).href);
-const call = async (tok, body, method = "POST") => { const r = await handler(new Request("https://proj.supabase.co/functions/v1/bond", { method, headers: tok ? { Authorization: "Bearer " + tok, "content-type": "application/json" } : {}, body: method === "POST" ? JSON.stringify(body) : undefined })); return [r.status, await r.json()]; };
+const call = async (tok, body, method = "POST", extra = {}) => { const r = await handler(new Request("https://proj.supabase.co/functions/v1/bond", { method, headers: { ...(tok ? { Authorization: "Bearer " + tok, "content-type": "application/json" } : {}), ...extra }, body: method === "POST" ? JSON.stringify(body) : undefined })); return [r.status, await r.json()]; };
+const sweep = () => call(null, { action: "sweep" }, "POST", { "x-bond-key": "k3y" });
 const res = []; const ok = (n, c, x) => res.push((c ? "PASS " : "FAIL ") + n + (x ? "  [" + x + "]" : ""));
 
 let [s, j] = await call(null, null, "GET"); ok("GET tells the board the price", s === 200 && j.bond_cents === 2500 && j.fee_cents === 300 && j.handling_cents === 250 && j.hold_days === 7, JSON.stringify(j));
@@ -86,23 +95,26 @@ T.payouts[0].approved = true;
 [s, j] = await call("tA", { action: "payout" }); ok("approved payout first sends them to Stripe onboarding", /connect\.stripe\.com/.test(j.onboarding || ""));
 acctActive = true; [s, j] = await call("tA", { action: "payout" });
 ok("after onboarding the money is transferred", j.paid === 1 && T.payouts[0].status === "paid" && stripeCalls.some(c => c.path === "transfers" && c.body.amount === "2250" && c.body.destination === "acct_1"));
+ok("…paid out of the forfeited charge, so it needn't wait for it to settle", stripeCalls.some(c => c.path === "transfers" && c.body.source_transaction === "ch_" + bB.payment_intent), JSON.stringify(stripeCalls.filter(c => c.path === "transfers").map(c => c.body)));
 [s, j] = await call("tA", { action: "payout" }); ok("and never twice", j.paid === 0 && stripeCalls.filter(c => c.path === "transfers").length === 1);
 [s, j] = await call("tB", { action: "payout" }); ok("the no-show has nothing to claim", j.paid === 0 && j.waiting === 0);
 
 // ---- the sweep: what the clock does while nobody is on the board
 const ago = (days) => new Date(Date.now() - days * 86400e3).toISOString();
 const offer = (id, extra = {}) => { const o = { id, owner_id: A, from_id: B, status: "agreed", ...extra }; T.offers.push(o); return o; };
-[s, j] = await call(null, { action: "sweep" }); ok("the sweep needs no session", s === 200 && typeof j.held === "number", JSON.stringify(j));
+[s, j] = await call(null, { action: "sweep" }); ok("the sweep refuses a caller without the database's key", s === 401);
+[s, j] = await call(null, { action: "sweep" }, "POST", { "x-bond-key": "guess" }); ok("…or with the wrong one", s === 401);
+[s, j] = await sweep(); ok("the sweep needs no session, only the key", s === 200 && typeof j.held === "number", JSON.stringify(j));
 
 // checkouts that never came back to the board
 const O3 = offer("33333333-3333-3333-3333-333333333333").id;
 await call("tA", { action: "start", offer_id: O3 }); const abandoned = T.bonds.at(-1);
 await call("tB", { action: "start", offer_id: O3 }); const paidButLeft = T.bonds.at(-1);
 sessionState[abandoned.checkout_id] = { id: abandoned.checkout_id, status: "expired", payment_intent: null };
-await call(null, { action: "sweep" });
+await sweep();
 ok("a checkout under two minutes old is left alone", abandoned.status === "pending" && paidButLeft.status === "pending");
 abandoned.created_at = ago(0.01); paidButLeft.created_at = ago(0.01);
-[s, j] = await call(null, { action: "sweep" });
+[s, j] = await sweep();
 ok("an abandoned checkout is marked failed", abandoned.status === "failed", abandoned.status);
 ok("a paid checkout nobody returned from is marked held, from when the card authorised", paidButLeft.status === "held" && !!paidButLeft.held_at && paidButLeft.payment_intent === "pi_" + paidButLeft.checkout_id, paidButLeft.status);
 
@@ -111,18 +123,18 @@ const O4 = offer("44444444-4444-4444-4444-444444444444", { owner_sent_at: ago(2)
 await call("tA", { action: "start", offer_id: O4.id }); await call("tA", { action: "confirm", session_id: T.bonds.at(-1).checkout_id }); const senderBond = T.bonds.at(-1);
 await call("tB", { action: "start", offer_id: O4.id }); await call("tB", { action: "confirm", session_id: T.bonds.at(-1).checkout_id }); const idlerBond = T.bonds.at(-1);
 senderBond.held_at = ago(5.5); idlerBond.held_at = ago(5.5);
-await call(null, { action: "sweep" });
+await sweep();
 ok("before day six nothing is taken", senderBond.status === "held" && idlerBond.status === "held");
 senderBond.held_at = ago(6.1); idlerBond.held_at = ago(6.1); const b4 = stripeCalls.length;
-[s, j] = await call(null, { action: "sweep" });
+[s, j] = await sweep();
 ok("on day six the sender's fee is taken and the rest released", senderBond.status === "released" && senderBond.fee_captured_cents === 300 && stripeCalls.slice(b4).some(c => c.path === `payment_intents/${senderBond.payment_intent}/capture` && c.body.amount_to_capture === "300"), JSON.stringify(j));
 ok("…while the side that hasn't sent stays held", idlerBond.status === "held");
-await call(null, { action: "sweep" });
+await sweep();
 ok("sweeping again takes nothing more", stripeCalls.filter(c => c.path === `payment_intents/${senderBond.payment_intent}/capture`).length === 1);
 
 // then the idle side never sends and the trade is closed as a no-show
 O4.status = "cancelled"; O4.defaulted_by = B; const b5 = stripeCalls.length;
-await call(null, { action: "sweep" }); const c5 = stripeCalls.slice(b5);
+await sweep(); const c5 = stripeCalls.slice(b5);
 ok("the no-show's whole hold is captured by the sweep", idlerBond.status === "forfeited" && c5.some(c => c.path === `payment_intents/${idlerBond.payment_intent}/capture` && !c.body.amount_to_capture));
 ok("the honest side's fee, taken on day six, is refunded", senderBond.fee_refunded_cents === 300 && c5.some(c => c.path === "refunds" && c.body.payment_intent === senderBond.payment_intent && c.body.amount === "300"), JSON.stringify(c5.map(c => c.path)));
 ok("…and the payout is the bond less handling", T.payouts.some(p => p.bond_id === idlerBond.id && p.user_id === A && p.amount_cents === 2250));
@@ -133,10 +145,71 @@ ok("settling by hand afterwards refunds nothing twice", stripeCalls.filter(c => 
 const O5 = offer("55555555-5555-5555-5555-555555555555").id;
 await call("tA", { action: "start", offer_id: O5 }); await call("tA", { action: "confirm", session_id: T.bonds.at(-1).checkout_id }); const lapsedBond = T.bonds.at(-1);
 lapsedBond.held_at = ago(8); piStatus[lapsedBond.payment_intent] = "canceled";
-await call(null, { action: "sweep" });
+await sweep();
 ok("a hold Stripe has let go is recorded as lapsed", lapsedBond.status === "expired", lapsedBond.status);
 T.offers.find(o => o.id === O5).status = "done"; const b6 = stripeCalls.length;
 [s, j] = await call("tA", { action: "settle", offer_id: O5 });
 ok("a lapsed hold can't be charged when the trade later completes", stripeCalls.slice(b6).every(c => !/capture/.test(c.path)) && lapsedBond.status === "expired");
+
+
+// ---- what the review found
+// A dot-press says "theirs arrived": it is evidence of the OTHER side's send, never your own.
+const O6 = offer("66666666-6666-6666-6666-666666666666", { confirm_owner: true });   // A pressed: B's item reached A; A never sent
+await call("tA", { action: "start", offer_id: O6.id }); await call("tA", { action: "confirm", session_id: T.bonds.at(-1).checkout_id }); const receiverBond = T.bonds.at(-1);
+await call("tB", { action: "start", offer_id: O6.id }); await call("tB", { action: "confirm", session_id: T.bonds.at(-1).checkout_id }); const deliveredBond = T.bonds.at(-1);
+receiverBond.held_at = ago(6.2); deliveredBond.held_at = ago(6.2);
+await sweep();
+ok("on day six, the side that only pressed (received) keeps its hold — pressing isn't sending", receiverBond.status === "held", receiverBond.status);
+ok("…and the side whose item arrived counts as sent: its fee is taken, the rest released", deliveredBond.status === "released" && deliveredBond.fee_captured_cents === 300, deliveredBond.status);
+
+// Called off with no no-show: a fee already taken comes back.
+O6.status = "cancelled"; const b7 = stripeCalls.length;
+await sweep();
+ok("a trade called off after a day-six fee refunds that fee", deliveredBond.fee_refunded_cents === 300 && stripeCalls.slice(b7).some(c => c.path === "refunds" && c.body.payment_intent === deliveredBond.payment_intent));
+ok("…and the other hold is released in full", receiverBond.status === "released" && receiverBond.fee_captured_cents === 0);
+
+// A restart can't wipe a bond that has already done its job, or overwrite a live checkout.
+const O7 = offer("77777777-7777-7777-7777-777777777777", { owner_sent_at: ago(1) });
+await call("tA", { action: "start", offer_id: O7.id }); await call("tA", { action: "confirm", session_id: T.bonds.at(-1).checkout_id }); const doneJob = T.bonds.at(-1);
+doneJob.held_at = ago(6.1); await sweep();
+[s, j] = await call("tA", { action: "start", offer_id: O7.id });
+ok("after the day-six release, bonding again is refused and the fee record kept", s === 400 && doneJob.status === "released" && doneJob.fee_captured_cents === 300, j.error);
+await call("tB", { action: "start", offer_id: O7.id }); const firstTry = T.bonds.at(-1), firstSession = firstTry.checkout_id;
+sessionState[firstSession] = { id: firstSession, status: "open", payment_intent: null };
+[s, j] = await call("tB", { action: "start", offer_id: O7.id });
+ok("starting again while a checkout is open closes the old one first", s === 200 && stripeCalls.some(c => c.path === `checkout/sessions/${firstSession}/expire`) && firstTry.checkout_id !== firstSession);
+const secondSession = firstTry.checkout_id;
+sessionState[secondSession] = { id: secondSession, status: "complete", payment_intent: { id: "pi_x" + secondSession, status: "requires_capture", created: Math.floor(Date.now() / 1000) } };
+[s, j] = await call("tB", { action: "start", offer_id: O7.id });
+ok("…and refuses when that checkout has already authorised", s === 400 && firstTry.status === "held", j.error);
+
+// A restart starts its own clock; a card mid-3-D Secure isn't failed.
+const O8 = offer("88888888-8888-8888-8888-888888888888");
+await call("tA", { action: "start", offer_id: O8.id }); const retry = T.bonds.at(-1);
+retry.status = "failed"; retry.created_at = ago(2);
+await call("tA", { action: "start", offer_id: O8.id });
+ok("a retried checkout is aged from the retry, not the first attempt", Date.now() - new Date(retry.created_at).getTime() < 60e3);
+retry.created_at = ago(0.01);
+sessionState[retry.checkout_id] = { id: retry.checkout_id, status: "open", payment_intent: { id: "pi_3ds", status: "requires_action" } };
+await sweep();
+ok("a card in the middle of 3-D Secure is left pending, not failed", retry.status === "pending", retry.status);
+sessionState[retry.checkout_id] = { id: retry.checkout_id, status: "complete", payment_intent: { id: "pi_3ds", status: "requires_capture", created: Math.floor(Date.now() / 1000) } };
+retry.status = "failed";
+[s, j] = await call("tA", { action: "confirm", session_id: retry.checkout_id });
+ok("a checkout marked failed that did authorise is picked up on return", j.status === "held" && retry.status === "held" && retry.payment_intent === "pi_3ds");
+
+// The handling fee is the one agreed when the bond was placed.
+const O9 = offer("99999999-9999-9999-9999-999999999999");
+await call("tB", { action: "start", offer_id: O9.id }); await call("tB", { action: "confirm", session_id: T.bonds.at(-1).checkout_id }); const locked = T.bonds.at(-1);
+ok("the handling fee is recorded on the bond when it is placed", locked.handling_cents === 250);
+locked.handling_cents = 100;   // as if the price was lower when this one was placed
+O9.status = "cancelled"; O9.defaulted_by = B;
+await sweep();
+ok("…and that is what the forfeit deducts", T.payouts.some(p => p.bond_id === locked.id && p.amount_cents === 2400 && p.handling_cents === 100));
+
+// A forfeit whose payout row went missing is owed again on the next pass.
+T.payouts = T.payouts.filter(p => p.bond_id !== locked.id);
+await sweep();
+ok("a forfeit with no payout row gets one on the next sweep", T.payouts.filter(p => p.bond_id === locked.id).length === 1);
 
 console.log(res.join("\n")); if (res.some(r => !r.startsWith("PASS"))) process.exitCode = 1;

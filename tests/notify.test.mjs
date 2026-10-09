@@ -96,11 +96,19 @@ T.profiles[0].lang = "en"; T.profiles[1].lang = "en";
 const ago = (d) => new Date(Date.now() - d * 86400e3).toISOString();
 T.items.push({ id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", title: "Sega Saturn", owner_id: A, status: "pledged" });
 T.offers.push({ id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", item_id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", owner_id: A, from_id: B, give: "Dreamcast", msg: "", status: "agreed", ship_by: ago(0.5), owner_sent_at: ago(1), confirm_owner: false, confirm_from: false });
-T.bonds.push({ id: "bond-b", offer_id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", user_id: B, amount_cents: 2500, fee_cents: 300, status: "held", held_at: ago(4.5), fee_captured_cents: 0, fee_refunded_cents: 0 });
+T.bonds.push({ id: "bond-b", offer_id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", user_id: B, amount_cents: 2500, fee_cents: 300, handling_cents: 250, status: "held", held_at: ago(4.5), fee_captured_cents: 0, fee_refunded_cents: 0 });
+// Alice turned ship-by reminders off; the email about money she is owed still comes.
+T.profiles[0].email_prefs = { reminders: false };
 [s, j] = await call({ kind: "bond_sweep" });
-ok("past the ship-by date, the side that sent is told to close the no-show before the other's hold lapses", j.sent === 1 && last().to[0] === "alice@x.com" && /Bob hasn't sent/.test(last().subject) && /\$25\.00 bond lapses/.test(last().html) && /Sega Saturn/.test(last().html), last().subject);
+ok("past the ship-by date, the side that sent is told to close the no-show before the other's hold lapses", j.sent === 1 && last().to[0] === "alice@x.com" && /Bob hasn't sent/.test(last().subject) && /\$25\.00 bond is paid to you, less a handling fee — <b>\$22\.50<\/b>/.test(last().html) && /Sega Saturn/.test(last().html), last().subject);
 [s, j] = await call({ kind: "bond_sweep" });
 ok("…once", j.sent === 0);
+T.profiles[0].email_prefs = {};
+// Alice pressed her dot (Bob's item reached her) but never sent: she is not the one owed a claim email.
+T.offers.push({ id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc", item_id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", owner_id: A, from_id: B, give: "Dreamcast", msg: "", status: "agreed", ship_by: ago(0.5), confirm_owner: true, confirm_from: false });
+T.bonds.push({ id: "bond-b2", offer_id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc", user_id: A, amount_cents: 2500, fee_cents: 300, handling_cents: 250, status: "held", held_at: ago(4.5), fee_captured_cents: 0, fee_refunded_cents: 0 });
+[s, j] = await call({ kind: "bond_sweep" });
+ok("a press counts as the other side's send: Bob, whose item arrived, is told he can claim Alice's bond", j.sent === 1 && last().to[0] === "bob@x.com" && /Alice hasn't sent/.test(last().subject), last().subject);
 T.bonds.push({ id: "bond-a", offer_id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", user_id: A, amount_cents: 2500, fee_cents: 300, status: "released", held_at: ago(6.2), settled_at: ago(0.1), fee_captured_cents: 300, fee_refunded_cents: 0 });
 [s, j] = await call({ kind: "bond_sweep" });
 ok("a sender whose fee was taken on day six is told, and why", j.sent === 1 && last().to[0] === "alice@x.com" && /\$3\.00 fee was taken/.test(last().subject) && /seven days/.test(last().html), last().subject);

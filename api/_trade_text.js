@@ -43,7 +43,7 @@ module.exports = {
           ["Do I need to bridge or sell my NFT first?", "No. You send the NFT itself, on whatever chain it's on. The other side sends their item by post or in person."],
           ["How do I know the NFT was really sent?", "When an NFT side is marked sent, the board reads the transaction from the chain and checks that the token went to the other trader's wallet. It shows as delivered only once that's confirmed."],
           ["What stops someone keeping my NFT and never posting?", "Every agreed trade has a send-by date. If they don't send by then, you close the trade as a no-show and it goes on their public record. Check a trader's dots and finished trades before you agree."],
-          ["Does it cost anything?", "No. Listing, matching and trading are free. You pay only your own postage and gas — and when two NFTs on the same chain swap in one transaction, a small flat board fee goes with it, paid by whoever completes the swap."],
+          ["Does it cost anything?", "No. Listing, matching and trading are free. You pay only your own postage and gas. Two optional extras carry a small flat fee: completing an NFT-for-NFT swap on chain (paid by whoever completes it), and — where offered — protecting a trade with a card hold."],
         ],
       },
       "nft-swap-cross-chain": {
@@ -84,7 +84,7 @@ module.exports = {
           ["Games for anything", "<p>A game can go for another game, a console, a card, or an NFT. Say what you'd take — or tick “open to other offers” and see what people come up with.</p>"],
         ],
         faq: [
-          ["Is it free?", "Yes. No listing fees, no selling fees. You pay only for postage if you post. The one paid extra is on the NFT side: completing an NFT-for-NFT swap on chain carries a small flat board fee."],
+          ["Is it free?", "Yes. No listing fees, no selling fees. You pay only for postage if you post. Two optional extras carry a small flat fee: completing an NFT-for-NFT swap on chain, and — where offered — protecting a trade with a card hold."],
           ["What if the other person doesn't send?", "Every agreed trade has a send-by date. If they miss it, you can close the trade as a no-show and it goes on their record."],
         ],
       },
@@ -151,7 +151,7 @@ module.exports = {
           ["¿Tengo que pasar mi NFT por un puente o venderlo antes?", "No. Envías el NFT tal cual, en la cadena donde esté. La otra parte envía su artículo por correo o en mano."],
           ["¿Cómo sé que el NFT se envió de verdad?", "Cuando la parte NFT se marca como enviada, el tablón lee la transacción en la cadena y comprueba que el token llegó a la wallet de la otra persona. Solo aparece como entregado cuando eso está confirmado."],
           ["¿Qué impide que alguien se quede mi NFT y nunca envíe nada?", "Todo intercambio acordado tiene fecha límite de envío. Si no envían a tiempo, lo cierras como plantón y queda en su historial público. Mira los puntos y los intercambios terminados de alguien antes de aceptar."],
-          ["¿Cuesta algo?", "No. Publicar, encontrar coincidencias e intercambiar es gratis. Solo pagas tu propio envío y el gas; y cuando dos NFT de la misma cadena se intercambian en una sola transacción, va con ella una pequeña comisión fija del tablón, que paga quien completa el intercambio."],
+          ["¿Cuesta algo?", "No. Publicar, encontrar coincidencias e intercambiar es gratis. Solo pagas tu propio envío y el gas. Dos extras opcionales llevan una pequeña comisión fija: completar un intercambio NFT por NFT en la cadena (la paga quien lo completa) y, donde se ofrezca, proteger un intercambio con una retención en la tarjeta."],
         ],
       },
       "nft-swap-cross-chain": {
@@ -192,7 +192,7 @@ module.exports = {
           ["Juegos por lo que sea", "<p>Un juego se puede cambiar por otro juego, una consola, una carta o un NFT. Di qué aceptarías, o marca «abierto a otras ofertas» y mira qué te proponen.</p>"],
         ],
         faq: [
-          ["¿Es gratis?", "Sí. No hay comisiones por publicar ni por vender. Solo pagas el envío si mandas algo por correo. El único extra de pago está en la parte NFT: completar un intercambio NFT por NFT en la cadena lleva una pequeña comisión fija del tablón."],
+          ["¿Es gratis?", "Sí. No hay comisiones por publicar ni por vender. Solo pagas el envío si mandas algo por correo. Dos extras opcionales llevan una pequeña comisión fija: completar un intercambio NFT por NFT en la cadena y, donde se ofrezca, proteger un intercambio con una retención en la tarjeta."],
           ["¿Y si la otra persona no envía?", "Todo intercambio acordado tiene fecha límite de envío. Si no la cumple, puedes cerrarlo como plantón y queda en su historial."],
         ],
       },
@@ -259,7 +259,7 @@ module.exports = {
           ["先にNFTをブリッジしたり売ったりする必要はありますか？", "いいえ。NFTは今あるチェーンのまま、そのまま送ります。相手は品物を郵送か手渡しで送ります。"],
           ["NFTが本当に送られたか、どうやってわかりますか？", "NFT側が発送済みになると、ボードがチェーン上のトランザクションを読み取り、トークンが相手のウォレットに届いたかを確認します。確認できて初めて「受け渡し済み」と表示されます。"],
           ["NFTを受け取ったまま、発送しない人がいたら？", "成立した交換にはすべて発送期限があります。期限までに送られなければ「未発送」として取引を終了でき、相手の公開履歴に残ります。交換に応じる前に、相手のドットと完了した取引数を確認しましょう。"],
-          ["費用はかかりますか？", "かかりません。出品・マッチング・交換はすべて無料です。自分の送料とガス代だけご負担ください。同じチェーン上の2つのNFTを1つのトランザクションで交換するときだけ、少額の固定のボード手数料が一緒にかかり、交換を完了する側が支払います。"],
+          ["費用はかかりますか？", "かかりません。出品・マッチング・交換はすべて無料です。自分の送料とガス代だけご負担ください。任意の追加機能2つだけに少額の固定手数料がかかります。NFT同士の交換をオンチェーンで完了するとき（完了する側が支払います）と、（提供されている場合）カードの仮押さえで取引を保護するときです。"],
         ],
       },
       "nft-swap-cross-chain": {
@@ -300,7 +300,7 @@ module.exports = {
           ["ゲームを何とでも", "<p>ゲームは別のゲームとも、ゲーム機とも、カードとも、NFTとも交換できます。欲しいものを書くか、「ほかのオファーも歓迎」にチェックして、どんな提案が来るか見てみましょう。</p>"],
         ],
         faq: [
-          ["無料ですか？", "はい。出品手数料も販売手数料もありません。郵送する場合の送料だけご負担ください。有料なのはNFT側の1点だけです。NFT同士の交換をオンチェーンで完了するときに、少額の固定のボード手数料がかかります。"],
+          ["無料ですか？", "はい。出品手数料も販売手数料もありません。郵送する場合の送料だけご負担ください。任意の追加機能2つだけに少額の固定手数料がかかります。NFT同士の交換をオンチェーンで完了するときと、（提供されている場合）カードの仮押さえで取引を保護するときです。"],
           ["相手が発送しなかったら？", "成立した交換にはすべて発送期限があります。期限を過ぎたら「未発送」として取引を終了でき、相手の履歴に残ります。"],
         ],
       },
@@ -367,7 +367,7 @@ module.exports = {
           ["Preciso passar meu NFT por uma ponte ou vender antes?", "Não. Você envia o próprio NFT, na rede em que ele estiver. A outra pessoa manda o item dela pelo correio ou em mãos."],
           ["Como eu sei que o NFT foi enviado mesmo?", "Quando o lado NFT é marcado como enviado, o mural lê a transação na blockchain e confere se o token foi para a carteira da outra pessoa. Só aparece como entregue depois que isso é confirmado."],
           ["O que impede alguém de ficar com meu NFT e nunca enviar nada?", "Toda troca fechada tem prazo de envio. Se a pessoa não enviar até lá, você encerra a troca como furo e isso fica no histórico público dela. Veja os pontos e as trocas concluídas de alguém antes de fechar."],
-          ["Custa alguma coisa?", "Não. Anunciar, encontrar combinações e trocar é grátis. Você só paga o seu frete e o gas — e quando dois NFTs da mesma rede são trocados em uma única transação, vai junto uma pequena taxa fixa do mural, paga por quem completa a troca."],
+          ["Custa alguma coisa?", "Não. Anunciar, encontrar combinações e trocar é grátis. Você só paga o seu frete e o gas. Dois extras opcionais têm uma pequena taxa fixa: completar uma troca de NFT por NFT na blockchain (paga por quem a completa) e, onde for oferecido, proteger uma troca com uma reserva no cartão."],
         ],
       },
       "nft-swap-cross-chain": {
@@ -408,7 +408,7 @@ module.exports = {
           ["Jogos por qualquer coisa", "<p>Um jogo pode ser trocado por outro jogo, um console, um card ou um NFT. Diga o que você aceitaria — ou marque “aberto a outras propostas” e veja o que aparece.</p>"],
         ],
         faq: [
-          ["É grátis?", "É. Sem taxa para anunciar e sem taxa de venda. Você só paga o frete se mandar pelo correio. O único extra pago fica do lado NFT: completar uma troca de NFT por NFT na blockchain tem uma pequena taxa fixa do mural."],
+          ["É grátis?", "É. Sem taxa para anunciar e sem taxa de venda. Você só paga o frete se mandar pelo correio. Dois extras opcionais têm uma pequena taxa fixa: completar uma troca de NFT por NFT na blockchain e, onde for oferecido, proteger uma troca com uma reserva no cartão."],
           ["E se a outra pessoa não enviar?", "Toda troca fechada tem prazo de envio. Se a pessoa perder o prazo, você pode encerrar a troca como furo e isso fica no histórico dela."],
         ],
       },

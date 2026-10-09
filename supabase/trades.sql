@@ -141,12 +141,14 @@ begin
   if not found then raise exception 'offer not found'; end if;
   if o.status <> 'agreed' then raise exception 'only an agreed trade can be claimed'; end if;
   if o.ship_by is null or now() <= o.ship_by then raise exception 'the ship-by date has not passed yet'; end if;
+  -- Pressing your dot says "theirs arrived", so a press is proof of the OTHER side's send:
+  -- confirm_owner (the owner received) counts for the offerer, confirm_from for the owner.
   if auth.uid() = o.owner_id then
-    me_done := public.side_sent(o.owner_sent_at, o.owner_sent_how, o.owner_tx_status, true) or o.confirm_owner;
-    them_done := public.side_sent(o.from_sent_at, o.from_sent_how, o.from_tx_status, false) or o.confirm_from; them := o.from_id;
+    me_done := public.side_sent(o.owner_sent_at, o.owner_sent_how, o.owner_tx_status, true) or o.confirm_from;
+    them_done := public.side_sent(o.from_sent_at, o.from_sent_how, o.from_tx_status, false) or o.confirm_owner; them := o.from_id;
   elsif auth.uid() = o.from_id then
-    me_done := public.side_sent(o.from_sent_at, o.from_sent_how, o.from_tx_status, true) or o.confirm_from;
-    them_done := public.side_sent(o.owner_sent_at, o.owner_sent_how, o.owner_tx_status, false) or o.confirm_owner; them := o.owner_id;
+    me_done := public.side_sent(o.from_sent_at, o.from_sent_how, o.from_tx_status, true) or o.confirm_owner;
+    them_done := public.side_sent(o.owner_sent_at, o.owner_sent_how, o.owner_tx_status, false) or o.confirm_from; them := o.owner_id;
   else
     raise exception 'you are not part of this trade';
   end if;
@@ -164,12 +166,17 @@ begin
   select * into o from public.offers where id = p_offer for update;
   if not found then raise exception 'offer not found'; end if;
   if o.status <> 'agreed' then raise exception 'only an agreed trade can be cancelled'; end if;
+  -- Walking away is for before anything has moved. Once either side has marked sent, or an item has
+  -- arrived, the trade finishes or ends as a no-show; otherwise the side that never sent could
+  -- cancel its way out of a bond after the other side posted.
   if auth.uid() = o.owner_id then
-    if o.confirm_owner then raise exception 'you already confirmed your side arrived'; end if;
-    if o.owner_sent_at is not null then raise exception 'you already marked your side sent'; end if;
+    if o.confirm_owner then raise exception 'you already confirmed their side arrived'; end if;
+    if o.owner_sent_at is not null or o.confirm_from then raise exception 'you already marked your side sent'; end if;
+    if o.from_sent_at is not null then raise exception 'they already marked their side sent — finish the trade, or it ends as a no-show after the ship-by date'; end if;
   elsif auth.uid() = o.from_id then
-    if o.confirm_from then raise exception 'you already confirmed your side arrived'; end if;
-    if o.from_sent_at is not null then raise exception 'you already marked your side sent'; end if;
+    if o.confirm_from then raise exception 'you already confirmed their side arrived'; end if;
+    if o.from_sent_at is not null or o.confirm_owner then raise exception 'you already marked your side sent'; end if;
+    if o.owner_sent_at is not null then raise exception 'they already marked their side sent — finish the trade, or it ends as a no-show after the ship-by date'; end if;
   else
     raise exception 'you are not part of this trade';
   end if;
@@ -366,6 +373,7 @@ create table if not exists public.bonds (
 -- When the card authorised (holds lapse seven days later), what became of the fee, and so what the
 -- board earned: 'released' alone can't say whether a fee was kept.
 alter table public.bonds
+  add column if not exists handling_cents     integer check (handling_cents is null or handling_cents >= 0),
   add column if not exists held_at            timestamptz,
   add column if not exists fee_captured_cents integer not null default 0 check (fee_captured_cents >= 0),
   add column if not exists fee_refunded_cents integer not null default 0 check (fee_refunded_cents >= 0);

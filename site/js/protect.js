@@ -33,6 +33,11 @@ function swapFeeText(chain) {
   return window.ethers.utils.formatEther(f.wei) + " " + (SYMBOL[chain] || "");
 }
 function money(c) { return "$" + (c / 100).toFixed(c % 100 ? 2 : 0); }
+// Has this side of the trade sent? Its own "marked sent", or the other side pressing their dot,
+// which says "theirs arrived" (confirm_owner: the owner received the offerer's side).
+function sideSent(o, side) { return !!o[side + "_sent_at"] || !!(side === "owner" ? o.confirm_from : o.confirm_owner); }
+// A bond still able to pay out: held, and its card hold not yet lapsed.
+function liveHold(b) { return !!b && b.status === "held" && (!b.held_at || new Date(b.held_at).getTime() + ((caps.bond && caps.bond.hold_days) || 7) * 86400e3 > Date.now()); }
 function sentLine(o, side, label) {
   var at = o[side + "_sent_at"], how = o[side + "_sent_how"], car = o[side + "_carrier"], ref = o[side + "_ref"];
   var pressed = side === "owner" ? o.confirm_owner : o.confirm_from;
@@ -95,10 +100,10 @@ function protectEl(o, dir, other) {
     };
     h += '<div class="ph"><span>' + esc(t("Bond")) + "</span><span>" + esc(t("{bond} each · {fee} fee", { bond: money(caps.bond.bond_cents), fee: money(caps.bond.fee_cents) })) + "</span></div>" +
       '<div class="sideline"><b>' + esc(t("You")) + "</b>" + word(mine) + '</div><div class="sideline"><b>' + esc(who(other)) + "</b>" + word(theirs) + "</div>";
-    if (o.status === "agreed" && (!mine || mine.status !== "held")) h += '<p class="phint">' + esc(t("A hold on your card, not a charge. If the trade completes, {fee} is kept as the fee and the rest is released. If you send and they don’t, their bond is paid to you, less a {handling} handling fee. Holds last {days} days: once you’ve marked sent, the fee is taken on day six and the rest released.", { fee: money(caps.bond.fee_cents), handling: money(caps.bond.handling_cents || 0), days: String(caps.bond.hold_days || 7) })) + ' <a href="/terms" target="_blank" rel="noopener">' + esc(t("See the terms.")) + "</a></p>";
-    var theirsLapses = theirs && theirs.status === "held" && theirs.held_at ? new Date(new Date(theirs.held_at).getTime() + (caps.bond.hold_days || 7) * 86400e3) : null;
-    var iSent = o[me + "_sent_at"] || (me === "owner" ? o.confirm_owner : o.confirm_from), theySent = o[them + "_sent_at"] || (them === "owner" ? o.confirm_owner : o.confirm_from);
-    if (o.status === "agreed" && late && iSent && !theySent && theirsLapses) h += '<p class="phint late">' + esc(t("Their hold lapses {date}. Close the no-show before then and their bond is paid to you.", { date: fmtDate(theirsLapses, { weekday: "short", month: "short", day: "numeric" }) })) + "</p>";
+    if (o.status === "agreed" && (!mine || /^(pending|failed|expired)$/.test(mine.status))) h += '<p class="phint">' + esc(t("A hold on your card, not a charge. If the trade completes, {fee} is kept as the fee and the rest is released. If you send and they don’t, their bond is paid to you, less a {handling} handling fee. Holds last {days} days: once you’ve marked sent, the fee is taken on day six and the rest released.", { fee: money(caps.bond.fee_cents), handling: money(caps.bond.handling_cents || 0), days: String(caps.bond.hold_days || 7) })) + ' <a href="/terms" target="_blank" rel="noopener">' + esc(t("See the terms.")) + "</a></p>";
+    // Name the day before the hold lapses, so an evening authorisation can't make the date a day late.
+    var closeBy = liveHold(theirs) && theirs.held_at ? new Date(new Date(theirs.held_at).getTime() + ((caps.bond.hold_days || 7) - 1) * 86400e3) : null;
+    if (o.status === "agreed" && late && sideSent(o, me) && !sideSent(o, them) && closeBy) h += '<p class="phint late">' + esc(t("Close the no-show by {date} and their bond is paid to you, less the {handling} handling fee. After that their card hold lapses.", { date: fmtDate(closeBy, { weekday: "short", month: "short", day: "numeric" }), handling: money(theirs.handling_cents != null ? theirs.handling_cents : (caps.bond.handling_cents || 0)) })) + "</p>";
   }
   box.innerHTML = h;
   var acts = document.createElement("div"); acts.className = "acts";
@@ -109,16 +114,15 @@ function protectEl(o, dir, other) {
       if (dir === "out" && o.swap_order) btn("ok", t("Complete the swap"), function () { completeSwap(o); });
     }
     if (!swap && !o[me + "_sent_at"]) btn("ok", t("Mark my side sent"), function () { openSent(o); });
-    var meDone = o[me + "_sent_at"] || (me === "owner" ? o.confirm_owner : o.confirm_from);
-    var themDone = o[them + "_sent_at"] || (them === "owner" ? o.confirm_owner : o.confirm_from);
-    if (late && meDone && !themDone) btn("no", t("They didn’t send — close as a no-show"), function () {
-      var paid = bs.some(function (b) { return b.user_id !== uid && b.status === "held"; });
+    if (late && sideSent(o, me) && !sideSent(o, them)) btn("no", t("They didn’t send — close as a no-show"), function () {
+      var paid = bs.some(function (b) { return b.user_id !== uid && liveHold(b); });
       if (!confirm(t(paid ? "Close this trade as a no-show? {who} gets a no-show on their record and their bond is paid to you, less a {handling} handling fee. Your item goes back on the board."
         : "Close this trade as a no-show? {who} gets a no-show on their record. Your item goes back on the board.", { who: who(other), handling: money((caps.bond && caps.bond.handling_cents) || 0) }))) return;
       sb.rpc("claim_no_show", { p_offer: o.id }).then(function (r) { if (r.error) return fail(r.error); toast(t("Closed as a no-show.")); settleBond(o.id, true); load(); });
     });
     var myBond = bs.filter(function (b) { return b.user_id === uid; })[0];
-    if (caps.bond && !swap && (!myBond || myBond.status !== "held")) btn("ghost", t("Hold {amount} on my card", { amount: money(caps.bond.bond_cents) }), function () { startBond(o); });
+    // Offered until a bond has done anything: once held, released (fee taken) or forfeited, never again.
+    if (caps.bond && !swap && (!myBond || /^(pending|failed|expired)$/.test(myBond.status))) btn("ghost", t("Hold {amount} on my card", { amount: money(caps.bond.bond_cents + caps.bond.fee_cents) }), function () { startBond(o); });
   }
   if (acts.children.length) box.appendChild(acts);
   return box;

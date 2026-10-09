@@ -244,7 +244,8 @@ function offerCard(o, dir) {
       var hint = document.createElement("span"); hint.className = "presshint";
       hint.textContent = theirs ? t("{who} has pressed theirs", { who: who(other) }) : t("Both of you press to close it");
       acts.appendChild(hint);
-      if (o.status === "agreed" && !(dir === "in" ? o.owner_sent_at : o.from_sent_at)) {
+      // Walking away is for before anything has moved: not once either side has sent or anything arrived.
+      if (o.status === "agreed" && !o.owner_sent_at && !o.from_sent_at && !o.confirm_owner && !o.confirm_from) {
         var cx = document.createElement("button");
         cx.className = "btn ghost"; cx.type = "button"; cx.textContent = t("Cancel trade");
         cx.title = t("Walk away before anything has arrived. The item goes back on the board; the cancellation stays on record.");
@@ -258,7 +259,7 @@ function offerCard(o, dir) {
   }
   el.appendChild(acts);
   if (uid && caps.trades && (o.status === "agreed" || (bondsBy[o.id] || []).length)) el.appendChild(protectEl(o, dir, other));
-  if (uid && (o.status === "done" || o.status === "cancelled") && (bondsBy[o.id] || []).some(function (b) { return b.status === "held"; })) settleBond(o.id);
+  if (uid && (o.status === "done" || o.status === "cancelled") && (bondsBy[o.id] || []).some(function (b) { return b.status === "held" || (o.status === "cancelled" && b.status === "released" && b.fee_captured_cents > b.fee_refunded_cents); })) settleBond(o.id);
   if (caps.messages && uid && (o.status === "pending" || o.status === "agreed" || o.status === "done")) el.appendChild(threadEl(o, other));
   return el;
 }

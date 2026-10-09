@@ -91,3 +91,30 @@ select 'B5 alice sees her payout: ' || count(*) from public.payouts;
 select 'B6 alice approves her own payout: ' || pg_temp.try($q$update public.payouts set approved = true$q$) || ', approved rows: ' || (select count(*) from public.payouts where approved);
 select pg_temp.as_user('e0000000-0000-0000-0000-000000000003');
 select 'B7 outsider sees bonds: ' || count(*) from public.bonds;
+
+-- A dot-press says "theirs arrived": it proves the OTHER side sent, never your own.
+reset role;
+insert into public.items (id, owner_id, title) values ('10000000-0000-0000-0000-000000000003','a0000000-0000-0000-0000-000000000001','Radio'),('10000000-0000-0000-0000-000000000004','a0000000-0000-0000-0000-000000000001','Kettle'),('10000000-0000-0000-0000-000000000005','a0000000-0000-0000-0000-000000000001','Clock');
+insert into public.offers (id, item_id, owner_id, from_id, give) values ('20000000-0000-0000-0000-000000000003','10000000-0000-0000-0000-000000000003','a0000000-0000-0000-0000-000000000001','b0000000-0000-0000-0000-000000000002','Tape deck'),('20000000-0000-0000-0000-000000000004','10000000-0000-0000-0000-000000000004','a0000000-0000-0000-0000-000000000001','b0000000-0000-0000-0000-000000000002','Toaster'),('20000000-0000-0000-0000-000000000005','10000000-0000-0000-0000-000000000005','a0000000-0000-0000-0000-000000000001','b0000000-0000-0000-0000-000000000002','Lamp');
+set role authenticated;
+select pg_temp.as_user('a0000000-0000-0000-0000-000000000001');
+select public.accept_offer('20000000-0000-0000-0000-000000000003');
+select public.press_dot('20000000-0000-0000-0000-000000000003');
+reset role; update public.offers set ship_by = now() - interval '1 hour' where id = '20000000-0000-0000-0000-000000000003'; set role authenticated;
+select 'P1 alice received bob''s item and never sent; she can''t call bob a no-show: ' || pg_temp.try($q$select public.claim_no_show('20000000-0000-0000-0000-000000000003')$q$);
+select pg_temp.as_user('b0000000-0000-0000-0000-000000000002');
+select 'P2 bob, whose item alice confirmed, can close it against her: ' || pg_temp.try($q$select public.claim_no_show('20000000-0000-0000-0000-000000000003')$q$);
+select 'P2b the no-show is on alice: ' || (defaulted_by = 'a0000000-0000-0000-0000-000000000001')::text from public.offers where id = '20000000-0000-0000-0000-000000000003';
+
+-- Walking away is for before anything has moved.
+select pg_temp.as_user('a0000000-0000-0000-0000-000000000001');
+select public.accept_offer('20000000-0000-0000-0000-000000000004');
+select public.mark_sent('20000000-0000-0000-0000-000000000004','post','USPS','9400222');
+select pg_temp.as_user('b0000000-0000-0000-0000-000000000002');
+select 'C1 bob cancels after alice posted hers: ' || pg_temp.try($q$select public.cancel_trade('20000000-0000-0000-0000-000000000004')$q$);
+select pg_temp.as_user('a0000000-0000-0000-0000-000000000001');
+select 'C2 alice cancels after posting: ' || pg_temp.try($q$select public.cancel_trade('20000000-0000-0000-0000-000000000004')$q$);
+select public.accept_offer('20000000-0000-0000-0000-000000000005');
+select pg_temp.as_user('b0000000-0000-0000-0000-000000000002');
+select 'C3 before anything has moved, either side can walk away: ' || pg_temp.try($q$select public.cancel_trade('20000000-0000-0000-0000-000000000005')$q$);
+reset role;
