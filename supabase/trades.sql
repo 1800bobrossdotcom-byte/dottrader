@@ -228,13 +228,39 @@ grant select on public.offer_signals to anon, authenticated;
 
 -- ---------------------------------------------------------------- atomic NFT swaps
 
+-- The board's fee on an atomic swap, per chain, in that chain's own coin (wei, as text so no
+-- precision is lost on the way to a browser). Whoever completes the swap pays it, in the same
+-- transaction, to `recipient`. post_swap() below refuses an order that leaves it out, and the
+-- filler's browser refuses one that asks for more, so the fee is exactly this, every time. A
+-- chain with no row, a null recipient or a zero amount charges nothing. Edit the rows to change
+-- the price; the board reads them when it starts. (Rows are only seeded, never overwritten.)
+create table if not exists public.swap_fees (
+  chain     integer primary key,
+  recipient text check (recipient is null or recipient ~ '^0x[0-9a-f]{40}$'),
+  wei       text not null default '0' check (wei ~ '^[0-9]{1,40}$')
+);
+alter table public.swap_fees enable row level security;
+drop policy if exists "swap fees readable by everyone" on public.swap_fees;
+create policy "swap fees readable by everyone" on public.swap_fees for select using (true);
+grant select on public.swap_fees to anon, authenticated;
+insert into public.swap_fees (chain, recipient, wei) values
+  (1,       '0x8455cf296e1265b494605207e97884813de21950', '500000000000000'),      -- Ethereum  0.0005 ETH
+  (8453,    '0x8455cf296e1265b494605207e97884813de21950', '500000000000000'),      -- Base      0.0005 ETH
+  (42161,   '0x8455cf296e1265b494605207e97884813de21950', '500000000000000'),      -- Arbitrum  0.0005 ETH
+  (10,      '0x8455cf296e1265b494605207e97884813de21950', '500000000000000'),      -- Optimism  0.0005 ETH
+  (7777777, '0x8455cf296e1265b494605207e97884813de21950', '500000000000000'),      -- Zora      0.0005 ETH
+  (137,     '0x8455cf296e1265b494605207e97884813de21950', '5000000000000000000'),  -- Polygon   5 POL
+  (56,      '0x8455cf296e1265b494605207e97884813de21950', '2500000000000000'),     -- BNB Chain 0.0025 BNB
+  (43114,   '0x8455cf296e1265b494605207e97884813de21950', '60000000000000000')     -- Avalanche 0.06 AVAX
+on conflict (chain) do nothing;
+
 -- The lister posts a signed Seaport order. The database checks it is the order this trade agreed
 -- — the listed NFT offered, the offered NFT asked for, paid to the lister, at most one more item
 -- which must be the native-currency fee — so a signed order can't quietly ask for more. The
 -- person filling it checks again in their own browser before sending anything.
 create or replace function public.post_swap(p_offer uuid, p_order jsonb, p_sig text)
 returns void language plpgsql security definer set search_path = public as $$
-declare o public.offers; it public.items; w text; n int;
+declare o public.offers; it public.items; w text; n int; f public.swap_fees; fee jsonb;
 begin
   select * into o from public.offers where id = p_offer for update;
   if not found then raise exception 'offer not found'; end if;
@@ -256,7 +282,15 @@ begin
      or p_order->'consideration'->0->>'identifierOrCriteria' <> o.asset_token_id
      or lower(p_order->'consideration'->0->>'recipient') <> w then
     raise exception 'the order does not ask for the offered item'; end if;
-  if n = 2 and (p_order->'consideration'->1->>'itemType') <> '0' then raise exception 'the second item may only be the fee'; end if;
+  -- Where this chain carries a board fee, the order must ask the filler for exactly that.
+  select * into f from public.swap_fees where chain = it.asset_chain and recipient is not null and wei::numeric > 0;
+  if found then
+    fee := p_order->'consideration'->1;
+    if n <> 2 or (fee->>'itemType') <> '0' or lower(fee->>'token') <> '0x0000000000000000000000000000000000000000'
+       or lower(fee->>'recipient') <> f.recipient or coalesce(fee->>'startAmount', '') !~ '^[0-9]{1,40}$'
+       or (fee->>'startAmount')::numeric < f.wei::numeric or (fee->>'endAmount') is distinct from (fee->>'startAmount') then
+      raise exception 'the order must include the board fee'; end if;
+  elsif n = 2 and (p_order->'consideration'->1->>'itemType') <> '0' then raise exception 'the second item may only be the fee'; end if;
   if coalesce(p_sig, '') !~ '^0x[0-9a-fA-F]{128,132}$' then raise exception 'bad signature'; end if;
   update public.offers set swap_order = p_order, swap_sig = p_sig where id = p_offer;
 end $$;

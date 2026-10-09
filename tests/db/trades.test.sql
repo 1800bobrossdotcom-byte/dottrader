@@ -37,7 +37,8 @@ reset role; set role anon; select pg_temp.as_user('');
 select 'S12 anyone can count no-shows: ' || count(*) from public.offer_signals where defaulted_by is not null;
 reset role; set role authenticated;
 
--- swaps
+-- swaps. The board's fee on Ethereum goes to the test fee wallet, 500 wei.
+reset role; update public.swap_fees set recipient = '0x00000000000000000000000000000000000000fe', wei = '500' where chain = 1; set role authenticated;
 select pg_temp.as_user('a0000000-0000-0000-0000-000000000001');
 select public.accept_offer('20000000-0000-0000-0000-000000000002');
 \set GOOD '''{"offerer":"0xAAAA000000000000000000000000000000000001","offer":[{"itemType":2,"token":"0xc0ffee0000000000000000000000000000000001","identifierOrCriteria":"7","startAmount":"1","endAmount":"1"}],"consideration":[{"itemType":3,"token":"0xbeef000000000000000000000000000000000002","identifierOrCriteria":"99","startAmount":"1","endAmount":"1","recipient":"0xaaaa000000000000000000000000000000000001"},{"itemType":0,"token":"0x0000000000000000000000000000000000000000","identifierOrCriteria":"0","startAmount":"500","endAmount":"500","recipient":"0x00000000000000000000000000000000000000fe"}]}'''
@@ -52,6 +53,12 @@ select 'L1 link a second wallet: ' || pg_temp.try(format('insert into public.lin
 select 'L2 a message that names another account: ' || pg_temp.try(format('insert into public.linked_wallets (owner_id, address, msg, sig) values (%L, %L, %L, %L)', 'a0000000-0000-0000-0000-000000000001', '0xcccc000000000000000000000000000000000004', replace(:MSG, 'a0000000', 'b0000000'), :SIG));
 select 'W4b from Alice''s second wallet, paid back to it: ' || pg_temp.try(format('select public.post_swap(%L, %L::jsonb, %L)', '20000000-0000-0000-0000-000000000002', replace(replace(:GOOD, '"offerer":"0xAAAA000000000000000000000000000000000001"', '"offerer":"0xcccc000000000000000000000000000000000003"'), '"recipient":"0xaaaa000000000000000000000000000000000001"', '"recipient":"0xcccc000000000000000000000000000000000003"'), :SIG));
 select 'W4c from her second wallet, paid to her main one: ' || pg_temp.try(format('select public.post_swap(%L, %L::jsonb, %L)', '20000000-0000-0000-0000-000000000002', replace(:GOOD, '"offerer":"0xAAAA000000000000000000000000000000000001"', '"offerer":"0xcccc000000000000000000000000000000000003"'), :SIG));
+select 'W4d order without the board fee: ' || pg_temp.try(format('select public.post_swap(%L, %L::jsonb, %L)', '20000000-0000-0000-0000-000000000002', (:GOOD::jsonb #- '{consideration,1}')::text, :SIG));
+select 'W4e fee to another wallet: ' || pg_temp.try(format('select public.post_swap(%L, %L::jsonb, %L)', '20000000-0000-0000-0000-000000000002', replace(:GOOD, '"recipient":"0x00000000000000000000000000000000000000fe"', '"recipient":"0x00000000000000000000000000000000000000ff"'), :SIG));
+select 'W4f fee too small: ' || pg_temp.try(format('select public.post_swap(%L, %L::jsonb, %L)', '20000000-0000-0000-0000-000000000002', replace(:GOOD, '"startAmount":"500","endAmount":"500"', '"startAmount":"400","endAmount":"400"'), :SIG));
+reset role; update public.swap_fees set recipient = null where chain = 1; set role authenticated;
+select 'W4g with the fee switched off, an order without one is fine: ' || pg_temp.try(format('select public.post_swap(%L, %L::jsonb, %L)', '20000000-0000-0000-0000-000000000002', (:GOOD::jsonb #- '{consideration,1}')::text, :SIG));
+reset role; update public.offers set swap_order = null, swap_sig = null where id = '20000000-0000-0000-0000-000000000002'; update public.swap_fees set recipient = '0x00000000000000000000000000000000000000fe' where chain = 1; set role authenticated;
 select pg_temp.as_user('e0000000-0000-0000-0000-000000000003');
 select 'L3 someone else links a wallet to Alice: ' || pg_temp.try(format('insert into public.linked_wallets (owner_id, address, msg, sig) values (%L, %L, %L, %L)', 'a0000000-0000-0000-0000-000000000001', '0xeeee000000000000000000000000000000000005', :MSG, :SIG));
 select 'L4 or unlinks hers: ' || pg_temp.try($q$delete from public.linked_wallets where owner_id = 'a0000000-0000-0000-0000-000000000001'$q$) || ', still there: ' || (select count(*) from public.linked_wallets where owner_id = 'a0000000-0000-0000-0000-000000000001');

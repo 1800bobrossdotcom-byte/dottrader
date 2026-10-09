@@ -72,7 +72,7 @@ async function open(browser, as, offers, { bondState = [], query = "" } = {}) {
   await p.route(/supabase\.co\/rest\/v1\/(\w+)/, r => {
     const t = r.request().url().match(/rest\/v1\/(\w+)/)[1];
     const items = [{ id: "i1", owner_id: A, title: "Alice lamp", cat: "Home & Kitchen", status: "pledged", created_at: now }, { id: "i2", owner_id: A, title: "sail-o-bots #632", cat: "Art", status: "pledged", created_at: now, ...NFT_A }];
-    r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ items, offers, profiles, offer_signals: offers, verification_badges: [], messages: [], bonds: bondState, payouts: [] }[t] || []) });
+    r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ items, offers, profiles, offer_signals: offers, verification_badges: [], messages: [], bonds: bondState, payouts: [], swap_fees: [{ chain: 1, recipient: "0x8455cf296e1265b494605207e97884813de21950", wei: "500000000000000" }] }[t] || []) });
   });
   await p.route(/supabase\.co\/rest\/v1\/rpc\/(\w+)/, r => { const fn = r.request().url().match(/rpc\/(\w+)/)[1]; rpcs.push({ fn, body: JSON.parse(r.request().postData() || "{}") }); r.fulfill({ status: 200, contentType: "application/json", body: "null" }); });
   await p.route(/supabase\.co\/(auth|realtime)/, r => r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(sess(as).user) }));
@@ -123,6 +123,7 @@ let posted;
   const { p, ctx, rpcs } = await open(browser, A, offers);
   const panel = await p.$eval("#offersIn .protect", e => e.innerText);
   ok("NFT-for-NFT trade offers an on-chain swap instead of shipping", /SWAP ON CHAIN/i.test(panel) && !(await p.$("#offersIn button:has-text('Mark my side sent')")) && !(await p.$("#offersIn button:has-text('Hold $25')")));
+  ok("…and says who pays the board fee before anyone signs", /Bob pays the gas and a 0\.0005 ETH board fee/.test(panel), panel.slice(0, 300));
   await p.click("#offersIn button:has-text('Set up the swap')"); await p.waitForTimeout(2500);
   posted = rpcs.find(x => x.fn === "post_swap");
   ok("lister signs and posts the order", !!posted, posted ? "order from " + posted.body.p_order.offerer.slice(0, 10) : JSON.stringify(rpcs.map(r => r.fn)));

@@ -13,9 +13,10 @@ window.DTP_CONFIG = {
   functions: { verify: "swift-processor", bond: "bond" },
 
   // Atomic NFT swaps: a flat fee paid by whoever completes a swap, in each chain's own coin,
-  // written into the signed order so it is paid in the same transaction. Leave `recipient` empty
-  // to charge nothing. Amounts are in wei (1 ETH = 1000000000000000000). The defaults are roughly
-  // $1.50–2 each at autumn-2026 prices; adjust as prices move.
+  // written into the signed order so it is paid in the same transaction. Once the project has the
+  // swap_fees table (supabase/trades.sql) those rows are used instead and the database refuses an
+  // order without the fee; this block only serves a project that has not run that SQL yet. Leave
+  // `recipient` empty to charge nothing. Amounts are in wei (1 ETH = 1000000000000000000).
   swapFee: {
     recipient: "0x8455cf296e1265b494605207e97884813de21950",
     wei: {

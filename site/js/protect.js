@@ -15,9 +15,22 @@ var CARRIERS = [
 function itemById(id) { return items.filter(function (x) { return x.id === id; })[0]; }
 function isNft(k) { return k === "erc721" || k === "erc1155"; }
 function swappable(o) { var it = itemById(o.item_id); return !!(it && isNft(it.asset_kind) && isNft(o.asset_kind) && Number(it.asset_chain) === Number(o.asset_chain) && window.DTP_SWAP); }
+// The board's fee on a swap, for a chain: the swap_fees table when the project has one (the
+// database holds a signed order to the same rows), otherwise whatever config.js says.
 function swapFeeFor(chain) {
+  if (Array.isArray(swapFees)) {
+    var row = swapFees.filter(function (r) { return Number(r.chain) === Number(chain); })[0];
+    return row && row.recipient && /^0x[0-9a-fA-F]{40}$/.test(row.recipient) && /^[0-9]+$/.test(String(row.wei)) && BigInt(row.wei) > 0n
+      ? { recipient: row.recipient, wei: String(row.wei) } : null;
+  }
   var f = cfg.swapFee || {};
   return f.recipient && /^0x[0-9a-fA-F]{40}$/.test(f.recipient) && f.wei && f.wei[chain] ? { recipient: f.recipient, wei: String(f.wei[chain]) } : null;
+}
+// "0.0005 ETH", or null where the chain carries no fee.
+function swapFeeText(chain) {
+  var f = swapFeeFor(chain);
+  if (!f || !window.ethers) return null;
+  return window.ethers.utils.formatEther(f.wei) + " " + (SYMBOL[chain] || "");
 }
 function money(c) { return "$" + (c / 100).toFixed(c % 100 ? 2 : 0); }
 function sentLine(o, side, label) {
@@ -51,9 +64,14 @@ function protectEl(o, dir, other) {
       (o.ship_by && !o.swap_tx ? '<span class="' + (late ? "late" : "") + '">' + esc(late ? t("ship-by date passed") : t("send by {date}", { date: fmtDate(o.ship_by, { weekday: "short", month: "short", day: "numeric" }) })) + "</span>" : "") + "</div>";
     if (swap) {
       if (o.swap_tx) h += sentLine(o, "owner", t("Done"));
-      else if (!o.swap_order) h += '<p class="phint">' + esc(dir === "in"
-        ? t("Both sides are NFTs on the same chain, so nobody has to send first. Sign the swap once — it’s free — and {who} completes it in one transaction. Both NFTs move together, or neither does.", { who: who(other) })
-        : t("Both sides are NFTs on the same chain, so nobody has to send first. {who} signs the swap, then you complete it in one transaction.", { who: who(other) })) + "</p>";
+      else if (!o.swap_order) {
+        var feeTxt = swapFeeText((itemById(o.item_id) || {}).asset_chain);
+        h += '<p class="phint">' + esc(dir === "in"
+          ? t("Both sides are NFTs on the same chain, so nobody has to send first. Sign the swap once — it’s free — and {who} completes it in one transaction. Both NFTs move together, or neither does.", { who: who(other) })
+            + (feeTxt ? " " + t("{who} pays the gas and a {fee} board fee.", { who: who(other), fee: feeTxt }) : "")
+          : t("Both sides are NFTs on the same chain, so nobody has to send first. {who} signs the swap, then you complete it in one transaction.", { who: who(other) })
+            + (feeTxt ? " " + t("You pay the gas and a {fee} board fee.", { fee: feeTxt }) : "")) + "</p>";
+      }
       else {
         var fee = window.DTP_SWAP.feeOf(o.swap_order), it = itemById(o.item_id);
         h += '<p class="phint">' + esc(dir === "in" ? t("Your swap is set up. Waiting for {who} to complete it — it stays open for 7 days.", { who: who(other) })

@@ -595,5 +595,7 @@
   "not in your linked wallets": "não está nas suas carteiras vinculadas",
   "{addr} is now your main wallet.": "{addr} agora é sua carteira principal.",
   "{n} wallets are linked to your account. Click to see them, add another or unlink one.": "{n} carteiras estão vinculadas à sua conta. Clique para vê-las, adicionar outra ou desvincular uma.",
-  "{addr} is already linked. Switch to a different account in {wallet}, then try again.": "{addr} já está vinculada. Mude para outra conta em {wallet} e tente de novo."
+  "{addr} is already linked. Switch to a different account in {wallet}, then try again.": "{addr} já está vinculada. Mude para outra conta em {wallet} e tente de novo.",
+  "{who} pays the gas and a {fee} board fee.": "{who} paga o gas e uma taxa do mural de {fee}.",
+  "You pay the gas and a {fee} board fee.": "Você paga o gas e uma taxa do mural de {fee}."
 }

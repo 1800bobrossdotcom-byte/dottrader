@@ -4,14 +4,12 @@
   "Post what you have, say what you want, swap. No money, no prices — just trades, and dots you earn by making them.": "持っているものを出品して、欲しいものを書いて、交換するだけ。お金も値段もいりません。交換するたびにドットが貯まります。",
   "Dot Trading Post — swap what you have for what you want.": "Dot Trading Post — 持っているものを、欲しいものと交換。",
   "A free barter board for trading cards, video games, retro consoles, collectibles and NFTs — swap, no money.": "トレカ、ゲームソフト、レトロゲーム機、コレクターズアイテム、NFTのための無料の物々交換ボード。お金は使わず、交換だけ。",
-
   "BARTER BOARD": "物々交換ボード",
   "Matching": "マッチング",
   "Trade safely": "安心して交換",
   "How dots work": "ドットのしくみ",
   "Stickers": "ステッカー",
   "Open the board": "ボードを開く",
-
   "Physical · NFTs · across chains · no cash": "現物 · NFT · チェーンをまたいで · お金は不要",
   "<h1>Trade <span class=\"sw\">anything</span><br>for <span class=\"sw2\">anything</span>.</h1>": "<h1><span class=\"sw\">なんでも</span>と<br><span class=\"sw2\">なんでも</span><span style=\"white-space:nowrap\">を交換。</span></h1>",
   "A card for a console. An NFT for an NFT on another chain. Something in your wallet for something in the real world. Dot finds the people who have what you want — no prices, no bridge, no cash required.": "カードとゲーム機を。NFTと別チェーンのNFTを。ウォレットの中のものと、リアルなモノを。欲しいものを持っている人を、Dotが見つけます。値段もブリッジもお金もいりません。",
@@ -20,7 +18,6 @@
   "Physical for NFT": "現物とNFT",
   "Start trading — free": "無料で交換をはじめる",
   "How trades stay safe": "安心して交換できる理由",
-
   "Example listing": "出品の例",
   "Charizard holo, 1999 base set": "リザードン ホロ（1999年 旧裏 第1弾）",
   "Played condition, one soft corner. Sleeved since forever.": "プレイ用、角に1か所やわらかい傷あり。ずっとスリーブ保管。",
@@ -31,7 +28,6 @@
   "7 dots": "7ドット",
   "3 trades · North Leeds": "交換3回 · 東京都",
   "● Proof of item": "● 現物証明",
-
   "Three ways to swap": "3つの交換スタイル",
   "Sign up with your email, list what you have — a card, a console, an NFT — and trade it for whatever you'd rather have.": "メールアドレスで登録して、カード、ゲーム機、NFTなど持っているものを出品し、欲しいものと交換しましょう。",
   "NFT ⇄ NFT · ANY CHAIN": "NFT ⇄ NFT · チェーン不問",
@@ -47,7 +43,6 @@
   "Cards for consoles, by post or meeting up locally. Tracking both ways, four days to send, and every trader's record of trades and no-shows on their card.": "カードとゲーム機を、郵送でも近くで手渡しでも。双方に追跡番号、発送期限は4日、全トレーダーの取引数と未発送の履歴がカードに表示されます。",
   "Bartering online →": "オンラインの物々交換について →",
   "Sign up — it's free": "無料で登録する",
-
   "Three steps, no account to fill in": "3ステップ、面倒な入力なし",
   "The whole app is one loop. If it takes longer than a minute to post something, it's broken.": "アプリの流れはこれだけ。出品に1分以上かかるなら、それはこちらの不具合です。",
   "01 — POST": "01 — 出品",
@@ -59,7 +54,6 @@
   "03 — TRADE": "03 — 交換",
   "Accept, meet, vouch.": "承認、交換、評価。",
   "Accepting takes the item off the board. When it's in hand, you each vouch — and you each earn dots.": "承認すると、その品物はボードから外れます。品物が手元に届いたら、お互いに評価し、2人ともドットがもらえます。",
-
   "You don't have to hunt for the other half": "交換相手を探し回る必要はありません",
   "Barter's oldest problem: you need someone who has what you want <em>and</em> wants what you have. Tell Dot both halves and it goes looking.": "物々交換の昔からの難問は、欲しいものを持っていて、<em>しかも</em>自分のものを欲しがっている相手を見つけること。Dotに両方を伝えれば、探してくれます。",
   "You": "あなた",
@@ -80,7 +74,6 @@
   "Both-ways swaps at the top, then nearby traders and listings with Proof of item.": "お互いが欲しがっている交換がいちばん上。その次に、近くのトレーダーや現物証明つきの出品。",
   "Save a search": "検索を保存",
   "Looking for something nobody has yet? Save it, and get an email the moment it's posted.": "まだ誰も出品していないものを探していますか？検索を保存すれば、出品された瞬間にメールでお知らせします。",
-
   "Built so neither trader has to just hope": "祈るしかない取引は、もう終わり",
   "The hard part of swapping with a stranger is sending first. Every step of a trade on the board is designed around that.": "知らない人との交換でいちばん不安なのは、先に送ること。ボードでの交換は、すべてのステップがその不安を解消するために作られています。",
   "Trust you can read": "見える信頼",
@@ -94,8 +87,7 @@
   "NFTs that can't be half-traded": "中途半端に終わらないNFT交換",
   "When both sides are NFTs on the same chain, the swap is one transaction: both move, or neither does. Nobody sends first. Listings are checked on chain, so you know it's still held.": "両方が同じチェーンのNFTなら、交換はトランザクション1回。両方が動くか、どちらも動かないか。先に送る人はいません。出品はオンチェーンで確認されるので、まだ保有していることも分かります。",
   "No money in the middle": "間にお金をはさまない",
-  "Trades are item for item. No money moves through the board and no card numbers are stored here, so there's nothing in the middle to lose.": "交換はモノとモノ。ボードを通るお金はなく、カード番号も保存しません。だから、途中で失うものがありません。",
-
+  "Trades are item for item. No cash changes hands between traders and no card numbers are stored here, so there's nothing in the middle to lose.": "交換はモノとモノ。交換する相手との間で現金のやり取りはなく、カード番号も保存しません。だから、途中で失うものがありません。",
   "Dots are earned, never bought": "ドットは稼ぐもの。買えません",
   "A barter board runs on whether you can trust a stranger. Dots are the only answer to that, so they're the one thing the app guards.": "物々交換ボードは、知らない人を信頼できるかどうかがすべて。その答えがドットなので、アプリが何より守っているのがドットです。",
   "for your first finished trade with someone · +1 the second time · nothing after": "同じ相手との最初の交換完了で · 2回目は+1 · 3回目以降は0",
@@ -106,11 +98,9 @@
   "for posting, browsing, or anything you can do alone": "出品、閲覧など、ひとりでできることでは増えません",
   "Nobody can award themselves one": "自分でドットを付けることはできません",
   "Dots aren't stored as a number anyone can write. They're counted from the trade record itself — every dot traces back to a swap somebody else accepted, or a vouch somebody else left. Trading back and forth with the same person stops counting after the second time, so two friends can't manufacture a reputation. There's nothing to edit and nothing to buy.": "ドットは、誰かが書き換えられる数字として保存されていません。取引記録そのものから数えられます。すべてのドットは、ほかの誰かが承認した交換か、ほかの誰かが残した評価にさかのぼれます。同じ相手との交換は2回目以降カウントされないので、友達同士で評判を作ることもできません。編集できるものも、買えるものもありません。",
-
   "Cards, games and retro first": "まずはトレカ、ゲーム、レトロから",
   "That's where swapping is liveliest, so that's where the board starts — trading cards, video games, retro consoles and collectibles.": "交換がいちばん盛んなジャンルから始めています。トレカ、ゲームソフト、レトロゲーム機、コレクターズアイテム。",
   "And everything else, from bikes to vinyl:": "そのほか、自転車からレコードまで：",
-
   "Free stickers — stick a Dot on it": "無料ステッカー — Dotを貼ろう",
   "Six stickers for trade binders, console boxes, laptops and meetup tables. Every QR code opens the board.": "トレカのバインダー、ゲーム機の箱、ノートPC、交換会のテーブルに貼れる6種類のステッカー。どのQRコードからもボードが開きます。",
   "Download them — PNG, PDF or the whole pack": "ダウンロード — PNG、PDF、まとめてパックでも",
@@ -125,8 +115,7 @@
   "Scan to swap QR sticker": "「スキャンして交換」QRステッカー",
   "Scan to swap card sticker": "「スキャンして交換」カード型ステッカー",
   "What would you trade for this sticker": "「これと何を交換する？」ステッカー",
-
-  "Free to use. Nothing to install — it works in your phone's browser.": "無料で使えます。インストール不要、スマホのブラウザで動きます。",
+  "Free to list, match and trade; on-chain NFT swaps and protected trades carry a small flat fee. Nothing to install — it works in your phone's browser.": "出品・マッチング・交換は無料。オンチェーンのNFT交換と保護付きの取引には少額の固定手数料がかかります。インストール不要、スマホのブラウザで動きます。",
   "Get the stickers": "ステッカーをもらう",
   "Ways to trade": "交換のしかた",
   "NFTs for physical items": "NFTと現物の交換",

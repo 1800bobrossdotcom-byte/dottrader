@@ -595,5 +595,7 @@
   "not in your linked wallets": "連携済みのウォレットにありません",
   "{addr} is now your main wallet.": "{addr} がメインのウォレットになりました。",
   "{n} wallets are linked to your account. Click to see them, add another or unlink one.": "{n}個のウォレットがアカウントに連携されています。クリックすると一覧の確認、追加、連携解除ができます。",
-  "{addr} is already linked. Switch to a different account in {wallet}, then try again.": "{addr} はすでに連携済みです。{wallet} で別のアカウントに切り替えてから、もう一度お試しください。"
+  "{addr} is already linked. Switch to a different account in {wallet}, then try again.": "{addr} はすでに連携済みです。{wallet} で別のアカウントに切り替えてから、もう一度お試しください。",
+  "{who} pays the gas and a {fee} board fee.": "{who}がガス代と {fee} のボード手数料を支払います。",
+  "You pay the gas and a {fee} board fee.": "あなたがガス代と {fee} のボード手数料を支払います。"
 }

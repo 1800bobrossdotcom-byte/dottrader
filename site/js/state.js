@@ -9,6 +9,8 @@ var sb = null, uid = null, myEmail = "";
 var items = [], offers = [], signals = [], profiles = {}, badges = {};
 // Every wallet each trader has linked (wallets.sql), by trader id.
 var linkedBy = {};
+// The board's fee per chain on atomic swaps (swap_fees); null until read, or when the project has no table.
+var swapFees = null;
 var profTouched = false, profNotifySet = false;
 // What this project has switched on. Each is probed once at boot, so the board never offers a
 // button whose back end is missing (the old failure: write the note, take the photo, then hear

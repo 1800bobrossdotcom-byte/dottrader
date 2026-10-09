@@ -33,7 +33,7 @@ module.exports = {
     pages: {
       "nfts-for-physical-items": {
         title: "Trade NFTs for physical items — swap an NFT for real things", h1: "Trade NFTs for physical items", short: "NFTs for physical items",
-        desc: "Swap an NFT for trading cards, games, consoles or anything real — or a physical item for an NFT. No money, no marketplace fees; the NFT side is checked on chain.",
+        desc: "Swap an NFT for trading cards, games, consoles or anything real — or a physical item for an NFT. No money between traders, no listing or selling fees; the NFT side is checked on chain.",
         lede: "Swap an NFT for a Pokémon card, a console, a watch — or something real for an NFT. You set what you want; the board finds people who have it, and checks the NFT side on chain.",
         sections: [
           ["How a hybrid swap works", "<p>One side sends an NFT from their wallet; the other posts a parcel (or hands it over, if you're local). Both have the same send-by date. The NFT transfer is read straight from the chain — the board checks it reached the other trader's wallet — and the parcel has a tracking number. When each of you has what you were promised, you both press your dot.</p>"],
@@ -43,7 +43,7 @@ module.exports = {
           ["Do I need to bridge or sell my NFT first?", "No. You send the NFT itself, on whatever chain it's on. The other side sends their item by post or in person."],
           ["How do I know the NFT was really sent?", "When an NFT side is marked sent, the board reads the transaction from the chain and checks that the token went to the other trader's wallet. It shows as delivered only once that's confirmed."],
           ["What stops someone keeping my NFT and never posting?", "Every agreed trade has a send-by date. If they don't send by then, you close the trade as a no-show and it goes on their public record. Check a trader's dots and finished trades before you agree."],
-          ["Does it cost anything?", "No. Listing, matching and trading are free. You pay only your own postage and gas."],
+          ["Does it cost anything?", "No. Listing, matching and trading are free. You pay only your own postage and gas — and when two NFTs on the same chain swap in one transaction, a small flat board fee goes with it, paid by whoever completes the swap."],
         ],
       },
       "nft-swap-cross-chain": {
@@ -84,7 +84,7 @@ module.exports = {
           ["Games for anything", "<p>A game can go for another game, a console, a card, or an NFT. Say what you'd take — or tick “open to other offers” and see what people come up with.</p>"],
         ],
         faq: [
-          ["Is it free?", "Yes. No listing fees, no selling fees. You pay only for postage if you post."],
+          ["Is it free?", "Yes. No listing fees, no selling fees. You pay only for postage if you post. The one paid extra is on the NFT side: completing an NFT-for-NFT swap on chain carries a small flat board fee."],
           ["What if the other person doesn't send?", "Every agreed trade has a send-by date. If they miss it, you can close the trade as a no-show and it goes on their record."],
         ],
       },
@@ -111,7 +111,7 @@ module.exports = {
         ],
         faq: [
           ["Is bartering online safe?", "Every trade here has a send-by date, proof of sending (tracking, or the transaction checked on chain), and a public record on each trader — dots for finished trades, and no-shows for trades they didn't send."],
-          ["Does it cost anything?", "No. It's free to list, match and trade."],
+          ["Does it cost anything?", "No. It's free to list, match and trade. Two optional extras carry a small flat fee: completing an NFT-for-NFT swap on chain, and — where offered — protecting a trade with a card hold."],
           ["Do I need to install an app?", "No. It works in your phone's browser — sign up with your email."],
         ],
       },
@@ -141,7 +141,7 @@ module.exports = {
     pages: {
       "nfts-for-physical-items": {
         title: "Cambia NFTs por objetos físicos: un NFT por cosas reales", h1: "Cambia NFTs por objetos físicos", short: "NFTs por objetos físicos",
-        desc: "Cambia un NFT por cartas, videojuegos, consolas o cualquier cosa real, o un objeto físico por un NFT. Sin dinero ni comisiones de marketplace; la parte NFT se comprueba en la cadena.",
+        desc: "Cambia un NFT por cartas, videojuegos, consolas o cualquier cosa real, o un objeto físico por un NFT. Sin dinero entre quienes intercambian y sin comisiones por publicar ni vender; la parte NFT se comprueba en la cadena.",
         lede: "Cambia un NFT por una carta Pokémon, una consola o un reloj, o algo real por un NFT. Tú decides qué quieres; el tablón encuentra a quien lo tiene y comprueba la parte NFT en la cadena.",
         sections: [
           ["Cómo funciona un intercambio híbrido", "<p>Una parte envía un NFT desde su wallet; la otra manda un paquete (o lo entrega en mano, si están cerca). Las dos tienen la misma fecha límite de envío. La transferencia del NFT se lee directamente de la cadena —el tablón comprueba que llegó a la wallet de la otra persona— y el paquete lleva número de seguimiento. Cuando cada uno tiene lo prometido, los dos pulsan su punto.</p>"],
@@ -151,7 +151,7 @@ module.exports = {
           ["¿Tengo que pasar mi NFT por un puente o venderlo antes?", "No. Envías el NFT tal cual, en la cadena donde esté. La otra parte envía su artículo por correo o en mano."],
           ["¿Cómo sé que el NFT se envió de verdad?", "Cuando la parte NFT se marca como enviada, el tablón lee la transacción en la cadena y comprueba que el token llegó a la wallet de la otra persona. Solo aparece como entregado cuando eso está confirmado."],
           ["¿Qué impide que alguien se quede mi NFT y nunca envíe nada?", "Todo intercambio acordado tiene fecha límite de envío. Si no envían a tiempo, lo cierras como plantón y queda en su historial público. Mira los puntos y los intercambios terminados de alguien antes de aceptar."],
-          ["¿Cuesta algo?", "No. Publicar, encontrar coincidencias e intercambiar es gratis. Solo pagas tu propio envío y el gas."],
+          ["¿Cuesta algo?", "No. Publicar, encontrar coincidencias e intercambiar es gratis. Solo pagas tu propio envío y el gas; y cuando dos NFT de la misma cadena se intercambian en una sola transacción, va con ella una pequeña comisión fija del tablón, que paga quien completa el intercambio."],
         ],
       },
       "nft-swap-cross-chain": {
@@ -192,7 +192,7 @@ module.exports = {
           ["Juegos por lo que sea", "<p>Un juego se puede cambiar por otro juego, una consola, una carta o un NFT. Di qué aceptarías, o marca «abierto a otras ofertas» y mira qué te proponen.</p>"],
         ],
         faq: [
-          ["¿Es gratis?", "Sí. No hay comisiones por publicar ni por vender. Solo pagas el envío si mandas algo por correo."],
+          ["¿Es gratis?", "Sí. No hay comisiones por publicar ni por vender. Solo pagas el envío si mandas algo por correo. El único extra de pago está en la parte NFT: completar un intercambio NFT por NFT en la cadena lleva una pequeña comisión fija del tablón."],
           ["¿Y si la otra persona no envía?", "Todo intercambio acordado tiene fecha límite de envío. Si no la cumple, puedes cerrarlo como plantón y queda en su historial."],
         ],
       },
@@ -219,7 +219,7 @@ module.exports = {
         ],
         faq: [
           ["¿Es seguro hacer trueque online?", "Cada intercambio aquí tiene fecha límite de envío, prueba de envío (seguimiento, o la transacción comprobada en la cadena) y un historial público de cada usuario: puntos por intercambios terminados y plantones por los que no envió."],
-          ["¿Cuesta algo?", "No. Publicar, encontrar coincidencias e intercambiar es gratis."],
+          ["¿Cuesta algo?", "No. Publicar, encontrar coincidencias e intercambiar es gratis. Dos extras opcionales llevan una pequeña comisión fija: completar un intercambio NFT por NFT en la cadena y, donde se ofrezca, proteger un intercambio con una retención en la tarjeta."],
           ["¿Tengo que instalar una app?", "No. Funciona en el navegador del móvil; solo regístrate con tu correo."],
         ],
       },
@@ -249,7 +249,7 @@ module.exports = {
     pages: {
       "nfts-for-physical-items": {
         title: "NFTと現物を交換 — NFTをリアルなモノと交換しよう", h1: "NFTと現物を交換する", short: "NFTと現物の交換",
-        desc: "NFTをトレカ、ゲーム、ゲーム機など現物と交換。現物をNFTと交換することもできます。お金もマーケットプレイス手数料も不要、NFT側はオンチェーンで確認されます。",
+        desc: "NFTをトレカ、ゲーム、ゲーム機など現物と交換。現物をNFTと交換することもできます。交換する相手との間でお金のやり取りはなく、出品手数料も販売手数料もありません。NFT側はオンチェーンで確認されます。",
         lede: "NFTをポケモンカードやゲーム機、腕時計と。あるいは現物をNFTと。欲しいものを書けば、持っている人をボードが見つけ、NFT側はオンチェーンで確認します。",
         sections: [
           ["NFTと現物の交換の流れ", "<p>一方はウォレットからNFTを送り、もう一方は荷物を発送します（近ければ手渡しも可）。発送期限は両者共通です。NFTの送付はチェーンから直接読み取られ、相手のウォレットに届いたことをボードが確認します。荷物には追跡番号があります。お互いが約束のものを受け取ったら、2人ともドットを押します。</p>"],
@@ -259,7 +259,7 @@ module.exports = {
           ["先にNFTをブリッジしたり売ったりする必要はありますか？", "いいえ。NFTは今あるチェーンのまま、そのまま送ります。相手は品物を郵送か手渡しで送ります。"],
           ["NFTが本当に送られたか、どうやってわかりますか？", "NFT側が発送済みになると、ボードがチェーン上のトランザクションを読み取り、トークンが相手のウォレットに届いたかを確認します。確認できて初めて「受け渡し済み」と表示されます。"],
           ["NFTを受け取ったまま、発送しない人がいたら？", "成立した交換にはすべて発送期限があります。期限までに送られなければ「未発送」として取引を終了でき、相手の公開履歴に残ります。交換に応じる前に、相手のドットと完了した取引数を確認しましょう。"],
-          ["費用はかかりますか？", "かかりません。出品・マッチング・交換はすべて無料です。自分の送料とガス代だけご負担ください。"],
+          ["費用はかかりますか？", "かかりません。出品・マッチング・交換はすべて無料です。自分の送料とガス代だけご負担ください。同じチェーン上の2つのNFTを1つのトランザクションで交換するときだけ、少額の固定のボード手数料が一緒にかかり、交換を完了する側が支払います。"],
         ],
       },
       "nft-swap-cross-chain": {
@@ -300,7 +300,7 @@ module.exports = {
           ["ゲームを何とでも", "<p>ゲームは別のゲームとも、ゲーム機とも、カードとも、NFTとも交換できます。欲しいものを書くか、「ほかのオファーも歓迎」にチェックして、どんな提案が来るか見てみましょう。</p>"],
         ],
         faq: [
-          ["無料ですか？", "はい。出品手数料も販売手数料もありません。郵送する場合の送料だけご負担ください。"],
+          ["無料ですか？", "はい。出品手数料も販売手数料もありません。郵送する場合の送料だけご負担ください。有料なのはNFT側の1点だけです。NFT同士の交換をオンチェーンで完了するときに、少額の固定のボード手数料がかかります。"],
           ["相手が発送しなかったら？", "成立した交換にはすべて発送期限があります。期限を過ぎたら「未発送」として取引を終了でき、相手の履歴に残ります。"],
         ],
       },
@@ -327,7 +327,7 @@ module.exports = {
         ],
         faq: [
           ["オンラインの物々交換は安全ですか？", "ここでの交換にはすべて、発送期限、発送の証明（追跡番号、またはオンチェーンで確認されたトランザクション）、そして各トレーダーの公開履歴（完了した交換のドットと、送らなかった取引の未発送）があります。"],
-          ["費用はかかりますか？", "かかりません。出品・マッチング・交換はすべて無料です。"],
+          ["費用はかかりますか？", "かかりません。出品・マッチング・交換はすべて無料です。任意の追加機能2つだけに少額の固定手数料がかかります。NFT同士の交換をオンチェーンで完了するときと、（提供されている場合）カードの仮押さえで取引を保護するときです。"],
           ["アプリのインストールは必要ですか？", "不要です。スマホのブラウザで使えます。メールアドレスで登録するだけです。"],
         ],
       },
@@ -357,7 +357,7 @@ module.exports = {
     pages: {
       "nfts-for-physical-items": {
         title: "Troque NFTs por itens físicos — um NFT por coisas de verdade", h1: "Troque NFTs por itens físicos", short: "NFTs por itens físicos",
-        desc: "Troque um NFT por cards, games, consoles ou qualquer coisa real — ou um item físico por um NFT. Sem dinheiro e sem taxa de marketplace; o lado NFT é conferido na blockchain.",
+        desc: "Troque um NFT por cards, games, consoles ou qualquer coisa real — ou um item físico por um NFT. Sem dinheiro entre quem troca e sem taxa para anunciar ou vender; o lado NFT é conferido na blockchain.",
         lede: "Troque um NFT por um card de Pokémon, um console, um relógio — ou algo real por um NFT. Você diz o que quer; o mural acha quem tem e confere o lado NFT na blockchain.",
         sections: [
           ["Como funciona uma troca híbrida", "<p>Um lado envia o NFT da carteira; o outro despacha um pacote (ou entrega em mãos, se vocês forem da mesma região). Os dois têm o mesmo prazo de envio. A transferência do NFT é lida direto da blockchain — o mural confere se chegou na carteira da outra pessoa — e o pacote tem código de rastreio. Quando cada um recebe o combinado, os dois apertam seu ponto.</p>"],
@@ -367,7 +367,7 @@ module.exports = {
           ["Preciso passar meu NFT por uma ponte ou vender antes?", "Não. Você envia o próprio NFT, na rede em que ele estiver. A outra pessoa manda o item dela pelo correio ou em mãos."],
           ["Como eu sei que o NFT foi enviado mesmo?", "Quando o lado NFT é marcado como enviado, o mural lê a transação na blockchain e confere se o token foi para a carteira da outra pessoa. Só aparece como entregue depois que isso é confirmado."],
           ["O que impede alguém de ficar com meu NFT e nunca enviar nada?", "Toda troca fechada tem prazo de envio. Se a pessoa não enviar até lá, você encerra a troca como furo e isso fica no histórico público dela. Veja os pontos e as trocas concluídas de alguém antes de fechar."],
-          ["Custa alguma coisa?", "Não. Anunciar, encontrar combinações e trocar é grátis. Você só paga o seu frete e o gas."],
+          ["Custa alguma coisa?", "Não. Anunciar, encontrar combinações e trocar é grátis. Você só paga o seu frete e o gas — e quando dois NFTs da mesma rede são trocados em uma única transação, vai junto uma pequena taxa fixa do mural, paga por quem completa a troca."],
         ],
       },
       "nft-swap-cross-chain": {
@@ -408,7 +408,7 @@ module.exports = {
           ["Jogos por qualquer coisa", "<p>Um jogo pode ser trocado por outro jogo, um console, um card ou um NFT. Diga o que você aceitaria — ou marque “aberto a outras propostas” e veja o que aparece.</p>"],
         ],
         faq: [
-          ["É grátis?", "É. Sem taxa para anunciar e sem taxa de venda. Você só paga o frete se mandar pelo correio."],
+          ["É grátis?", "É. Sem taxa para anunciar e sem taxa de venda. Você só paga o frete se mandar pelo correio. O único extra pago fica do lado NFT: completar uma troca de NFT por NFT na blockchain tem uma pequena taxa fixa do mural."],
           ["E se a outra pessoa não enviar?", "Toda troca fechada tem prazo de envio. Se a pessoa perder o prazo, você pode encerrar a troca como furo e isso fica no histórico dela."],
         ],
       },
@@ -435,7 +435,7 @@ module.exports = {
         ],
         faq: [
           ["Escambo online é seguro?", "Toda troca aqui tem prazo de envio, comprovante de envio (rastreio, ou a transação conferida na blockchain) e um histórico público de cada pessoa — pontos por trocas concluídas e furos pelas que ela não enviou."],
-          ["Custa alguma coisa?", "Não. Anunciar, encontrar combinações e trocar é grátis."],
+          ["Custa alguma coisa?", "Não. Anunciar, encontrar combinações e trocar é grátis. Dois extras opcionais têm uma pequena taxa fixa: completar uma troca de NFT por NFT na blockchain e, onde for oferecido, proteger uma troca com uma reserva no cartão."],
           ["Preciso instalar um app?", "Não. Funciona no navegador do celular — é só se cadastrar com seu e-mail."],
         ],
       },

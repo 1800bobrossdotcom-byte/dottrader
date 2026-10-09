@@ -4,14 +4,12 @@
   "Post what you have, say what you want, swap. No money, no prices — just trades, and dots you earn by making them.": "Publica lo que tienes, di qué quieres e intercambia. Sin dinero ni precios: solo trueques, y puntos que ganas al hacerlos.",
   "Dot Trading Post — swap what you have for what you want.": "Dot Trading Post: cambia lo que tienes por lo que quieres.",
   "A free barter board for trading cards, video games, retro consoles, collectibles and NFTs — swap, no money.": "Un tablón de trueques gratis para cartas coleccionables, videojuegos, consolas retro, coleccionables y NFTs: intercambia, sin dinero.",
-
   "BARTER BOARD": "TABLÓN DE TRUEQUES",
   "Matching": "Coincidencias",
   "Trade safely": "Intercambia seguro",
   "How dots work": "Cómo funcionan los puntos",
   "Stickers": "Pegatinas",
   "Open the board": "Abrir el tablón",
-
   "Physical · NFTs · across chains · no cash": "Físico · NFTs · entre cadenas · sin dinero",
   "<h1>Trade <span class=\"sw\">anything</span><br>for <span class=\"sw2\">anything</span>.</h1>": "<h1>Cambia <span class=\"sw\">lo que sea</span><br>por <span class=\"sw2\">lo que sea</span>.</h1>",
   "A card for a console. An NFT for an NFT on another chain. Something in your wallet for something in the real world. Dot finds the people who have what you want — no prices, no bridge, no cash required.": "Una carta por una consola. Un NFT por un NFT de otra cadena. Algo de tu wallet por algo del mundo real. Dot encuentra a la gente que tiene lo que quieres: sin precios, sin puentes y sin dinero.",
@@ -20,7 +18,6 @@
   "Physical for NFT": "Físico por NFT",
   "Start trading — free": "Empieza a intercambiar gratis",
   "How trades stay safe": "Cómo se protege cada intercambio",
-
   "Example listing": "Anuncio de ejemplo",
   "Charizard holo, 1999 base set": "Charizard holo, set base de 1999",
   "Played condition, one soft corner. Sleeved since forever.": "Con uso, una esquina un poco blanda. En funda desde siempre.",
@@ -31,7 +28,6 @@
   "7 dots": "7 puntos",
   "3 trades · North Leeds": "3 intercambios · Madrid",
   "● Proof of item": "● Prueba del artículo",
-
   "Three ways to swap": "Tres formas de intercambiar",
   "Sign up with your email, list what you have — a card, a console, an NFT — and trade it for whatever you'd rather have.": "Regístrate con tu correo, publica lo que tienes (una carta, una consola, un NFT) y cámbialo por lo que prefieras tener.",
   "NFT ⇄ NFT · ANY CHAIN": "NFT ⇄ NFT · CUALQUIER CADENA",
@@ -47,7 +43,6 @@
   "Cards for consoles, by post or meeting up locally. Tracking both ways, four days to send, and every trader's record of trades and no-shows on their card.": "Cartas por consolas, por correo o quedando en persona. Seguimiento en los dos sentidos, cuatro días para enviar y el historial de intercambios y plantones de cada usuario a la vista.",
   "Bartering online →": "El trueque online →",
   "Sign up — it's free": "Regístrate: es gratis",
-
   "Three steps, no account to fill in": "Tres pasos, sin formularios eternos",
   "The whole app is one loop. If it takes longer than a minute to post something, it's broken.": "Toda la app es un solo ciclo. Si publicar algo te lleva más de un minuto, algo falla.",
   "01 — POST": "01 — PUBLICA",
@@ -59,7 +54,6 @@
   "03 — TRADE": "03 — INTERCAMBIO",
   "Accept, meet, vouch.": "Acepta, intercambia, avala.",
   "Accepting takes the item off the board. When it's in hand, you each vouch — and you each earn dots.": "Al aceptar, el artículo sale del tablón. Cuando lo tengan en mano, cada uno avala al otro, y los dos ganan puntos.",
-
   "You don't have to hunt for the other half": "No tienes que ir a la caza de la otra mitad",
   "Barter's oldest problem: you need someone who has what you want <em>and</em> wants what you have. Tell Dot both halves and it goes looking.": "El problema más viejo del trueque: necesitas a alguien que tenga lo que quieres <em>y</em> quiera lo que tienes. Dile a Dot las dos mitades y se pone a buscar.",
   "You": "Tú",
@@ -80,7 +74,6 @@
   "Both-ways swaps at the top, then nearby traders and listings with Proof of item.": "Arriba, los cambios que interesan a los dos; después, usuarios cercanos y anuncios con Prueba del artículo.",
   "Save a search": "Guarda una búsqueda",
   "Looking for something nobody has yet? Save it, and get an email the moment it's posted.": "¿Buscas algo que nadie tiene todavía? Guárdalo y te llegará un correo en cuanto alguien lo publique.",
-
   "Built so neither trader has to just hope": "Hecho para que nadie tenga que cruzar los dedos",
   "The hard part of swapping with a stranger is sending first. Every step of a trade on the board is designed around that.": "Lo difícil de intercambiar con un desconocido es enviar primero. Cada paso de un intercambio en el tablón está pensado para eso.",
   "Trust you can read": "Confianza que se puede leer",
@@ -94,8 +87,7 @@
   "NFTs that can't be half-traded": "NFTs que no se quedan a medio cambiar",
   "When both sides are NFTs on the same chain, the swap is one transaction: both move, or neither does. Nobody sends first. Listings are checked on chain, so you know it's still held.": "Si las dos partes son NFTs en la misma cadena, el cambio es una sola transacción: se mueven los dos o ninguno. Nadie envía primero. Los anuncios se comprueban en la cadena, así que sabes que siguen en su wallet.",
   "No money in the middle": "Sin dinero de por medio",
-  "Trades are item for item. No money moves through the board and no card numbers are stored here, so there's nothing in the middle to lose.": "Los intercambios son artículo por artículo. Por el tablón no pasa dinero y aquí no se guardan números de tarjeta, así que no hay nada en medio que perder.",
-
+  "Trades are item for item. No cash changes hands between traders and no card numbers are stored here, so there's nothing in the middle to lose.": "Los intercambios son artículo por artículo. No hay dinero en efectivo entre quienes intercambian y aquí no se guardan números de tarjeta, así que no hay nada en medio que perder.",
   "Dots are earned, never bought": "Los puntos se ganan, nunca se compran",
   "A barter board runs on whether you can trust a stranger. Dots are the only answer to that, so they're the one thing the app guards.": "Un tablón de trueques depende de si puedes fiarte de un desconocido. Los puntos son la respuesta, por eso son lo que más protege la app.",
   "for your first finished trade with someone · +1 the second time · nothing after": "por tu primer intercambio terminado con alguien · +1 la segunda vez · nada después",
@@ -106,11 +98,9 @@
   "for posting, browsing, or anything you can do alone": "por publicar, mirar o cualquier cosa que puedas hacer tú solo",
   "Nobody can award themselves one": "Nadie puede dárselos a sí mismo",
   "Dots aren't stored as a number anyone can write. They're counted from the trade record itself — every dot traces back to a swap somebody else accepted, or a vouch somebody else left. Trading back and forth with the same person stops counting after the second time, so two friends can't manufacture a reputation. There's nothing to edit and nothing to buy.": "Los puntos no se guardan como un número que alguien pueda escribir. Se cuentan a partir del propio historial: cada punto viene de un cambio que otra persona aceptó o de un aval que otra persona dejó. Intercambiar una y otra vez con la misma persona deja de contar a partir de la segunda vez, así que dos amigos no pueden fabricarse una reputación. No hay nada que editar ni nada que comprar.",
-
   "Cards, games and retro first": "Primero, cartas, videojuegos y retro",
   "That's where swapping is liveliest, so that's where the board starts — trading cards, video games, retro consoles and collectibles.": "Ahí es donde más se intercambia, así que el tablón empieza por ahí: cartas coleccionables, videojuegos, consolas retro y coleccionables.",
   "And everything else, from bikes to vinyl:": "Y todo lo demás, de bicis a vinilos:",
-
   "Free stickers — stick a Dot on it": "Pegatinas gratis: ponle un Dot",
   "Six stickers for trade binders, console boxes, laptops and meetup tables. Every QR code opens the board.": "Seis pegatinas para carpetas de cartas, cajas de consolas, portátiles y mesas de quedadas. Cada código QR abre el tablón.",
   "Download them — PNG, PDF or the whole pack": "Descárgalas: PNG, PDF o el pack completo",
@@ -125,8 +115,7 @@
   "Scan to swap QR sticker": "Pegatina QR «Escanea para intercambiar»",
   "Scan to swap card sticker": "Pegatina tarjeta «Escanea para intercambiar»",
   "What would you trade for this sticker": "Pegatina «¿Qué darías por esto?»",
-
-  "Free to use. Nothing to install — it works in your phone's browser.": "Gratis. Nada que instalar: funciona en el navegador del móvil.",
+  "Free to list, match and trade; on-chain NFT swaps and protected trades carry a small flat fee. Nothing to install — it works in your phone's browser.": "Gratis para publicar, encontrar coincidencias e intercambiar; los intercambios de NFT en la cadena y los intercambios protegidos llevan una pequeña comisión fija. Nada que instalar: funciona en el navegador del móvil.",
   "Get the stickers": "Consigue las pegatinas",
   "Ways to trade": "Formas de intercambiar",
   "NFTs for physical items": "NFTs por objetos físicos",

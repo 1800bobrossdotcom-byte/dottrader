@@ -4,14 +4,12 @@
   "Post what you have, say what you want, swap. No money, no prices — just trades, and dots you earn by making them.": "Anuncie o que você tem, diga o que quer e troque. Sem dinheiro, sem preço — só trocas, e pontos que você ganha fazendo trocas.",
   "Dot Trading Post — swap what you have for what you want.": "Dot Trading Post — troque o que você tem pelo que você quer.",
   "A free barter board for trading cards, video games, retro consoles, collectibles and NFTs — swap, no money.": "Um mural de trocas grátis para cards colecionáveis, videogames, consoles retrô, colecionáveis e NFTs — troque, sem dinheiro.",
-
   "BARTER BOARD": "MURAL DE TROCAS",
   "Matching": "Combinações",
   "Trade safely": "Troque com segurança",
   "How dots work": "Como funcionam os pontos",
   "Stickers": "Adesivos",
   "Open the board": "Abrir o mural",
-
   "Physical · NFTs · across chains · no cash": "Físico · NFTs · entre redes · sem dinheiro",
   "<h1>Trade <span class=\"sw\">anything</span><br>for <span class=\"sw2\">anything</span>.</h1>": "<h1>Troque <span class=\"sw\">qualquer coisa</span><br>por <span class=\"sw2\">qualquer coisa</span>.</h1>",
   "A card for a console. An NFT for an NFT on another chain. Something in your wallet for something in the real world. Dot finds the people who have what you want — no prices, no bridge, no cash required.": "Um card por um console. Um NFT por um NFT de outra rede. Algo da sua carteira por algo do mundo real. O Dot encontra quem tem o que você quer — sem preço, sem ponte, sem dinheiro.",
@@ -20,7 +18,6 @@
   "Physical for NFT": "Físico por NFT",
   "Start trading — free": "Comece a trocar — grátis",
   "How trades stay safe": "Como cada troca fica segura",
-
   "Example listing": "Anúncio de exemplo",
   "Charizard holo, 1999 base set": "Charizard holo, coleção base de 1999",
   "Played condition, one soft corner. Sleeved since forever.": "Com marcas de uso, uma ponta levemente gasta. Sempre no sleeve.",
@@ -31,7 +28,6 @@
   "7 dots": "7 pontos",
   "3 trades · North Leeds": "3 trocas · São Paulo",
   "● Proof of item": "● Prova do item",
-
   "Three ways to swap": "Três jeitos de trocar",
   "Sign up with your email, list what you have — a card, a console, an NFT — and trade it for whatever you'd rather have.": "Cadastre-se com seu e-mail, anuncie o que você tem — um card, um console, um NFT — e troque pelo que você preferir.",
   "NFT ⇄ NFT · ANY CHAIN": "NFT ⇄ NFT · QUALQUER REDE",
@@ -47,7 +43,6 @@
   "Cards for consoles, by post or meeting up locally. Tracking both ways, four days to send, and every trader's record of trades and no-shows on their card.": "Cards por consoles, pelo correio ou combinando em mãos. Rastreio dos dois lados, quatro dias para enviar e o histórico de trocas e furos de cada pessoa à vista.",
   "Bartering online →": "Escambo online →",
   "Sign up — it's free": "Cadastre-se — é grátis",
-
   "Three steps, no account to fill in": "Três passos, sem formulário chato",
   "The whole app is one loop. If it takes longer than a minute to post something, it's broken.": "O app inteiro é um ciclo só. Se anunciar algo levar mais de um minuto, tem algo errado.",
   "01 — POST": "01 — ANUNCIE",
@@ -59,7 +54,6 @@
   "03 — TRADE": "03 — TROCA",
   "Accept, meet, vouch.": "Aceite, troque, dê seu aval.",
   "Accepting takes the item off the board. When it's in hand, you each vouch — and you each earn dots.": "Ao aceitar, o item sai do mural. Quando estiver em mãos, cada um dá seu aval — e os dois ganham pontos.",
-
   "You don't have to hunt for the other half": "Você não precisa caçar a outra metade",
   "Barter's oldest problem: you need someone who has what you want <em>and</em> wants what you have. Tell Dot both halves and it goes looking.": "O problema mais antigo do escambo: você precisa de alguém que tenha o que você quer <em>e</em> queira o que você tem. Conte as duas metades para o Dot e ele vai procurar.",
   "You": "Você",
@@ -80,7 +74,6 @@
   "Both-ways swaps at the top, then nearby traders and listings with Proof of item.": "No topo, as trocas em que os dois querem; depois, pessoas por perto e anúncios com Prova do item.",
   "Save a search": "Salve uma busca",
   "Looking for something nobody has yet? Save it, and get an email the moment it's posted.": "Procurando algo que ninguém tem ainda? Salve a busca e receba um e-mail assim que alguém anunciar.",
-
   "Built so neither trader has to just hope": "Feito para ninguém precisar contar com a sorte",
   "The hard part of swapping with a stranger is sending first. Every step of a trade on the board is designed around that.": "O difícil de trocar com um desconhecido é enviar primeiro. Cada passo de uma troca no mural foi pensado para isso.",
   "Trust you can read": "Confiança que dá para ver",
@@ -94,8 +87,7 @@
   "NFTs that can't be half-traded": "NFTs que não ficam pela metade",
   "When both sides are NFTs on the same chain, the swap is one transaction: both move, or neither does. Nobody sends first. Listings are checked on chain, so you know it's still held.": "Quando os dois lados são NFTs na mesma rede, a troca é uma transação só: os dois se movem, ou nenhum se move. Ninguém envia primeiro. Os anúncios são conferidos na blockchain, então você sabe que o NFT ainda está lá.",
   "No money in the middle": "Sem dinheiro no meio",
-  "Trades are item for item. No money moves through the board and no card numbers are stored here, so there's nothing in the middle to lose.": "As trocas são item por item. Nenhum dinheiro passa pelo mural e nenhum número de cartão fica guardado aqui, então não há nada no meio para perder.",
-
+  "Trades are item for item. No cash changes hands between traders and no card numbers are stored here, so there's nothing in the middle to lose.": "As trocas são item por item. Nenhum dinheiro passa de mão em mão entre quem troca e nenhum número de cartão fica guardado aqui, então não há nada no meio para perder.",
   "Dots are earned, never bought": "Pontos se ganham, nunca se compram",
   "A barter board runs on whether you can trust a stranger. Dots are the only answer to that, so they're the one thing the app guards.": "Um mural de trocas depende de você poder confiar num desconhecido. Os pontos são a resposta para isso, por isso são o que o app mais protege.",
   "for your first finished trade with someone · +1 the second time · nothing after": "pela sua primeira troca concluída com alguém · +1 na segunda vez · nada depois",
@@ -106,11 +98,9 @@
   "for posting, browsing, or anything you can do alone": "por anunciar, navegar ou qualquer coisa que você faz sozinho",
   "Nobody can award themselves one": "Ninguém pode dar pontos a si mesmo",
   "Dots aren't stored as a number anyone can write. They're counted from the trade record itself — every dot traces back to a swap somebody else accepted, or a vouch somebody else left. Trading back and forth with the same person stops counting after the second time, so two friends can't manufacture a reputation. There's nothing to edit and nothing to buy.": "Os pontos não ficam guardados como um número que alguém possa escrever. Eles são contados a partir do próprio histórico — cada ponto vem de uma troca que outra pessoa aceitou ou de um aval que outra pessoa deu. Trocar várias vezes com a mesma pessoa para de contar depois da segunda vez, então dois amigos não conseguem fabricar uma reputação. Não há nada para editar nem nada para comprar.",
-
   "Cards, games and retro first": "Primeiro: cards, games e retrô",
   "That's where swapping is liveliest, so that's where the board starts — trading cards, video games, retro consoles and collectibles.": "É onde mais se troca, então é por aí que o mural começa — cards colecionáveis, videogames, consoles retrô e colecionáveis.",
   "And everything else, from bikes to vinyl:": "E todo o resto, de bikes a vinis:",
-
   "Free stickers — stick a Dot on it": "Adesivos grátis — cole um Dot",
   "Six stickers for trade binders, console boxes, laptops and meetup tables. Every QR code opens the board.": "Seis adesivos para pastas de cards, caixas de console, notebooks e mesas de encontros. Todo QR code abre o mural.",
   "Download them — PNG, PDF or the whole pack": "Baixe — PNG, PDF ou o pacote inteiro",
@@ -125,8 +115,7 @@
   "Scan to swap QR sticker": "Adesivo QR “Escaneie para trocar”",
   "Scan to swap card sticker": "Adesivo cartão “Escaneie para trocar”",
   "What would you trade for this sticker": "Adesivo “O que você daria por isto?”",
-
-  "Free to use. Nothing to install — it works in your phone's browser.": "Grátis. Nada para instalar — funciona no navegador do celular.",
+  "Free to list, match and trade; on-chain NFT swaps and protected trades carry a small flat fee. Nothing to install — it works in your phone's browser.": "Grátis para anunciar, encontrar combinações e trocar; trocas de NFT na blockchain e trocas protegidas têm uma pequena taxa fixa. Nada para instalar — funciona no navegador do celular.",
   "Get the stickers": "Pegue os adesivos",
   "Ways to trade": "Jeitos de trocar",
   "NFTs for physical items": "NFTs por itens físicos",
