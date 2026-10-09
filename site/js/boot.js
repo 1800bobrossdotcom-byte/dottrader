@@ -39,7 +39,7 @@ function probe() {
     // The bond function answers a plain GET with its price; 401 means it is there behind JWT checks.
     fetch(fnUrl("bond")).then(function (r) {
       if (r.status === 200) return r.json();
-      return r.status === 404 ? null : { bond_cents: 2500, fee_cents: 150 };
+      return r.status === 404 ? null : { bond_cents: 2500, fee_cents: 300, handling_cents: 250, hold_days: 7 };
     }, function () { return null; })
   ]).then(function (r) {
     caps = { photos: r[0], location: r[1], messages: r[2], verify: r[3], trades: r[4], bond: r[4] && r[5] && r[16] ? r[16] : null, matching: r[6], notify: r[7], giveItems: r[8], history: r[9], local: r[10], paging: r[11], stats: r[12], lang: r[13], wallets: r[14] };

@@ -118,7 +118,7 @@ function page(o) {
     '<main class="wrap">\n' + o.body + "\n</main>\n" +
     '<footer class="wrap foot"><a href="' + (P || "") + '/">' + esc(tt("foot.how")) + '</a><a href="' + appHref(lang) + '">' + esc(tt("foot.board")) + "</a>" +
       ["Trading Cards", "Video Games", "Consoles & Retro", "NFTs"].map((c) => '<a href="' + P + "/c/" + slug(c) + '">' + esc(I.catName(lang, c)) + "</a>").join("") +
-      '<a href="' + P + '/trade">' + esc(tt("foot.ways")) + '</a><a href="/stickers">' + esc(tt("foot.stickers")) + "</a>" +
+      '<a href="' + P + '/trade">' + esc(tt("foot.ways")) + '</a><a href="/stickers">' + esc(tt("foot.stickers")) + '</a><a href="/terms">' + esc(tt("foot.terms")) + "</a>" +
       '<a class="makers" href="https://cbuy.ing" target="_blank" rel="noopener"><span>' + esc(tt("foot.makers")) + '</span><img src="/cbuy.png?v=1" alt="cbuy" width="75" height="32"></a>' +
       '<nav class="langs" aria-label="' + esc(tt("foot.lang")) + '">' + langLinks + "</nav>" + '<p class="site-stats" id="siteStats" aria-live="polite" hidden></p></footer>\n' +
     '<script src="/js/share.js?v=5" defer></script>\n</body>\n</html>\n';

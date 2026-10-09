@@ -10,6 +10,7 @@ const T = {
   messages: [{ id: "44444444-4444-4444-4444-444444444444", offer_id: "33333333-3333-3333-3333-333333333333", from_id: B, body: "Still on for Saturday?" },
              { id: "55555555-5555-5555-5555-555555555555", offer_id: "33333333-3333-3333-3333-333333333333", from_id: B, body: "Hello?" }],
   notifications_sent: [],
+  bonds: [],
 };
 const emails = [];
 const users = { [A]: "alice@x.com", [B]: "bob@x.com", [C]: "cara@x.com" };
@@ -88,4 +89,25 @@ T.profiles[1].lang = "pt"; T.offers[T.offers.length - 1].status = "agreed"; T.of
 T.profiles[0].lang = "es";
 [s, j] = await call({ kind: "accepted", id: "99999999-0000-4000-8000-000000000009" });
 ok("…and a Spanish one in Spanish, with the date written the Spanish way", j.sent === 1 && last().to[0] === "alice@x.com" && /aceptó tu oferta/.test(last().subject) && /sábado/.test(last().html), last().subject);
+
+// Bonds on the clock: the honest side is told to close a no-show before the other side's hold
+// lapses, and a sender is told when their fee was taken on day six.
+T.profiles[0].lang = "en"; T.profiles[1].lang = "en";
+const ago = (d) => new Date(Date.now() - d * 86400e3).toISOString();
+T.items.push({ id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", title: "Sega Saturn", owner_id: A, status: "pledged" });
+T.offers.push({ id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", item_id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", owner_id: A, from_id: B, give: "Dreamcast", msg: "", status: "agreed", ship_by: ago(0.5), owner_sent_at: ago(1), confirm_owner: false, confirm_from: false });
+T.bonds.push({ id: "bond-b", offer_id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", user_id: B, amount_cents: 2500, fee_cents: 300, status: "held", held_at: ago(4.5), fee_captured_cents: 0, fee_refunded_cents: 0 });
+[s, j] = await call({ kind: "bond_sweep" });
+ok("past the ship-by date, the side that sent is told to close the no-show before the other's hold lapses", j.sent === 1 && last().to[0] === "alice@x.com" && /Bob hasn't sent/.test(last().subject) && /\$25\.00 bond lapses/.test(last().html) && /Sega Saturn/.test(last().html), last().subject);
+[s, j] = await call({ kind: "bond_sweep" });
+ok("…once", j.sent === 0);
+T.bonds.push({ id: "bond-a", offer_id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", user_id: A, amount_cents: 2500, fee_cents: 300, status: "released", held_at: ago(6.2), settled_at: ago(0.1), fee_captured_cents: 300, fee_refunded_cents: 0 });
+[s, j] = await call({ kind: "bond_sweep" });
+ok("a sender whose fee was taken on day six is told, and why", j.sent === 1 && last().to[0] === "alice@x.com" && /\$3\.00 fee was taken/.test(last().subject) && /seven days/.test(last().html), last().subject);
+[s, j] = await call({ kind: "bond_sweep" });
+ok("…and not again", j.sent === 0);
+T.bonds.push({ id: "bond-old", offer_id: "33333333-3333-3333-3333-333333333333", user_id: B, amount_cents: 2500, fee_cents: 300, status: "released", settled_at: ago(0.1), fee_captured_cents: 300, fee_refunded_cents: 0 });
+[s, j] = await call({ kind: "bond_sweep" });
+ok("a fee kept on a trade that has already finished gets no 'taken early' email", j.sent === 0);
+
 console.log(res.join("\n")); if (res.some(r => !r.startsWith("PASS"))) process.exitCode = 1;

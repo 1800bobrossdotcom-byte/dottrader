@@ -42,7 +42,7 @@ async function claim(key: string, userId: string, kind: string) {
 }
 
 // Each kind of email answers to one of the settings a trader can switch off in their profile.
-const PREF: Record<string, string> = { offer: "offers", accepted: "trades", noshow: "trades", message: "messages", search: "matches", mutual: "matches", shipby: "reminders" };
+const PREF: Record<string, string> = { offer: "offers", accepted: "trades", noshow: "trades", message: "messages", search: "matches", mutual: "matches", shipby: "reminders", bondclaim: "reminders", bondfee: "trades" };
 
 // Each email goes out in the language on the recipient's profile (profiles.lang: en, es, ja, pt),
 // written to the same glossary as the board (i18n/GLOSSARY.md).
@@ -92,6 +92,12 @@ const W = {
       lines: [`<b>${esc(title)}</b> was just listed by someone who'd take your <b>${esc(label)}</b> — and you said you'd take theirs.`], cta: "Make an offer" }),
     shipby: (by: string, title: string) => ({ subject: "Your trade's ship-by date is tomorrow", headline: `Send by ${by}`,
       lines: [`Your side of the trade for <b>${title}</b> isn't marked sent yet. After the date, the other trader can close it as a no-show.`], cta: "Mark it sent" }),
+    bondclaim: (who: string, title: string, amount: string, by: string) => ({ subject: `${who} hasn't sent — close the no-show by ${by}`, headline: `Their ${amount} bond lapses on ${by}`,
+      lines: [`The ship-by date for <b>${title}</b> has passed and ${who} hasn't marked their side sent. You have, so you can close the trade as a no-show and their bond is paid to you.`,
+        `Card holds last seven days: close it before <b>${by}</b>, or the hold lapses and there is nothing to pay out.`], cta: "Open the trade" }),
+    bondfee: (fee: string, title: string) => ({ subject: `Your ${fee} fee was taken — the hold is released`, headline: `Your bond on ${title} has done its job`,
+      lines: [`You marked your side sent, so the <b>${fee}</b> fee was taken from your card hold and the rest released. Card holds only last seven days, which is why it doesn't wait for the trade to finish.`,
+        "If the other side never sends and you close the trade as a no-show, the fee comes back to you."], cta: "See the trade" }),
   },
   es: {
     why: "Recibes estos correos porque intercambias en Dot Trading Post.", choose: "Elige qué correos recibes", someone: "Alguien", listing: "anuncio", item: "un artículo", theItem: "artículo",
@@ -108,6 +114,12 @@ const W = {
       lines: [`<b>${esc(title)}</b> encaja con tu búsqueda guardada «${esc(label)}».`], cta: "Echar un vistazo" }),
     mutual: (title: string, label: string) => ({ subject: `Una coincidencia mutua para tu ${label}`, headline: "Alguien tiene lo que quieres, y quiere lo que tienes",
       lines: [`Alguien que aceptaría tu <b>${esc(label)}</b> acaba de publicar <b>${esc(title)}</b>, y tú dijiste que aceptarías lo suyo.`], cta: "Hacer una oferta" }),
+    bondclaim: (who: string, title: string, amount: string, by: string) => ({ subject: `${who} no ha enviado: cierra la incomparecencia antes del ${by}`, headline: `Su fianza de ${amount} caduca el ${by}`,
+      lines: [`La fecha límite de envío de <b>${title}</b> ya pasó y ${who} no ha marcado su parte como enviada. Tú sí, así que puedes cerrar el intercambio como incomparecencia y su fianza se te paga a ti.`,
+        `Las retenciones en tarjeta duran siete días: ciérralo antes del <b>${by}</b>, o la retención caduca y no queda nada que pagar.`], cta: "Abrir el intercambio" }),
+    bondfee: (fee: string, title: string) => ({ subject: `Se ha cobrado tu comisión de ${fee}: la retención queda liberada`, headline: `Tu fianza por ${title} ya cumplió su función`,
+      lines: [`Marcaste tu parte como enviada, así que la comisión de <b>${fee}</b> se cobró de la retención de tu tarjeta y el resto quedó liberado. Las retenciones solo duran siete días, por eso no espera a que termine el intercambio.`,
+        "Si la otra parte nunca envía y cierras el intercambio como incomparecencia, la comisión se te devuelve."], cta: "Ver el intercambio" }),
     shipby: (by: string, title: string) => ({ subject: "Mañana vence la fecha límite de envío de tu intercambio", headline: `Envía antes del ${by}`,
       lines: [`Tu parte del intercambio por <b>${title}</b> todavía no está marcada como enviada. Pasada la fecha, la otra persona puede cerrarlo como plantón.`], cta: "Marcar como enviado" }),
   },
@@ -126,6 +138,12 @@ const W = {
       lines: [`<b>${esc(title)}</b>が、保存した検索「${esc(label)}」に一致しました。`], cta: "見てみる" }),
     mutual: (title: string, label: string) => ({ subject: `あなたの${label}に相互マッチ`, headline: "欲しいものを持っていて、あなたのものを欲しがっている人がいます",
       lines: [`あなたの<b>${esc(label)}</b>を欲しがっている人が<b>${esc(title)}</b>を出品しました。あなたもそれを希望しています。`], cta: "オファーする" }),
+    bondclaim: (who: string, title: string, amount: string, by: string) => ({ subject: `${who}さんが未発送です。${by}までに不履行として締めてください`, headline: `相手の${amount}の保証金は${by}に失効します`,
+      lines: [`<b>${title}</b>の発送期限を過ぎましたが、${who}さんはまだ発送済みにしていません。あなたは発送済みなので、この交換を不履行として締めることができ、相手の保証金があなたに支払われます。`,
+        `カードの仮押さえは7日間だけです。<b>${by}</b>より前に締めてください。過ぎると仮押さえが失効し、支払えるものがなくなります。`], cta: "交換を開く" }),
+    bondfee: (fee: string, title: string) => ({ subject: `${fee}の手数料を受け取りました。仮押さえは解除されました`, headline: `${title}の保証金は役目を終えました`,
+      lines: [`発送済みにしていただいたので、カードの仮押さえから<b>${fee}</b>の手数料を受け取り、残りは解除しました。仮押さえは7日間しか続かないため、交換の完了を待たずに行います。`,
+        "相手が最後まで発送せず、あなたが不履行として締めた場合、手数料はお返しします。"], cta: "交換を見る" }),
     shipby: (by: string, title: string) => ({ subject: "明日が交換の発送期限です", headline: `${by}までに発送`,
       lines: [`<b>${title}</b>の交換で、あなたの分がまだ発送済みになっていません。期限を過ぎると、相手が「未発送」として終了できます。`], cta: "発送済みにする" }),
   },
@@ -144,6 +162,12 @@ const W = {
       lines: [`<b>${esc(title)}</b> combina com sua busca salva “${esc(label)}”.`], cta: "Dar uma olhada" }),
     mutual: (title: string, label: string) => ({ subject: `Uma combinação mútua para seu ${label}`, headline: "Alguém tem o que você quer, e quer o que você tem",
       lines: [`<b>${esc(title)}</b> acabou de ser anunciado por alguém que aceitaria seu <b>${esc(label)}</b> — e você disse que aceitaria o dela.`], cta: "Fazer uma proposta" }),
+    bondclaim: (who: string, title: string, amount: string, by: string) => ({ subject: `${who} não enviou — feche a falta até ${by}`, headline: `A caução de ${amount} da pessoa expira em ${by}`,
+      lines: [`O prazo de envio de <b>${title}</b> passou e ${who} não marcou o lado dela como enviado. Você marcou, então pode fechar a troca como falta e a caução vai para você.`,
+        `A reserva no cartão dura sete dias: feche antes de <b>${by}</b>, ou a reserva expira e não sobra nada para pagar.`], cta: "Abrir a troca" }),
+    bondfee: (fee: string, title: string) => ({ subject: `Sua taxa de ${fee} foi cobrada — a reserva foi liberada`, headline: `Sua caução em ${title} cumpriu o papel dela`,
+      lines: [`Você marcou o seu lado como enviado, então a taxa de <b>${fee}</b> foi cobrada da reserva no seu cartão e o restante foi liberado. Reservas no cartão duram só sete dias, por isso não esperam a troca terminar.`,
+        "Se a outra pessoa nunca enviar e você fechar a troca como falta, a taxa volta para você."], cta: "Ver a troca" }),
     shipby: (by: string, title: string) => ({ subject: "O prazo de envio da sua troca é amanhã", headline: `Envie até ${by}`,
       lines: [`A sua parte da troca por <b>${title}</b> ainda não está marcada como enviada. Depois do prazo, a outra pessoa pode encerrar como furo.`], cta: "Marcar como enviada" }),
   },
@@ -210,6 +234,35 @@ async function handle(kind: string, id: string | null) {
     for (const t of targets ?? []) {
       if (t.kind === "search") n += await tell(t.user_id, `search:${id}:${t.user_id}`, "search", (l) => ({ ...W[l].search(it.title, t.label), href: itemUrl(id!, l) }));
       else n += await tell(t.user_id, `mutual:${id}:${t.other_item}`, "mutual", (l) => ({ ...W[l].mutual(it.title, t.label), href: itemUrl(id!, l) }));
+    }
+    return n;
+  }
+  if (kind === "bond_sweep") {
+    const now = new Date().toISOString(), DAYMS = 86400e3;
+    let n = 0;
+    // The ship-by date passed, one side sent, the other holds a bond and hasn't: tell the honest
+    // side they can close it now, and by when, because the hold lapses seven days after it began.
+    const late = await db(`offers?status=eq.agreed&ship_by=lt.${now}&select=*`) as Array<Record<string, any>>;
+    for (const o of late ?? []) {
+      const sent = (side: "owner" | "from") => !!o[`${side}_sent_at`] || !!(side === "owner" ? o.confirm_owner : o.confirm_from);
+      const honest = sent("owner") && !sent("from") ? "owner" : sent("from") && !sent("owner") ? "from" : null;
+      if (!honest) continue;
+      const other = honest === "owner" ? "from" : "owner";
+      const b = await one(`bonds?offer_id=eq.${o.id}&user_id=eq.${o[`${other}_id`]}&status=eq.held&select=*`);
+      if (!b) continue;
+      const by = new Date(new Date(b.held_at || b.created_at).getTime() + 7 * DAYMS).toISOString();
+      const it = await one(`items?id=eq.${o.item_id}&select=title`);
+      const who = await nameOf(o[`${other}_id`]);
+      n += await tell(o[`${honest}_id`], `bondclaim:${o.id}`, "bondclaim", (l) => ({ ...W[l].bondclaim(esc(who || W[l].someone), esc(it?.title ?? W[l].item), `$${(b.amount_cents / 100).toFixed(2)}`, day(by, l)), href: boardUrl(l) }));
+    }
+    // A fee taken on day six, while the trade is still going: say so, once.
+    const since = new Date(Date.now() - 2 * DAYMS).toISOString();
+    const taken = await db(`bonds?status=eq.released&fee_captured_cents=gt.0&settled_at=gt.${since}&select=*`) as Array<Record<string, any>>;
+    for (const b of taken ?? []) {
+      const o = await one(`offers?id=eq.${b.offer_id}&select=*`);
+      if (!o || o.status !== "agreed") continue;
+      const it = await one(`items?id=eq.${o.item_id}&select=title`);
+      n += await tell(b.user_id, `bondfee:${b.id}`, "bondfee", (l) => ({ ...W[l].bondfee(`$${(b.fee_captured_cents / 100).toFixed(2)}`, esc(it?.title ?? W[l].item)), href: boardUrl(l) }));
     }
     return n;
   }

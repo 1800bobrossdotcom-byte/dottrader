@@ -320,6 +320,7 @@ h2 { font-family:var(--display); font-weight:700; font-size:28px; letter-spacing
 .sideline .no { color:var(--muted); }
 .sideline a { color:var(--blue); font-weight:600; overflow-wrap:anywhere; }
 .phint { font-size:12.5px; color:var(--muted); margin:0; }
+.phint.late { color:var(--ink); font-weight:600; }
 .strike { font-family:var(--mono); font-size:10.5px; font-weight:600; letter-spacing:.04em; color:#fff; background:var(--red); border:1.5px solid var(--ink); border-radius:4px; padding:1px 6px; }
 .payout { background:var(--yellow); border:var(--bw) solid var(--ink); border-radius:var(--r); padding:14px 16px; margin-bottom:18px; box-shadow:var(--sh); display:flex; gap:12px; align-items:center; flex-wrap:wrap; font-weight:600; }
 .payout .btn { margin-left:auto; background:var(--ink); color:var(--yellow); }
@@ -464,6 +465,7 @@ h2 { font-family:var(--display); font-weight:700; font-size:28px; letter-spacing
 /* Language links at the foot of the board. */
 .sitefoot { flex-direction:column; align-items:center; gap:14px; }
 .sitefoot .langs { display:flex; flex-wrap:wrap; justify-content:center; gap:6px 16px; font-size:14px; }
+.sitefoot .termslink { font-size:14px; color:var(--muted); }
 .sitefoot .langs a { color:var(--muted); text-decoration:none; font-weight:600; }
 .sitefoot .langs a[aria-current] { color:var(--ink); text-decoration:underline; text-underline-offset:3px; }
 

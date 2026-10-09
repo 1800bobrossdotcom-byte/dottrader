@@ -20,6 +20,7 @@ const S = {
   "foot.board": { en: "The board", es: "El tablón", ja: "ボード", pt: "O mural" },
   "foot.ways": { en: "Ways to trade", es: "Formas de intercambiar", ja: "交換のしかた", pt: "Jeitos de trocar" },
   "foot.stickers": { en: "Stickers", es: "Pegatinas", ja: "ステッカー", pt: "Adesivos" },
+  "foot.terms": { en: "Terms", es: "Términos", ja: "利用規約", pt: "Termos" },
   "foot.makers": { en: "From the makers of", es: "De los creadores de", ja: "制作：", pt: "Dos criadores do" },
   "foot.lang": { en: "Language", es: "Idioma", ja: "言語", pt: "Idioma" },
   "crumb.home": { en: "Home", es: "Inicio", ja: "ホーム", pt: "Início" },

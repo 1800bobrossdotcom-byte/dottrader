@@ -2,7 +2,6 @@
   "(save to keep)": "(guarda para conservarla)",
   "+ Post": "+ Publicar",
   "+ Post an item": "+ Publicar un artículo",
-  "A hold on your card, not a charge. If the trade completes it’s released and {fee} is kept as the fee. If you send and they don’t, their bond is paid to you. Holds last about a week.": "Es una retención en tu tarjeta, no un cobro. Si el intercambio se completa, se libera y se cobran {fee} de comisión. Si tú envías y la otra parte no, su fianza te la pagan a ti. Las retenciones duran una semana aproximadamente.",
   "A photo and what you'd take for it.": "Una foto y lo que aceptarías a cambio.",
   "A photo failed to upload.": "No se pudo subir una foto.",
   "A physical thing": "Un objeto físico",
@@ -60,7 +59,6 @@
   "Claim {amount}": "Cobrar {amount}",
   "Clear filters": "Quitar filtros",
   "Close": "Cerrar",
-  "Close this trade as a no-show? {who} gets a no-show on their record and their bond is paid to you. Your item goes back on the board.": "¿Cerrar este intercambio como plantón? A {who} le queda un plantón en su historial y su fianza te la pagan a ti. Tu artículo vuelve al tablón.",
   "Close this trade as a no-show? {who} gets a no-show on their record. Your item goes back on the board.": "¿Cerrar este intercambio como plantón? A {who} le queda un plantón en su historial. Tu artículo vuelve al tablón.",
   "Closed as a no-show.": "Cerrado como plantón.",
   "Code": "Código",
@@ -597,5 +595,12 @@
   "{n} wallets are linked to your account. Click to see them, add another or unlink one.": "Hay {n} wallets vinculadas a tu cuenta. Haz clic para verlas, añadir otra o desvincular una.",
   "{addr} is already linked. Switch to a different account in {wallet}, then try again.": "{addr} ya está vinculada. Cambia a otra cuenta en {wallet} y vuelve a intentarlo.",
   "{who} pays the gas and a {fee} board fee.": "{who} paga el gas y una comisión del tablón de {fee}.",
-  "You pay the gas and a {fee} board fee.": "Tú pagas el gas y una comisión del tablón de {fee}."
+  "You pay the gas and a {fee} board fee.": "Tú pagas el gas y una comisión del tablón de {fee}.",
+  "A hold on your card, not a charge. If the trade completes, {fee} is kept as the fee and the rest is released. If you send and they don’t, their bond is paid to you, less a {handling} handling fee. Holds last {days} days: once you’ve marked sent, the fee is taken on day six and the rest released.": "Una retención en tu tarjeta, no un cobro. Si el intercambio se completa, se queda {fee} como comisión y el resto se libera. Si tú envías y la otra parte no, su fianza se te paga a ti, menos {handling} de gastos de gestión. Las retenciones duran {days} días: una vez que marques tu parte como enviada, la comisión se cobra el sexto día y el resto se libera.",
+  "Close this trade as a no-show? {who} gets a no-show on their record and their bond is paid to you, less a {handling} handling fee. Your item goes back on the board.": "¿Cerrar este intercambio como incomparecencia? {who} tendrá una incomparecencia en su historial y su fianza se te paga a ti, menos {handling} de gastos de gestión. Tu artículo vuelve al tablón.",
+  "See the terms.": "Ver los términos.",
+  "Their hold lapses {date}. Close the no-show before then and their bond is paid to you.": "Su retención caduca el {date}. Cierra la incomparecencia antes y su fianza se te paga a ti.",
+  "released, {fee} fee kept": "liberada, comisión de {fee} cobrada",
+  "until {date}": "hasta el {date}",
+  "Terms": "Términos"
 }

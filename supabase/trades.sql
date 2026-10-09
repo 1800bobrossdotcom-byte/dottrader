@@ -363,6 +363,12 @@ create table if not exists public.bonds (
   settled_at      timestamptz,
   unique (offer_id, user_id)
 );
+-- When the card authorised (holds lapse seven days later), what became of the fee, and so what the
+-- board earned: 'released' alone can't say whether a fee was kept.
+alter table public.bonds
+  add column if not exists held_at            timestamptz,
+  add column if not exists fee_captured_cents integer not null default 0 check (fee_captured_cents >= 0),
+  add column if not exists fee_refunded_cents integer not null default 0 check (fee_refunded_cents >= 0);
 alter table public.bonds enable row level security;
 drop policy if exists "bonds readable by the two parties" on public.bonds;
 create policy "bonds readable by the two parties" on public.bonds for select using (exists (
@@ -381,6 +387,8 @@ create table if not exists public.payouts (
   created_at    timestamptz not null default now(),
   paid_at       timestamptz
 );
+-- The handling fee kept from a forfeited bond before the rest is paid to the other side.
+alter table public.payouts add column if not exists handling_cents integer not null default 0 check (handling_cents >= 0);
 alter table public.payouts enable row level security;
 drop policy if exists "payouts readable by their recipient" on public.payouts;
 create policy "payouts readable by their recipient" on public.payouts for select using (auth.uid() = user_id);
@@ -394,6 +402,26 @@ create table if not exists public.stripe_accounts (
 alter table public.stripe_accounts enable row level security;
 drop policy if exists "stripe account readable by its owner" on public.stripe_accounts;
 create policy "stripe account readable by its owner" on public.stripe_accounts for select using (auth.uid() = user_id);
+
+-- What the bonds earned, by month, for whoever runs the board (read it in the SQL editor; nothing
+-- grants it to the API). Fees kept on completed trades, less fees refunded to honest sides of
+-- no-shows, plus the handling kept from forfeits that were paid out.
+create or replace view public.bond_revenue with (security_invoker = true) as
+select to_char(m.month, 'YYYY-MM') as month,
+       coalesce(f.fees_kept, 0)::int as fees_kept, coalesce(f.fee_cents, 0)::int as fee_cents,
+       coalesce(f.forfeits, 0)::int as forfeits, coalesce(p.handling_cents, 0)::int as handling_cents,
+       (coalesce(f.fee_cents, 0) + coalesce(p.handling_cents, 0))::int as revenue_cents
+from (select distinct date_trunc('month', settled_at) as month from public.bonds where settled_at is not null
+      union select distinct date_trunc('month', paid_at) from public.payouts where paid_at is not null) m
+left join (select date_trunc('month', settled_at) as month,
+                  count(*) filter (where fee_captured_cents > fee_refunded_cents) as fees_kept,
+                  sum(fee_captured_cents - fee_refunded_cents) as fee_cents,
+                  count(*) filter (where status = 'forfeited') as forfeits
+           from public.bonds where settled_at is not null group by 1) f on f.month = m.month
+left join (select date_trunc('month', paid_at) as month, sum(handling_cents) as handling_cents
+           from public.payouts where status = 'paid' group by 1) p on p.month = m.month
+order by 1 desc;
+revoke all on public.bond_revenue from public, anon, authenticated;
 
 -- No insert/update/delete policies on bonds, payouts or stripe_accounts: only the bond Edge
 -- Function, with the service role, writes them.

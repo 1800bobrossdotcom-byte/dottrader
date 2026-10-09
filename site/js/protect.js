@@ -87,12 +87,18 @@ function protectEl(o, dir, other) {
     var mine = bs.filter(function (b) { return b.user_id === uid; })[0], theirs = bs.filter(function (b) { return b.user_id !== uid; })[0];
     var word = function (b) {
       if (!b) return '<span class="no">' + esc(t("no bond")) + "</span>";
-      return { pending: '<span class="no">' + esc(t("checkout not finished")) + "</span>", held: "<span>" + esc(t("{amount} held", { amount: money(b.amount_cents) })) + "</span>", released: "<span>" + esc(t("released")) + "</span>",
+      var lapses = b.held_at ? new Date(new Date(b.held_at).getTime() + (caps.bond.hold_days || 7) * 86400e3) : null;
+      return { pending: '<span class="no">' + esc(t("checkout not finished")) + "</span>",
+        held: "<span>" + esc(t("{amount} held", { amount: money(b.amount_cents) }) + (lapses ? " · " + t("until {date}", { date: fmtDate(lapses, { month: "short", day: "numeric" }) }) : "")) + "</span>",
+        released: "<span>" + esc(b.fee_captured_cents > b.fee_refunded_cents ? t("released, {fee} fee kept", { fee: money(b.fee_captured_cents - b.fee_refunded_cents) }) : t("released")) + "</span>",
         forfeited: '<span class="strike">' + esc(t("{amount} forfeited", { amount: money(b.amount_cents) })) + "</span>", expired: '<span class="no">' + esc(t("hold lapsed")) + "</span>", failed: '<span class="no">' + esc(t("card declined")) + "</span>" }[b.status] || esc(b.status);
     };
     h += '<div class="ph"><span>' + esc(t("Bond")) + "</span><span>" + esc(t("{bond} each · {fee} fee", { bond: money(caps.bond.bond_cents), fee: money(caps.bond.fee_cents) })) + "</span></div>" +
       '<div class="sideline"><b>' + esc(t("You")) + "</b>" + word(mine) + '</div><div class="sideline"><b>' + esc(who(other)) + "</b>" + word(theirs) + "</div>";
-    if (o.status === "agreed" && (!mine || mine.status !== "held")) h += '<p class="phint">' + esc(t("A hold on your card, not a charge. If the trade completes it’s released and {fee} is kept as the fee. If you send and they don’t, their bond is paid to you. Holds last about a week.", { fee: money(caps.bond.fee_cents) })) + "</p>";
+    if (o.status === "agreed" && (!mine || mine.status !== "held")) h += '<p class="phint">' + esc(t("A hold on your card, not a charge. If the trade completes, {fee} is kept as the fee and the rest is released. If you send and they don’t, their bond is paid to you, less a {handling} handling fee. Holds last {days} days: once you’ve marked sent, the fee is taken on day six and the rest released.", { fee: money(caps.bond.fee_cents), handling: money(caps.bond.handling_cents || 0), days: String(caps.bond.hold_days || 7) })) + ' <a href="/terms" target="_blank" rel="noopener">' + esc(t("See the terms.")) + "</a></p>";
+    var theirsLapses = theirs && theirs.status === "held" && theirs.held_at ? new Date(new Date(theirs.held_at).getTime() + (caps.bond.hold_days || 7) * 86400e3) : null;
+    var iSent = o[me + "_sent_at"] || (me === "owner" ? o.confirm_owner : o.confirm_from), theySent = o[them + "_sent_at"] || (them === "owner" ? o.confirm_owner : o.confirm_from);
+    if (o.status === "agreed" && late && iSent && !theySent && theirsLapses) h += '<p class="phint late">' + esc(t("Their hold lapses {date}. Close the no-show before then and their bond is paid to you.", { date: fmtDate(theirsLapses, { weekday: "short", month: "short", day: "numeric" }) })) + "</p>";
   }
   box.innerHTML = h;
   var acts = document.createElement("div"); acts.className = "acts";
@@ -107,8 +113,8 @@ function protectEl(o, dir, other) {
     var themDone = o[them + "_sent_at"] || (them === "owner" ? o.confirm_owner : o.confirm_from);
     if (late && meDone && !themDone) btn("no", t("They didn’t send — close as a no-show"), function () {
       var paid = bs.some(function (b) { return b.user_id !== uid && b.status === "held"; });
-      if (!confirm(t(paid ? "Close this trade as a no-show? {who} gets a no-show on their record and their bond is paid to you. Your item goes back on the board."
-        : "Close this trade as a no-show? {who} gets a no-show on their record. Your item goes back on the board.", { who: who(other) }))) return;
+      if (!confirm(t(paid ? "Close this trade as a no-show? {who} gets a no-show on their record and their bond is paid to you, less a {handling} handling fee. Your item goes back on the board."
+        : "Close this trade as a no-show? {who} gets a no-show on their record. Your item goes back on the board.", { who: who(other), handling: money((caps.bond && caps.bond.handling_cents) || 0) }))) return;
       sb.rpc("claim_no_show", { p_offer: o.id }).then(function (r) { if (r.error) return fail(r.error); toast(t("Closed as a no-show.")); settleBond(o.id, true); load(); });
     });
     var myBond = bs.filter(function (b) { return b.user_id === uid; })[0];

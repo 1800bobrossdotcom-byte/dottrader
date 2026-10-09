@@ -2,7 +2,6 @@
   "(save to keep)": "（保存すると反映されます）",
   "+ Post": "+ 出品",
   "+ Post an item": "+ 出品する",
-  "A hold on your card, not a charge. If the trade completes it’s released and {fee} is kept as the fee. If you send and they don’t, their bond is paid to you. Holds last about a week.": "カードの仮押さえで、請求ではありません。交換が完了すると解除され、{fee}が手数料になります。あなたが送って相手が送らなかった場合、相手の保証金はあなたに支払われます。仮押さえの期間は約1週間です。",
   "A photo and what you'd take for it.": "写真と、代わりに欲しいもの。",
   "A photo failed to upload.": "写真をアップロードできませんでした。",
   "A physical thing": "現物",
@@ -60,7 +59,6 @@
   "Claim {amount}": "{amount}を受け取る",
   "Clear filters": "絞り込みを解除",
   "Close": "閉じる",
-  "Close this trade as a no-show? {who} gets a no-show on their record and their bond is paid to you. Your item goes back on the board.": "この交換を「未発送」として終了しますか？{who}さんの履歴に未発送が記録され、相手の保証金はあなたに支払われます。あなたの品物はボードに戻ります。",
   "Close this trade as a no-show? {who} gets a no-show on their record. Your item goes back on the board.": "この交換を「未発送」として終了しますか？{who}さんの履歴に未発送が記録されます。あなたの品物はボードに戻ります。",
   "Closed as a no-show.": "未発送として終了しました。",
   "Code": "コード",
@@ -597,5 +595,12 @@
   "{n} wallets are linked to your account. Click to see them, add another or unlink one.": "{n}個のウォレットがアカウントに連携されています。クリックすると一覧の確認、追加、連携解除ができます。",
   "{addr} is already linked. Switch to a different account in {wallet}, then try again.": "{addr} はすでに連携済みです。{wallet} で別のアカウントに切り替えてから、もう一度お試しください。",
   "{who} pays the gas and a {fee} board fee.": "{who}がガス代と {fee} のボード手数料を支払います。",
-  "You pay the gas and a {fee} board fee.": "あなたがガス代と {fee} のボード手数料を支払います。"
+  "You pay the gas and a {fee} board fee.": "あなたがガス代と {fee} のボード手数料を支払います。",
+  "A hold on your card, not a charge. If the trade completes, {fee} is kept as the fee and the rest is released. If you send and they don’t, their bond is paid to you, less a {handling} handling fee. Holds last {days} days: once you’ve marked sent, the fee is taken on day six and the rest released.": "カードの仮押さえで、請求ではありません。交換が完了すると、{fee} を手数料として受け取り、残りは解除されます。あなたが発送して相手が発送しなかった場合、相手の保証金から事務手数料 {handling} を引いた額があなたに支払われます。仮押さえは{days}日間です。発送済みにすると、6日目に手数料を受け取り、残りを解除します。",
+  "Close this trade as a no-show? {who} gets a no-show on their record and their bond is paid to you, less a {handling} handling fee. Your item goes back on the board.": "この交換を不履行として締めますか？{who}さんの記録に不履行が残り、相手の保証金から事務手数料 {handling} を引いた額があなたに支払われます。あなたの出品はボードに戻ります。",
+  "See the terms.": "利用規約を見る。",
+  "Their hold lapses {date}. Close the no-show before then and their bond is paid to you.": "相手の仮押さえは{date}に失効します。その前に不履行として締めると、相手の保証金があなたに支払われます。",
+  "released, {fee} fee kept": "解除済み、手数料 {fee} 受領",
+  "until {date}": "{date}まで",
+  "Terms": "利用規約"
 }
