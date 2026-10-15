@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Dot Trading Post — investor ad</title>
+<!-- A 42-second motion piece, drawn by render(t) so every frame is exact. Open it in a browser to
+     watch it play; render.mjs steps it frame by frame into an MP4. Fonts come from fonts.css next
+     to this file (render.mjs writes it); without it the browser falls back to system fonts. -->
+<link rel="stylesheet" href="fonts.css">
+<style>
+  :root { --paper:#F3EAD3; --card:#FFFCF4; --sunk:#EADFC4; --ink:#121212; --muted:#4B4740; --red:#E8392B; --yellow:#FFD23F;
+    --blue:#2F56D6; --green:#1DB36A; --purple:#7B4FD6; --pink:#F2518F; --cyan:#27B2E8; --orange:#FF8A2B;
+    --display:"Space Grotesk","Helvetica Neue",Arial,sans-serif; --body:"IBM Plex Sans",system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,monospace; }
+  * { box-sizing:border-box; }
+  html, body { margin:0; background:#000; }
+  #stage { position:relative; width:1920px; height:1080px; overflow:hidden; background:var(--paper); font-family:var(--body); color:var(--ink);
+    transform-origin:0 0; }
+  /* paper grain: a fine halftone, very faint */
+  #stage::before { content:""; position:absolute; inset:0; background:radial-gradient(rgba(18,18,18,.06) 1.2px, transparent 1.4px) 0 0/22px 22px; pointer-events:none; }
+  .scene { position:absolute; inset:0; opacity:0; }
+  .abs { position:absolute; }
+  .h1 { font-family:var(--display); font-weight:700; letter-spacing:-.035em; line-height:.95; }
+  .mono { font-family:var(--mono); font-weight:600; letter-spacing:.14em; text-transform:uppercase; }
+  .card { background:var(--card); border:5px solid var(--ink); border-radius:18px; box-shadow:12px 12px 0 var(--ink); }
+  .chip { display:inline-flex; align-items:center; gap:14px; border:4px solid var(--ink); border-radius:999px; background:var(--card); box-shadow:6px 6px 0 var(--ink);
+    padding:12px 28px; font-family:var(--display); font-weight:700; font-size:40px; white-space:nowrap; }
+  .tag { position:absolute; display:flex; flex-direction:column; align-items:center; justify-content:center; width:330px; height:190px; border:5px solid var(--ink);
+    border-radius:18px 18px 18px 18px; background:var(--card); box-shadow:10px 10px 0 var(--ink); }
+  .tag b { font-family:var(--display); font-size:92px; letter-spacing:-.04em; line-height:1; }
+  .tag span { font-family:var(--mono); font-weight:600; font-size:24px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); margin-top:10px; }
+  .tag::before { content:""; position:absolute; left:-32px; top:50%; width:40px; height:40px; margin-top:-20px; border-radius:50%; background:var(--paper); border:5px solid var(--ink); }
+  .item { position:absolute; width:300px; height:390px; display:flex; flex-direction:column; overflow:hidden; }
+  .item .pic { flex:1; border-bottom:5px solid var(--ink); display:grid; place-items:center; }
+  .item .lab { padding:16px 20px 18px; font-family:var(--display); font-weight:700; font-size:34px; letter-spacing:-.02em; }
+  .listing { position:absolute; width:560px; padding:30px 34px 32px; }
+  .listing .k { font-family:var(--mono); font-weight:600; font-size:22px; letter-spacing:.16em; text-transform:uppercase; }
+  .listing .v { font-family:var(--display); font-weight:700; font-size:50px; letter-spacing:-.03em; line-height:1.02; margin:6px 0 22px; }
+  .dotc { position:absolute; width:96px; height:96px; border-radius:50%; border:6px solid var(--ink); background:var(--card); }
+  .dotc i { position:absolute; inset:14px; border-radius:50%; background:var(--red); transform:scale(0); }
+  .caption { position:absolute; left:0; right:0; text-align:center; font-family:var(--display); font-weight:700; letter-spacing:-.03em; }
+  .sub { position:absolute; left:0; right:0; text-align:center; font-family:var(--body); font-weight:500; color:var(--muted); }
+  .strike { position:absolute; height:12px; background:var(--red); border-radius:6px; transform-origin:0 50%; }
+  .bar { position:absolute; left:0; bottom:0; height:14px; background:var(--ink); }
+</style>
+</head>
+<body>
+<div id="stage">
+
+  <!-- 1 · every resale app takes a cut -->
+  <div class="scene" id="s1">
+    <div class="caption h1" id="s1t" style="top:150px;font-size:104px">Resale apps take a cut<br>of every sale.</div>
+    <div class="tag" id="tag1" style="left:250px;top:560px"><b>13.25%</b><span>eBay · cards</span></div>
+    <div class="tag" id="tag2" style="left:795px;top:560px"><b>20%</b><span>Poshmark</span></div>
+    <div class="tag" id="tag3" style="left:1340px;top:560px"><b>10%</b><span>Mercari · seller</span></div>
+    <div class="sub" id="s1s" style="top:860px;font-size:30px">Fees as published, October 2026.</div>
+  </div>
+
+  <!-- 2 · what if nobody had to sell -->
+  <div class="scene" id="s2">
+    <div class="caption h1" id="s2t" style="top:140px;font-size:110px">What if nobody<br>had to sell?</div>
+    <div class="card item" id="itA" style="left:520px;top:480px">
+      <div class="pic" style="background:#FFE4E0">
+        <svg width="150" height="200" viewBox="0 0 150 200"><rect x="6" y="6" width="138" height="188" rx="12" fill="#FFD23F" stroke="#121212" stroke-width="7"/><circle cx="75" cy="86" r="38" fill="#E8392B" stroke="#121212" stroke-width="7"/><path d="M37 86h76" stroke="#121212" stroke-width="7"/><circle cx="75" cy="86" r="12" fill="#FFFCF4" stroke="#121212" stroke-width="7"/><rect x="28" y="146" width="94" height="14" rx="7" fill="#121212"/></svg>
+      </div>
+      <div class="lab">Holo card</div>
+    </div>
+    <div class="card item" id="itB" style="left:1100px;top:480px">
+      <div class="pic" style="background:#E3EAFF">
+        <svg width="140" height="210" viewBox="0 0 140 210"><rect x="6" y="6" width="128" height="198" rx="16" fill="#7B4FD6" stroke="#121212" stroke-width="7"/><rect x="24" y="24" width="92" height="74" rx="6" fill="#FFFCF4" stroke="#121212" stroke-width="6"/><path d="M38 140h30M53 125v30" stroke="#121212" stroke-width="9" stroke-linecap="round"/><circle cx="98" cy="134" r="9" fill="#121212"/><circle cx="114" cy="150" r="9" fill="#121212"/></svg>
+      </div>
+      <div class="lab">Retro handheld</div>
+    </div>
+    <svg class="abs" id="swapArrows" style="left:840px;top:560px" width="240" height="240" viewBox="0 0 240 240">
+      <path id="arrTop" d="M20 90 C 80 30, 160 30, 220 90" fill="none" stroke="#121212" stroke-width="9" stroke-linecap="round"/>
+      <path d="M200 66 L222 92 L192 100" fill="none" stroke="#121212" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" id="headTop"/>
+      <path id="arrBot" d="M220 150 C 160 210, 80 210, 20 150" fill="none" stroke="#E8392B" stroke-width="9" stroke-linecap="round"/>
+      <path d="M40 174 L18 148 L48 140" fill="none" stroke="#E8392B" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" id="headBot"/>
+    </svg>
+  </div>
+
+  <!-- 3 · logo -->
+  <div class="scene" id="s3">
+    <svg class="abs" id="logo" style="left:760px;top:170px" width="400" height="400" viewBox="0 0 40 40">
+      <path id="logoD" d="M9 5h11a15 15 0 0 1 0 30H9z" fill="#FFD23F" stroke="#121212" stroke-width="2.4" stroke-linejoin="round"/>
+      <circle id="logoDot" cx="20" cy="20" r="5.5" fill="#E8392B" stroke="#121212" stroke-width="2.4"/>
+    </svg>
+    <div class="caption h1" id="s3t" style="top:620px;font-size:132px;text-transform:uppercase">Dot Trading Post</div>
+    <div class="caption" id="s3s" style="top:800px;font-size:60px;font-family:var(--display);font-weight:500;letter-spacing:-.02em">Trade anything for anything.</div>
+  </div>
+
+  <!-- 4 · matching -->
+  <div class="scene" id="s4">
+    <div class="caption h1" id="s4t" style="top:90px;font-size:84px">Say what you'd take.</div>
+    <div class="card listing" id="L1" style="left:170px;top:330px">
+      <div class="k" style="color:var(--blue)">Has</div><div class="v">Game Boy Color</div>
+      <div class="k" style="color:var(--red)">Wants</div><div class="v" style="margin-bottom:0">Pokémon cards</div>
+    </div>
+    <div class="card listing" id="L2" style="left:1190px;top:330px">
+      <div class="k" style="color:var(--blue)">Has</div><div class="v">Charizard holo</div>
+      <div class="k" style="color:var(--red)">Wants</div><div class="v" style="margin-bottom:0">A retro handheld</div>
+    </div>
+    <svg class="abs" style="left:730px;top:420px" width="460" height="220" viewBox="0 0 460 220">
+      <path id="link1" d="M0 60 C 150 60, 310 160, 460 160" fill="none" stroke="#121212" stroke-width="8" stroke-dasharray="22 16"/>
+      <path id="link2" d="M0 160 C 150 160, 310 60, 460 60" fill="none" stroke="#E8392B" stroke-width="8" stroke-dasharray="22 16"/>
+    </svg>
+    <div class="abs chip" id="mutual" style="left:760px;top:720px;background:var(--yellow);font-size:46px">⇄ Mutual match</div>
+    <div class="sub" id="s4s" style="top:900px;font-size:40px;color:var(--ink)">Dot finds who has it — and wants yours.</div>
+  </div>
+
+  <!-- 5 · trust -->
+  <div class="scene" id="s5">
+    <div class="caption h1" id="s5t" style="top:120px;font-size:96px">Every finished trade<br>earns a dot.</div>
+    <div class="dotc" style="left:620px;top:470px"><i></i></div>
+    <div class="dotc" style="left:760px;top:470px"><i></i></div>
+    <div class="dotc" style="left:900px;top:470px"><i></i></div>
+    <div class="dotc" style="left:1040px;top:470px"><i></i></div>
+    <div class="dotc" style="left:1180px;top:470px"><i></i></div>
+    <div class="abs" style="left:0;right:0;top:680px;display:flex;justify-content:center;gap:40px">
+      <span class="chip" id="noshow" style="font-size:38px">No-shows go on the record</span>
+      <span class="chip" id="bond" style="font-size:38px;background:var(--green);color:#fff">$25 bond on the line</span>
+    </div>
+    <div class="sub" id="s5s" style="top:880px;font-size:38px;color:var(--ink)">Trust you can see before you trade.</div>
+  </div>
+
+  <!-- 6 · NFTs -->
+  <div class="scene" id="s6">
+    <div class="caption h1" id="s6t" style="top:110px;font-size:110px">NFTs too.</div>
+    <div class="abs" id="chains" style="left:0;right:0;top:330px;display:flex;flex-wrap:wrap;justify-content:center;gap:26px 26px;padding:0 220px">
+      <span class="chip c" style="background:#E3EAFF">Ethereum</span><span class="chip c" style="background:#2F56D6;color:#fff">Base</span><span class="chip c">Arbitrum</span><span class="chip c" style="background:#FFE4E0">Optimism</span>
+      <span class="chip c" style="background:#7B4FD6;color:#fff">Polygon</span><span class="chip c" style="background:#FFD23F">BNB Chain</span><span class="chip c" style="background:#E8392B;color:#fff">Avalanche</span><span class="chip c">Zora</span>
+    </div>
+    <div class="caption" id="s6a" style="top:640px;font-size:58px;font-family:var(--display);font-weight:700;letter-spacing:-.025em">Checked on chain. Swapped atomically.</div>
+    <div class="sub" id="s6b" style="top:740px;font-size:40px;color:var(--ink)">Both NFTs move in one transaction — or neither does.</div>
+    <div class="sub" id="s6c" style="top:830px;font-size:34px">NFT for a Game Boy works too: the NFT side is verified on chain.</div>
+  </div>
+
+  <!-- 7 · the model -->
+  <div class="scene" id="s7">
+    <div class="caption h1" id="s7t" style="top:110px;font-size:96px">Free to list, match<br>and trade.</div>
+    <div class="sub" id="s7s" style="top:390px;font-size:40px;color:var(--ink)">Flat fees only where Dot removes the risk:</div>
+    <div class="card abs" id="fee1" style="left:330px;top:500px;width:580px;padding:34px 40px">
+      <div class="h1" style="font-size:110px">$3</div>
+      <div class="mono" style="font-size:24px;margin-top:10px">per protected trade</div>
+    </div>
+    <div class="card abs" id="fee2" style="left:1010px;top:500px;width:580px;padding:34px 40px">
+      <div class="h1" style="font-size:110px">≈$1.50</div>
+      <div class="mono" style="font-size:24px;margin-top:10px">per on-chain NFT swap</div>
+    </div>
+    <div class="caption h1" id="s7z" style="top:830px;font-size:92px"><span style="background:var(--yellow);padding:0 24px;border:5px solid var(--ink);border-radius:14px;box-shadow:8px 8px 0 var(--ink)">0% of value. Ever.</span></div>
+  </div>
+
+  <!-- 8 · live, end card -->
+  <div class="scene" id="s8">
+    <div class="caption mono" id="s8k" style="top:150px;font-size:34px">Live now in</div>
+    <div class="abs" id="langs" style="left:0;right:0;top:220px;display:flex;justify-content:center;gap:28px">
+      <span class="chip l">English</span><span class="chip l">Español</span><span class="chip l" style="font-family:'WenQuanYi Zen Hei',var(--display)">日本語</span><span class="chip l">Português</span>
+    </div>
+    <svg class="abs" id="endLogo" style="left:810px;top:400px" width="300" height="300" viewBox="0 0 40 40">
+      <path d="M9 5h11a15 15 0 0 1 0 30H9z" fill="#FFD23F" stroke="#121212" stroke-width="2.4" stroke-linejoin="round"/>
+      <circle cx="20" cy="20" r="5.5" fill="#E8392B" stroke="#121212" stroke-width="2.4"/>
+    </svg>
+    <div class="caption h1" id="s8u" style="top:740px;font-size:120px">dottrader.app</div>
+    <div class="sub" id="s8c" style="top:900px;font-size:36px;color:var(--ink)">Investor conversations: <b>hello@dottrader.app</b></div>
+  </div>
+
+  <div class="bar" id="bar"></div>
+</div>
+
+<script>
+"use strict";
+var DURATION = 42;
+var $ = function (id) { return document.getElementById(id); };
+var clamp = function (x, a, b) { return Math.max(a, Math.min(b, x)); };
+// 0→1 across [a, b]
+var seg = function (t, a, b) { return clamp((t - a) / (b - a), 0, 1); };
+var easeOut = function (x) { return 1 - Math.pow(1 - x, 3); };
+var easeInOut = function (x) { return x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; };
+// A springy overshoot for things that pop in.
+var back = function (x) { var c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2); };
+var set = function (el, o) { if (typeof el === "string") el = $(el); for (var k in o) el.style[k] = o[k]; };
+// Fade a scene in over the first 0.35 s and out over the last 0.35 s of its window.
+function sceneAlpha(t, a, b) { return Math.min(seg(t, a, a + .35), 1 - seg(t, b - .35, b)); }
+// Rise in: opacity and a small upward slide, starting at `at`.
+function rise(el, t, at, dist) {
+  var p = easeOut(seg(t, at, at + .6));
+  set(el, { opacity: p, transform: "translateY(" + ((1 - p) * (dist || 40)) + "px)" });
+}
+function pop(el, t, at, base) {
+  var p = seg(t, at, at + .5);
+  set(el, { opacity: Math.min(1, p * 3), transform: (base || "") + " scale(" + (p === 0 ? 0 : back(p)) + ")" });
+}
+
+var SCENES = [["s1", 0, 5.2], ["s2", 5, 10.2], ["s3", 10, 15.2], ["s4", 15, 21.2], ["s5", 21, 26.2], ["s6", 26, 31.2], ["s7", 31, 37.2], ["s8", 37, 42]];
+
+function render(t) {
+  SCENES.forEach(function (s) { $(s[0]).style.opacity = sceneAlpha(t, s[1], s[2]); $(s[0]).style.display = t >= s[1] - .01 && t <= s[2] + .01 ? "block" : "none"; });
+  set("bar", { width: (t / DURATION * 100) + "%" });
+
+  // 1
+  rise("s1t", t, .15);
+  ["tag1", "tag2", "tag3"].forEach(function (id, i) {
+    var p = seg(t, .9 + i * .35, 1.6 + i * .35);
+    set(id, { opacity: Math.min(1, p * 2), transform: "translateY(" + (1 - back(p)) * 160 + "px) rotate(" + ((i - 1) * 4) + "deg)" });
+  });
+  rise("s1s", t, 2.4, 20);
+  // the tags shake as if being stamped, then drop away
+  var drop = easeInOut(seg(t, 4.2, 5.1));
+  if (t > 4.2) ["tag1", "tag2", "tag3"].forEach(function (id, i) { set(id, { transform: "translateY(" + drop * (700 + i * 60) + "px) rotate(" + ((i - 1) * 4 + drop * (i - 1) * 22) + "deg)" }); });
+
+  // 2
+  rise("s2t", t, 5.2);
+  var inA = easeOut(seg(t, 5.6, 6.3)), inB = easeOut(seg(t, 5.8, 6.5));
+  var sw = easeInOut(seg(t, 7.1, 8.5));            // the swap
+  var dx = 580 * sw, arc = Math.sin(sw * Math.PI) * 150;
+  set("itA", { opacity: inA, transform: "translate(" + dx + "px," + (-arc + (1 - inA) * 80) + "px) rotate(" + (-6 + sw * 12) + "deg)" });
+  set("itB", { opacity: inB, transform: "translate(" + (-dx) + "px," + (arc + (1 - inB) * 80) + "px) rotate(" + (6 - sw * 12) + "deg)" });
+  var ar = seg(t, 6.4, 7.0);
+  ["arrTop", "arrBot"].forEach(function (id) { var el = $(id), L = el.getTotalLength(); set(el, { strokeDasharray: L, strokeDashoffset: L * (1 - ar) }); });
+  set("headTop", { opacity: ar >= 1 ? 1 : 0 }); set("headBot", { opacity: ar >= 1 ? 1 : 0 });
+  set("swapArrows", { opacity: 1 - seg(t, 7.0, 7.3) + seg(t, 8.6, 8.9), transform: "rotate(" + sw * 180 + "deg)" });
+
+  // 3
+  var lp = seg(t, 10.1, 10.8);
+  set("logo", { opacity: Math.min(1, lp * 2), transform: "scale(" + (lp === 0 ? 0 : back(lp)) + ") rotate(" + (1 - easeOut(lp)) * -30 + "deg)" });
+  var dp = seg(t, 10.8, 11.25);
+  set("logoDot", { transformOrigin: "20px 20px", transform: "scale(" + (dp === 0 ? 0 : back(dp)) + ")" });
+  // the title types in
+  var title = "Dot Trading Post", n = Math.round(seg(t, 11.2, 12.4) * title.length);
+  $("s3t").textContent = title.slice(0, n) + (n < title.length && t > 11.2 ? "▌" : "");
+  rise("s3s", t, 12.6);
+
+  // 4
+  rise("s4t", t, 15.15);
+  var l1 = easeOut(seg(t, 15.6, 16.3)), l2 = easeOut(seg(t, 15.9, 16.6));
+  set("L1", { opacity: l1, transform: "translateX(" + (1 - l1) * -260 + "px) rotate(-2deg)" });
+  set("L2", { opacity: l2, transform: "translateX(" + (1 - l2) * 260 + "px) rotate(2deg)" });
+  [["link1", 17.0], ["link2", 17.6]].forEach(function (a) {
+    var el = $(a[0]), p = easeInOut(seg(t, a[1], a[1] + .7));
+    set(el, { opacity: p > 0 ? 1 : 0, strokeDashoffset: -t * 60, clipPath: "inset(0 " + (1 - p) * 100 + "% 0 0)" });
+  });
+  pop("mutual", t, 18.4);
+  rise("s4s", t, 19.0, 24);
+
+  // 5
+  rise("s5t", t, 21.15);
+  document.querySelectorAll("#s5 .dotc").forEach(function (el, i) {
+    var p = seg(t, 21.7 + i * .12, 22.2 + i * .12);
+    set(el, { opacity: Math.min(1, p * 2), transform: "scale(" + (p === 0 ? 0 : back(p)) + ")" });
+    var f = seg(t, 22.6 + i * .32, 22.95 + i * .32);
+    set(el.firstElementChild, { transform: "scale(" + (i < 4 ? (f === 0 ? 0 : back(f)) : 0) + ")" });
+  });
+  pop("noshow", t, 24.2); pop("bond", t, 24.5);
+  rise("s5s", t, 25.0, 24);
+
+  // 6
+  rise("s6t", t, 26.15);
+  document.querySelectorAll("#chains .c").forEach(function (el, i) {
+    var p = seg(t, 26.6 + i * .11, 27.1 + i * .11);
+    set(el, { opacity: Math.min(1, p * 2), transform: "translateY(" + (1 - back(p)) * 60 + "px) rotate(" + ((i % 2 ? 1 : -1) * 2) + "deg)" });
+  });
+  rise("s6a", t, 28.0); rise("s6b", t, 28.7, 24); rise("s6c", t, 29.4, 20);
+
+  // 7
+  rise("s7t", t, 31.15);
+  rise("s7s", t, 32.0, 24);
+  var f1 = seg(t, 32.6, 33.2), f2 = seg(t, 32.9, 33.5);
+  set("fee1", { opacity: Math.min(1, f1 * 2), transform: "rotate(-2deg) scale(" + (f1 === 0 ? 0 : back(f1)) + ")" });
+  set("fee2", { opacity: Math.min(1, f2 * 2), transform: "rotate(2deg) scale(" + (f2 === 0 ? 0 : back(f2)) + ")" });
+  pop("s7z", t, 34.4);
+
+  // 8
+  rise("s8k", t, 37.15, 20);
+  document.querySelectorAll("#langs .l").forEach(function (el, i) {
+    var p = seg(t, 37.5 + i * .25, 38.0 + i * .25);
+    set(el, { opacity: Math.min(1, p * 2), transform: "translateY(" + (1 - back(p)) * 50 + "px)", background: i === Math.floor(((t - 38.8) / .5) % 4) && t > 38.8 && t < 40.8 ? "var(--yellow)" : "var(--card)" });
+  });
+  var e = seg(t, 38.6, 39.3);
+  set("endLogo", { opacity: Math.min(1, e * 2), transform: "scale(" + (e === 0 ? 0 : back(e)) + ")" });
+  rise("s8u", t, 39.4); rise("s8c", t, 40.0, 20);
+}
+
+// Played live when opened in a browser; render.mjs drives render(t) itself.
+window.render = render; window.DURATION = DURATION;
+function fit() { var s = Math.min(innerWidth / 1920, innerHeight / 1080); $("stage").style.transform = "scale(" + s + ")"; }
+if (!/[?&]frames/.test(location.search)) {
+  fit(); addEventListener("resize", fit);
+  var t0 = performance.now();
+  (function loop() { render(((performance.now() - t0) / 1000) % DURATION); requestAnimationFrame(loop); })();
+} else render(0);
+</script>
+</body>
+</html>

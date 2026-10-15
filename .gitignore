@@ -2,3 +2,6 @@ node_modules/
 .DS_Store
 *.log
 .vercel
+marketing/investor-ad/fonts/
+marketing/investor-ad/fonts.css
+marketing/investor-ad/out/
