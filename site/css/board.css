@@ -269,10 +269,10 @@ h2 { font-family:var(--display); font-weight:700; font-size:28px; letter-spacing
 .verdict ul { margin:6px 0 0; padding-left:18px; }
 
 /* sign-in: the cover */
-.gate { position:relative; max-width:760px; margin:30px auto 0; display:grid; gap:24px; }
+.gate { position:relative; max-width:760px; margin:18px auto 0; display:grid; gap:14px; }
 .eyebrow { font-family:var(--mono); font-size:10.5px; letter-spacing:.22em; text-transform:uppercase; color:var(--ink); display:inline-flex; align-items:center; gap:10px; background:var(--card); border:2px solid var(--ink); padding:5px 12px; border-radius:4px; width:max-content; box-shadow:3px 3px 0 var(--ink); font-weight:600; }
 .eyebrow::before { content:""; width:8px; height:8px; border-radius:50%; background:var(--red); border:1.5px solid var(--ink); }
-.gate h2 { font-size:clamp(34px,6.2vw,64px); line-height:.98; letter-spacing:-.035em; text-transform:uppercase; margin:0; text-wrap:balance; }
+.gate h2 { font-size:clamp(28px,4.6vw,46px); line-height:.98; letter-spacing:-.035em; text-transform:uppercase; margin:0; text-wrap:balance; }
 .gate h2 em { font-style:normal; background:var(--yellow); box-decoration-break:clone; -webkit-box-decoration-break:clone; padding:0 .14em; box-shadow:4px 4px 0 var(--ink); }
 .steps { display:grid; gap:14px; grid-template-columns:repeat(3,1fr); }
 @media (max-width:640px){
@@ -293,7 +293,19 @@ h2 { font-family:var(--display); font-weight:700; font-size:28px; letter-spacing
 .gate .fine { margin:0; color:var(--muted); font-size:13px; }
 #authMsg { margin:0; color:var(--ink); font-weight:600; background:var(--dot-soft); border:2px solid var(--ink); padding:10px 14px; border-radius:6px; }
 #authMsg.bad { background:var(--want-soft); }
-.gate { margin-bottom:34px; }
+.gate { margin-bottom:22px; }
+#wantedBox { margin:0 0 22px; }
+#wantedBox .sub .hint { text-transform:none; letter-spacing:0; font-family:var(--body); font-weight:400; }
+.wantrow { display:grid; grid-auto-flow:column; grid-auto-columns:minmax(200px, 240px); gap:14px; overflow-x:auto; padding:4px 6px 12px 2px; }
+.wcard { --c:var(--faint); display:flex; flex-direction:column; gap:4px; background:var(--card); border:var(--bw) dashed var(--ink); border-radius:var(--r); padding:14px; box-shadow:var(--sh); }
+.wcard .wk { font-family:var(--mono); font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--c); font-weight:600; }
+.wcard .wt { font-family:var(--display); font-size:17px; line-height:1.2; overflow-wrap:anywhere; }
+.wcard .wc, .wcard .wb { font-size:12.5px; color:var(--muted); }
+.wcard .btn { margin-top:auto; align-self:flex-start; }
+.lookpub { flex-basis:100%; margin-top:4px; }
+.photonote { margin:8px 0 0; font-size:13px; color:var(--ink); font-weight:600; }
+.howit summary { cursor:pointer; font-family:var(--mono); font-size:11.5px; letter-spacing:.16em; text-transform:uppercase; font-weight:600; width:max-content; }
+.howit[open] summary { margin-bottom:12px; }
 .gate .ctas { display:flex; gap:12px; flex-wrap:wrap; }
 .authmsg { margin:0; font-size:13.5px; font-weight:600; border:2px solid var(--ink); border-radius:6px; padding:9px 12px; background:var(--dot-soft); }
 .authmsg.bad { background:var(--want-soft); }

@@ -105,6 +105,13 @@ alter table public.saved_wants enable row level security;
 drop policy if exists "saved wants are their owner's" on public.saved_wants;
 create policy "saved wants are their owner's" on public.saved_wants for all
   using (auth.uid() = user_id) with check (auth.uid() = user_id);
+-- A want can be shown on the board ("Wanted"), so someone who has the thing can find the person
+-- looking for it before either has listed anything. Only the words and categories show; listing
+-- something that fits emails the person who wants it, through the saved-search alert below.
+alter table public.saved_wants add column if not exists public boolean not null default false;
+drop policy if exists "wants on the board are readable by everyone" on public.saved_wants;
+create policy "wants on the board are readable by everyone" on public.saved_wants for select using (public);
+create index if not exists saved_wants_public_idx on public.saved_wants (created_at desc) where public;
 
 create or replace function public.saved_wants_prepare() returns trigger
 language plpgsql as $$

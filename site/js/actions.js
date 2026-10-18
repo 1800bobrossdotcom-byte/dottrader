@@ -317,7 +317,7 @@ function loaded() {
       if (!$("p-area").value) $("p-area").value = profiles[uid].area || "";
       if (!$("p-note").value) $("p-note").value = profiles[uid].note || "";
       if (!profNotifySet) { profNotifySet = true; paintNotify(profiles[uid]); }
-      syncLang();
+      syncLang(); syncRef(); paintInvite();
     }
     render();
     loadMatches();
@@ -374,6 +374,27 @@ Array.prototype.forEach.call(document.querySelectorAll("#langLinks a, #langTop a
 // Emails go out in the language on the profile. A new phone follows the profile; a language
 // chosen here (the picker, a link) becomes the profile's.
 var langSynced = false;
+// The link that brought this member, saved once on their profile (stats.sql: site_funnel).
+var refSynced = false;
+function syncRef() {
+  var p = uid && profiles[uid], r = null;
+  if (!caps.refs || !p || p.ref || refSynced) return;
+  try { r = localStorage.getItem("dtp-ref"); } catch (e) {}
+  if (!r || !/^[a-z0-9_-]{1,40}$/.test(r) || r === "t-" + uid.slice(0, 8)) return;
+  refSynced = true;
+  sb.from("profiles").upsert({ id: uid, ref: r, updated_at: new Date().toISOString() }).then(function (res) { if (!res.error) p.ref = r; }, function () {});
+}
+// A trader's own invite link: anyone who signs up through it is credited to them.
+function paintInvite() {
+  var box = $("p-invitewrap"); box.hidden = !(uid && caps.refs); if (box.hidden) return;
+  $("p-invite").value = location.origin + langPath("/") + "?ref=t-" + uid.slice(0, 8);
+}
+$("p-inviteShare").addEventListener("click", function () {
+  var url = $("p-invite").value;
+  if (navigator.share) return navigator.share({ title: "Dot Trading Post", text: t("Trade what you have for what you want — no money needed."), url: url }).catch(function () {});
+  (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject()).then(function () { toast(t("Link copied.")); }, function () { $("p-invite").select(); });
+});
+
 function syncLang() {
   var p = uid && profiles[uid];
   if (!caps.lang || !p || langSynced) return;

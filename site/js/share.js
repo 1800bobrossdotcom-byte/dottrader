@@ -52,6 +52,16 @@ Array.prototype.forEach.call(document.querySelectorAll("img[data-art]"), functio
   bar.appendChild(p); bar.appendChild(go); bar.appendChild(x);
   document.body.insertBefore(bar, document.body.firstChild);
 })();
+// Where this visitor came from: the first ?ref= a browser arrives with (a sticker's QR code, a
+// trader's invite link) is kept, so a later sign-up can be credited to it.
+var PAGE_REF = (function () {
+  var r = null;
+  try { r = new URLSearchParams(location.search).get("ref"); } catch (e) {}
+  r = r ? String(r).toLowerCase().trim() : null;
+  if (r && !/^[a-z0-9_-]{1,40}$/.test(r)) r = null;
+  try { if (r && !localStorage.getItem("dtp-ref")) localStorage.setItem("dtp-ref", r); } catch (e) {}
+  return r;
+})();
 // Visits since launch and members, at the foot of the page (supabase/stats.sql). Counting a visit
 // sends no cookie: the database recognises a browser for one day, then forgets it.
 (function () {
@@ -61,7 +71,9 @@ Array.prototype.forEach.call(document.querySelectorAll("img[data-art]"), functio
     ja: ["回の訪問", "回の訪問", "人のメンバー", "人のメンバー"], pt: ["visita", "visitas", "membro", "membros"] };
   var lang = String(document.documentElement.lang || "en").slice(0, 2), w = WORDS[lang] || WORDS.en;
   var id = null; try { id = localStorage.getItem("dtp-vid"); if (!id) { id = (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2)); localStorage.setItem("dtp-vid", id); } } catch (e) {}
-  fetch(SB + "/rest/v1/rpc/note_visit", { method: "POST", headers: { apikey: KEY, Authorization: "Bearer " + KEY, "Content-Type": "application/json" }, body: JSON.stringify({ p_client: id }) })
+  var note = function (body) { return fetch(SB + "/rest/v1/rpc/note_visit", { method: "POST", headers: { apikey: KEY, Authorization: "Bearer " + KEY, "Content-Type": "application/json" }, body: JSON.stringify(body) }); };
+  // A database not yet upgraded knows no p_ref: count the visit anyway.
+  note(PAGE_REF ? { p_client: id, p_ref: PAGE_REF } : { p_client: id }).then(function (r) { return r.ok || !PAGE_REF ? r : note({ p_client: id }); })
     .then(function (r) { return r.ok ? r.json() : null; }).then(function (rows) {
       var c = Array.isArray(rows) ? rows[0] : rows; if (!c) return;
       var fmt = function (n) { try { return new Intl.NumberFormat(document.documentElement.lang || "en").format(n); } catch (e) { return String(n); } };
@@ -70,3 +82,32 @@ Array.prototype.forEach.call(document.querySelectorAll("img[data-art]"), functio
     }).catch(function () {});
 })();
 
+// Up for trade now, on the homepage: the newest open listings, straight from the board.
+(function () {
+  var sec = document.getElementById("live"), row = document.getElementById("liveRow");
+  if (!sec || !row || !window.fetch) return;
+  var SB = "https://yujxwfghmauajrpduagl.supabase.co", KEY = "sb_publishable_3bOvzS08UOQsu1376idqDg_XHPmOgfp";
+  var lang = String(document.documentElement.lang || "en").slice(0, 2), pre = lang === "en" ? "" : "/" + lang;
+  var W = { en: ["Wants", "Open to offers"], es: ["Busca", "Abierto a ofertas"], ja: ["希望", "オファー歓迎"], pt: ["Quer", "Aberto a ofertas"] }[lang] || ["Wants", "Open to offers"];
+  var slug = function (t) { var s = String(t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/&/g, " and ").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, ""); if (s.length > 60) s = s.slice(0, 60).replace(/-[^-]*$/, ""); return s; };
+  fetch(SB + "/rest/v1/items?status=eq.open&select=id,title,photos,want,asset_kind&order=created_at.desc&limit=10", { headers: { apikey: KEY, Authorization: "Bearer " + KEY } })
+    .then(function (r) { return r.ok ? r.json() : []; }).then(function (items) {
+      if (!Array.isArray(items) || !items.length) return;
+      items.forEach(function (it) {
+        var a = document.createElement("a"), s = slug(it.title);
+        a.className = "tile"; a.href = pre + "/item/" + (s ? s + "-" : "") + it.id;
+        var photo = it.photos && it.photos[0], img;
+        if (photo || (it.asset_kind && it.asset_kind !== "erc20")) {
+          img = document.createElement("img"); img.loading = "lazy"; img.alt = it.title || "";
+          img.src = photo || "/og/art/" + it.id + ".png";
+          img.addEventListener("error", function () { var n = document.createElement("span"); n.className = "noimg"; img.replaceWith(n); });
+        } else { img = document.createElement("span"); img.className = "noimg"; }
+        var b = document.createElement("b"); b.textContent = it.title || "";
+        var w = document.createElement("span"), k = document.createElement("i"); k.textContent = W[0];
+        w.appendChild(k); w.appendChild(document.createTextNode(String(it.want || "").trim() || W[1]));
+        a.appendChild(img); a.appendChild(b); a.appendChild(w); row.appendChild(a);
+      });
+      sec.hidden = false;
+      if (items.length >= 3) document.body.classList.add("haslive");
+    }).catch(function () {});
+})();

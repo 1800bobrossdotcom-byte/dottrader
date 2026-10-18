@@ -8,3 +8,8 @@ S7 anyone reading the visits: 0
 S8 anyone writing a visit: 0
 S9 nothing stored names a visitor: true, one secret kept: 1
 S10 yesterday's secret is gone after a visit: true
+S11 a visit from a sticker is counted once for that source: 1
+S12 a malformed source is ignored, the visit still counted: 0, visits 6
+S13 a source that isn't a plain word is refused: refused: new row for relation "profiles" violates check constraint "profiles_ref_shape"
+S14 the funnel, by source: (none) 5/1/0/0/0; sticker 1/1/1/0/0
+S15 a visitor reading the funnel: refused: permission denied for view site_funnel

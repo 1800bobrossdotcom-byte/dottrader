@@ -42,12 +42,14 @@ function probe() {
       // Any other answer (a 401 means "Verify JWT" was left on, which also stops the sweep): bonds stay
       // off rather than show prices the board didn't read.
       return null;
-    }, function () { return null; })
+    }, function () { return null; }),
+    has(sb.from("saved_wants").select("public").limit(1)),
+    has(sb.from("profiles").select("ref").limit(1))
   ]).then(function (r) {
-    caps = { photos: r[0], location: r[1], messages: r[2], verify: r[3], trades: r[4], bond: r[4] && r[5] && r[16] ? r[16] : null, matching: r[6], notify: r[7], giveItems: r[8], history: r[9], local: r[10], paging: r[11], stats: r[12], lang: r[13], wallets: r[14] };
+    caps = { photos: r[0], location: r[1], messages: r[2], verify: r[3], trades: r[4], bond: r[4] && r[5] && r[16] ? r[16] : null, matching: r[6], notify: r[7], giveItems: r[8], history: r[9], local: r[10], paging: r[11], stats: r[12], lang: r[13], wallets: r[14], wanted: r[17], refs: r[18] };
     swapFees = r[15];
     syncLang();
-    applyCaps(); render(); loadMatches(); loadHistory(); noteVisit();
+    applyCaps(); render(); loadMatches(); loadHistory(); loadWanted(); noteVisit();
     if (caps.bond) sb.channel("bonds").on("postgres_changes", { event: "*", schema: "public", table: "bonds" }, load).subscribe();
     if (caps.messages) {
       sb.channel("threads").on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, load).subscribe();
@@ -55,10 +57,22 @@ function probe() {
   });
 }
 
+// Where this visitor came from: the first ?ref= a browser arrives with (a sticker's QR code, a
+// trader's invite link) is kept, so a later sign-up can be credited to it.
+var REF = (function () {
+  var r = null;
+  try { r = new URLSearchParams(location.search).get("ref"); } catch (e) {}
+  r = r ? String(r).toLowerCase().trim() : null;
+  if (r && !/^[a-z0-9_-]{1,40}$/.test(r)) r = null;
+  try { if (r && !localStorage.getItem("dtp-ref")) localStorage.setItem("dtp-ref", r); } catch (e) {}
+  return r;
+})();
+
 /* ---- visits and members, at the foot (stats.sql) ---- */
 function noteVisit() {
   var id = null; try { id = localStorage.getItem("dtp-vid"); if (!id) { id = window.crypto && crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2); localStorage.setItem("dtp-vid", id); } } catch (e) {}
-  sb.rpc("note_visit", { p_client: id }).then(function (r) {
+  sb.rpc("note_visit", REF ? { p_client: id, p_ref: REF } : { p_client: id })
+    .then(function (r) { return r.error && REF ? sb.rpc("note_visit", { p_client: id }) : r; }).then(function (r) {
     var c = !r.error && (Array.isArray(r.data) ? r.data[0] : r.data); if (!c) return;
     var fmt = function (n) { try { return new Intl.NumberFormat(LOCALE[LANG]).format(n); } catch (e) { return String(n); } };
     var chip = function (n, one, many) { return "<span><b>" + esc(fmt(n)) + "</b> " + esc(Number(n) === 1 ? one : many) + "</span>"; };

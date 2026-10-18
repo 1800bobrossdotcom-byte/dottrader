@@ -57,3 +57,15 @@ create policy "read own proofs" on storage.objects for select to authenticated
   using (bucket_id = 'proofs' and (storage.foldername(name))[1] = auth.uid()::text);
 
 -- The listing-photo read policy must not cover proofs: it is scoped to bucket 'photos' above.
+
+-- Photo reads: each time the post form asks the vision function to suggest a title from a photo.
+-- Only the function (service role) writes or reads it; it is how the daily allowance is counted.
+create table if not exists public.photo_reads (
+  id         bigint generated always as identity primary key,
+  user_id    uuid not null references auth.users on delete cascade,
+  created_at timestamptz not null default now()
+);
+create index if not exists photo_reads_user_idx on public.photo_reads (user_id, created_at);
+alter table public.photo_reads enable row level security;
+-- Old reads are only counted for a day; keep a week for looking into abuse, then let them go.
+delete from public.photo_reads where created_at < now() - interval '7 days';

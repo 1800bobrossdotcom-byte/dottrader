@@ -7,6 +7,12 @@
 // Called by the board after the owner uploads their proof photo to the private `proofs` bucket:
 //   POST { verification_id, proof_path }   with the caller's Supabase session as the bearer token.
 //
+// It also reads a listing photo for the post form, so posting can start from a picture:
+//   POST { action: "describe", photo_url, cats, lang }
+// The photo must be one the caller uploaded to the public `photos` bucket. The answer is a
+// suggested title, category and details, which the form fills in for the person to check. Each
+// account gets DESCRIBE_PER_DAY of these a day (photo_reads in supabase/storage.sql).
+//
 // This runs here and not in the page for one reason: the vision model needs an API key, and a key
 // in a browser is a key everyone has. The caller is identified from their session token, the
 // verification row is checked to be theirs and still pending, the photo is read from the private
@@ -22,6 +28,7 @@ import { createClient } from "npm:@supabase/supabase-js@2.117.2";
 
 const CODE_ALPHABET = "ACDEFGHJKMNPQRTUVWXY3467";
 const PASS = 45;      // weighted score needed
+const DESCRIBE_PER_DAY = 30;
 const CRITICAL = 15;  // name or code below this fails outright, whatever the rest says
 
 const cors = {
@@ -56,6 +63,72 @@ const SCHEMA = {
     summary: { type: "string" },
   },
 };
+
+// What a listing photo suggests. The category must be one the board has.
+const describeSchema = (cats: string[]) => ({
+  type: "object",
+  additionalProperties: false,
+  required: ["title", "category", "details", "sure"],
+  properties: {
+    title: { type: "string", description: "A listing title a collector would search for: brand, model, edition, set, year if visible. At most 70 characters." },
+    category: { type: "string", enum: cats },
+    details: { type: "string", description: "One or two short sentences on what is visible: condition, box, accessories. Nothing guessed." },
+    sure: { type: "boolean", description: "False if the photo is unclear or shows no single item to trade." },
+  },
+});
+const LANG_NAME: Record<string, string> = { en: "English", es: "Spanish", ja: "Japanese", pt: "Brazilian Portuguese" };
+
+async function describe(service: ReturnType<typeof createClient>, url: string, uid: string, body: Record<string, unknown>) {
+  const photo = String(body.photo_url ?? "");
+  const own = `${url}/storage/v1/object/public/photos/${uid}/`;
+  if (!photo.startsWith(own) || !/^[A-Za-z0-9._-]+$/.test(photo.slice(own.length))) return json({ error: "the photo must be one you uploaded" }, 400);
+  const cats = (Array.isArray(body.cats) ? body.cats : []).map(String).filter((c) => c.length > 0 && c.length <= 40).slice(0, 80);
+  if (!cats.includes("Other")) cats.push("Other");
+  const lang = LANG_NAME[String(body.lang ?? "en")] ? String(body.lang) : "en";
+
+  // A daily allowance per account: each read costs real money.
+  const since = new Date(Date.now() - 86400e3).toISOString();
+  const { count } = await service.from("photo_reads").select("id", { count: "exact", head: true }).eq("user_id", uid).gte("created_at", since);
+  if ((count ?? 0) >= DESCRIBE_PER_DAY) return json({ error: "that's enough photo reads for today — fill it in by hand" }, 429);
+  await service.from("photo_reads").insert({ user_id: uid });
+
+  const img = await fetch(photo);
+  if (!img.ok) return json({ error: "could not fetch the photo" }, 400);
+  const mediaType = (img.headers.get("content-type") || "image/jpeg").split(";")[0];
+  if (!["image/jpeg", "image/png", "image/webp"].includes(mediaType)) return json({ error: "unsupported image type" }, 415);
+  const bytes = new Uint8Array(await img.arrayBuffer());
+  if (bytes.length > 8 * 1024 * 1024) return json({ error: "photo too large" }, 413);
+  let b64 = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) b64 += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  b64 = btoa(b64);
+
+  const client = new Anthropic({ apiKey: Deno.env.get("ANTHROPIC_API_KEY") });
+  try {
+    const res = await client.beta.messages.create({
+      model: "claude-opus-5-5",
+      max_tokens: 4096,
+      betas: ["server-side-fallback-2026-07-01"],
+      fallbacks: "default",
+      output_config: { effort: "low", format: { type: "json_schema", schema: describeSchema(cats) } },
+      messages: [{
+        role: "user",
+        content: [
+          { type: "image", source: { type: "base64", media_type: mediaType as "image/jpeg" | "image/png" | "image/webp", data: b64 } },
+          { type: "text", text: `This photo is for a listing on a barter board for collectibles, games and other things people swap. Suggest the listing's title, category and a short description of what is visible. Write the title and details in ${LANG_NAME[lang]}. Name only what you can see or read; if a detail isn't visible, leave it out rather than guess.` },
+        ],
+      }],
+    });
+    if (res.stop_reason === "refusal") return json({ error: "couldn't read that photo" }, 422);
+    const text = res.content.find((b) => b.type === "text");
+    if (!text || text.type !== "text") return json({ error: "couldn't read that photo" }, 502);
+    const out = JSON.parse(text.text);
+    return json({ title: String(out.title ?? "").slice(0, 80), category: cats.includes(out.category) ? out.category : "Other", details: String(out.details ?? "").slice(0, 600), sure: !!out.sure });
+  } catch (e) {
+    const msg = e instanceof Anthropic.APIError ? `${e.status}: ${e.message}` : (e as Error).message;
+    console.error("[describe]", msg);
+    return json({ error: "the photo reader is unavailable right now" }, 502);
+  }
+}
 
 function prompt(name: string, code: string, title: string) {
   const now = new Date();
@@ -102,8 +175,9 @@ Deno.serve(async (req) => {
   if (whoErr || !who?.user) return json({ error: "sign in first" }, 401);
   const uid = who.user.id;
 
-  let body: { verification_id?: string; proof_path?: string };
+  let body: { verification_id?: string; proof_path?: string; action?: string };
   try { body = await req.json(); } catch { return json({ error: "bad request" }, 400); }
+  if (body.action === "describe") return describe(service, url, uid, body as Record<string, unknown>);
   const vid = String(body.verification_id ?? "");
   const proofPath = String(body.proof_path ?? "");
   if (!vid || !proofPath) return json({ error: "verification_id and proof_path are required" }, 400);

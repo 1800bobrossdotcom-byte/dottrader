@@ -34,3 +34,10 @@ insert into public.saved_wants (user_id, label) select 'b0000000-0000-0000-0000-
 select 'M13 a 21st saved search: ' || pg_temp.try($q$insert into public.saved_wants (user_id, label) values ('b0000000-0000-0000-0000-000000000002','zelda cartridge')$q$);
 update public.items set title = 'Game Boy Color, teal' where id = '10000000-0000-0000-0000-00000000000a';
 select 'M14 keywords follow an edit: ' || array_to_string(have_terms, ',') from public.items where id = '10000000-0000-0000-0000-00000000000a';
+-- Wants on the board: a want shown publicly is readable by anyone; a private one stays private.
+insert into public.saved_wants (user_id, label, public) values ('d0000000-0000-0000-0000-000000000004', 'n64 controller', true);
+set role anon; select set_config('req.uid', '', false);
+select 'M15 a visitor sees the wants on the board, and only those: ' || string_agg(label, ', ' order by label) from public.saved_wants;
+reset role; set role authenticated; select set_config('req.uid', 'e0000000-0000-0000-0000-000000000005', false);
+select 'M16 someone else can''t put a want on the board for her: ' || pg_temp.try($q$update public.saved_wants set public = true where label = 'pokemon cards'$q$) || ', public now: ' || (select count(*) from public.saved_wants where public);
+reset role;

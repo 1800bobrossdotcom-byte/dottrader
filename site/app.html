@@ -56,19 +56,22 @@
 
   <!-- sign in -->
   <section id="gate" hidden>
+    <!-- Kept short on purpose: a visitor should see listings on the first screen, not a lecture. -->
     <div class="gate">
-      <div class="eyebrow">Barter board · no money changes hands</div>
       <h2 data-t>Swap what you have<br>for <em>what you want.</em></h2>
-      <div class="steps">
-        <div class="step" style="--c:var(--have)"><i>1</i><b>Post an item</b><span>A photo and what you'd take for it.</span></div>
-        <div class="step" style="--c:var(--want)"><i>2</i><b>Get offers</b><span>Accept one, then sort the swap out in messages.</span></div>
-        <div class="step" style="--c:var(--dot)"><i>3</i><b>Press your dot</b><span>Both press when it arrives. You both earn trust.</span></div>
-      </div>
       <div class="ctas">
         <button class="btn ok big" type="button" data-auth="signup">Create an account</button>
         <button class="btn big" type="button" data-auth="signin">Sign in</button>
       </div>
       <p class="fine">Look around first — everything on the board is below. You only need an account to post or make an offer.</p>
+      <details class="howit">
+        <summary>How it works</summary>
+        <div class="steps">
+          <div class="step" style="--c:var(--have)"><i>1</i><b>Post an item</b><span>A photo and what you'd take for it.</span></div>
+          <div class="step" style="--c:var(--want)"><i>2</i><b>Get offers</b><span>Accept one, then sort the swap out in messages.</span></div>
+          <div class="step" style="--c:var(--dot)"><i>3</i><b>Press your dot</b><span>Both press when it arrives. You both earn trust.</span></div>
+        </div>
+      </details>
     </div>
   </section>
 
@@ -88,6 +91,7 @@
       <button class="btn ghost" type="button" id="saveSearch" hidden title="Collect everything that fits this search under My trades">Save search</button>
       <button class="btn ok" type="button" id="postCta">+ Post an item</button>
     </div>
+    <div id="wantedBox" hidden></div>
     <div id="mapWrap" hidden><div id="map" class="map"></div><p class="hint" style="margin:-8px 0 16px;font-size:12px;color:var(--muted)">Pins are rounded to about a kilometre. Click one to jump to the listing.</p></div>
     <div class="catrow">
       <div class="chips" id="cats"></div>
@@ -121,14 +125,15 @@
         </div>
         <div id="f-preview" class="nftpreview" hidden></div>
       </div>
-      <div>
-        <label for="f-title" id="f-titlelbl">What are you offering?</label>
-        <input id="f-title" maxlength="80" required placeholder="Charizard holo, 1999 base set">
-      </div>
       <div id="f-photowrap">
         <label>Photos <span class="hint" id="f-photohint">— up to 4 · location data is removed before upload</span></label>
         <label class="filebtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg><span>Add photos</span><input id="f-photos" type="file" accept="image/jpeg,image/png,image/webp" multiple></label>
         <div class="thumbs" id="f-thumbs"></div>
+        <p class="hint photonote" id="f-photonote" aria-live="polite" hidden></p>
+      </div>
+      <div>
+        <label for="f-title" id="f-titlelbl">What are you offering?</label>
+        <input id="f-title" maxlength="80" required placeholder="Charizard holo, 1999 base set">
       </div>
       <div class="rowf">
         <div>
@@ -176,6 +181,7 @@
         <input id="look-q" maxlength="80" placeholder="Pokémon cards, a Game Boy, a road bike…" aria-label="What you're looking for">
         <select id="look-cat" class="catpick" aria-label="Category"></select>
         <button class="btn ok" type="submit">Save</button>
+        <label class="tick lookpub" id="look-pubwrap" hidden><input type="checkbox" id="look-public" checked> <span>Show it on the board, so someone who has it can find you</span></label>
       </form>
       <div id="lookList" class="looklist"></div>
     </div>
@@ -212,6 +218,11 @@
               <span class="hint" id="locState">Not set</span><button class="linkbtn" type="button" id="locClear" hidden>clear</button></div></div>
           <div><button class="btn" type="submit">Save profile</button></div>
         </form>
+    </div>
+    <div class="panel" id="p-invitewrap" hidden>
+      <div class="sub">Invite a trader</div>
+      <p class="hint" style="margin:0 0 10px">The board gets better with every person on it. Send this to someone with things to swap.</p>
+      <div class="acts"><input id="p-invite" readonly aria-label="Your invite link" style="flex:1;min-width:220px"><button class="btn ok" type="button" id="p-inviteShare">Share</button></div>
     </div>
     <div class="panel" id="p-notifywrap" hidden>
       <div class="sub">Email notifications</div>

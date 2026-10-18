@@ -147,7 +147,7 @@ function paintLooking() {
   matchData.wants.forEach(function (w) {
     var hits = (matchData.hits[w.id] || []).filter(function (id) { return itemById(id); });
     var row = document.createElement("div"); row.className = "look";
-    row.innerHTML = "<span><b>" + esc(w.label || listJoin(w.cats.map(catName))) + "</b>" + (w.label && w.cats.length ? "<small>" + esc(t("in {cats}", { cats: listJoin(w.cats.map(catName)) })) + "</small>" : "") + "</span>";
+    row.innerHTML = "<span><b>" + esc(w.label || listJoin(w.cats.map(catName))) + "</b>" + (w.public ? ' <span class="tag mine">' + esc(t("on the board")) + "</span>" : "") + (w.label && w.cats.length ? "<small>" + esc(t("in {cats}", { cats: listJoin(w.cats.map(catName)) })) + "</small>" : "") + "</span>";
     var see = document.createElement("button"); see.type = "button"; see.className = "btn " + (hits.length ? "ok" : "ghost"); see.disabled = !hits.length;
     see.textContent = hits.length ? tn(hits.length, "{n} listing fits", "{n} listings fit") : t("nothing yet");
     see.addEventListener("click", function () { openHits(w, hits); });
@@ -167,19 +167,66 @@ function openHits(w, ids) {
     host.appendChild(b);
   });
 }
-function saveSearch(label, cats) {
+function saveSearch(label, cats, pub) {
   if (!uid) return needAccount(t("Make an account to save searches. It takes a minute."), null);
-  sb.from("saved_wants").insert({ user_id: uid, label: (label || "").slice(0, 80), cats: cats || [] }).then(function (r) {
+  var rec = { user_id: uid, label: (label || "").slice(0, 80), cats: cats || [] };
+  if (caps.wanted && pub) rec.public = true;
+  sb.from("saved_wants").insert(rec).then(function (r) {
     if (r.error) return fail(r.error);
-    toast(t("Saved. Everything that fits collects under My trades → Looking for."));
-    loadMatches();
+    toast(t(rec.public ? "Saved, and on the board under Wanted. If someone lists it, you'll hear about it." : "Saved. Everything that fits collects under My trades → Looking for."));
+    loadMatches(); loadWanted();
   });
+}
+
+/* ---- wanted: what people are looking for, on the board ----
+   A want someone chose to show. "I have one" starts a listing for it; posting a listing that fits
+   emails the person who wants it (the saved-search alert), so the two find each other. */
+var wantedList = [];
+function loadWanted() {
+  $("look-pubwrap").hidden = !caps.wanted;
+  if (!caps.wanted || !sb) return Promise.resolve();
+  return sb.from("saved_wants").select("id,user_id,label,cats,created_at").eq("public", true).order("created_at", { ascending: false }).limit(24).then(function (r) {
+    wantedList = r.error ? [] : (r.data || []);
+    var need = wantedList.map(function (w) { return w.user_id; }).filter(function (id) { return !profiles[id]; });
+    return (need.length ? byIds("profiles", "id", need).then(function (p) { (p.data || []).forEach(function (x) { profiles[x.id] = x; }); }) : Promise.resolve()).then(paintWanted);
+  });
+}
+function paintWanted() {
+  var box = $("wantedBox");
+  box.hidden = !wantedList.length;
+  if (box.hidden) { box.innerHTML = ""; return; }
+  box.innerHTML = '<div class="sub">' + esc(t("Wanted")) + ' <span class="hint">' + esc(t("— people looking for these. Have one? List it and they'll hear about it.")) + "</span></div>";
+  var row = document.createElement("div"); row.className = "wantrow";
+  wantedList.forEach(function (w) {
+    var what = w.label || listJoin(w.cats.map(catName)), mine = uid && w.user_id === uid;
+    var c = document.createElement("article"); c.className = "wcard"; c.style.setProperty("--c", hueOf(w.cats[0] || "Other"));
+    c.innerHTML = '<span class="wk">' + esc(t("Wanted")) + '</span><b class="wt">' + esc(what) + "</b>" +
+      (w.label && w.cats.length ? '<span class="wc">' + esc(listJoin(w.cats.map(catName))) + "</span>" : "") +
+      '<span class="wb">' + esc(mine ? t("Yours") : who(w.user_id)) + " · " + esc(ago(w.created_at)) + "</span>";
+    if (!mine) {
+      var b = document.createElement("button"); b.type = "button"; b.className = "btn ok"; b.textContent = t("I have one");
+      b.addEventListener("click", function () { haveOne(w); });
+      c.appendChild(b);
+    }
+    row.appendChild(c);
+  });
+  box.appendChild(row);
+}
+// Start a listing aimed at a want: the post form, with its category picked and a note of who's looking.
+function haveOne(w) {
+  if (!uid) return needAccount(t("Make an account to list it. It takes a minute."), function () { haveOne(w); });
+  show("post");
+  if ($("f-isasset").checked) setPostKind(w.cats[0] === "NFTs");
+  if (w.cats[0] && w.cats[0] !== "NFTs" && !$("f-cat").disabled) $("f-cat").value = w.cats[0];
+  if (!$("f-title").value.trim() && w.label) $("f-title").value = w.label;
+  toast(t("List it, and {who} hears about it as soon as it's posted.", { who: who(w.user_id) }));
+  $("f-title").focus();
 }
 groupedOptions($("look-cat"), t("Any category"));
 $("lookForm").addEventListener("submit", function (e) {
   e.preventDefault();
   var q = $("look-q").value.trim(), c = $("look-cat").value;
   if (!q && !c) return toast(t("Say what you’re looking for, or pick a category."));
-  saveSearch(q, c ? [c] : []); $("look-q").value = ""; $("look-cat").value = "";
+  saveSearch(q, c ? [c] : [], $("look-public").checked); $("look-q").value = ""; $("look-cat").value = "";
 });
 $("saveSearch").addEventListener("click", function () { saveSearch(filter.q, filter.cat ? [filter.cat] : []); });

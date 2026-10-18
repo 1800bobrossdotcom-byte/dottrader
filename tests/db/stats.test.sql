@@ -2,6 +2,7 @@
 -- about the visitor is kept; nobody can read or write the tables directly.
 \set ON_ERROR_STOP 0
 \pset tuples_only on
+create or replace function pg_temp.try(q text) returns text language plpgsql as $$ begin execute q; return 'ok'; exception when others then return 'refused: ' || sqlerrm; end $$;
 insert into auth.users values ('a0000000-0000-0000-0000-000000000001','a@x'),('b0000000-0000-0000-0000-000000000002','b@x');
 set role anon;
 select set_config('request.headers', '{"cf-connecting-ip":"203.0.113.7","user-agent":"Mozilla/5.0 (iPhone)"}', false);
@@ -22,3 +23,20 @@ select 'S9 nothing stored names a visitor: ' || (not exists (select 1 from publi
 insert into public.site_salts values (current_date - 1, 'old');
 set role anon; select public.note_visit('client-1') is not null; reset role;
 select 'S10 yesterday''s secret is gone after a visit: ' || (not exists (select 1 from public.site_salts where day < current_date))::text;
+-- Where visitors come from, and how far they get.
+set role anon;
+select set_config('request.headers', '{"cf-connecting-ip":"192.0.2.10","user-agent":"Mozilla/5.0 (iPad)"}', false);
+select public.note_visit('client-9', 'sticker') is not null;
+select public.note_visit('client-9', 'sticker') is not null;
+select set_config('request.headers', '{"cf-connecting-ip":"192.0.2.11","user-agent":"Mozilla/5.0 (Mac)"}', false);
+select public.note_visit('client-10', 'Bad Ref!<script>') is not null;
+reset role;
+select 'S11 a visit from a sticker is counted once for that source: ' || (select count(*) from public.site_refs where ref = 'sticker');
+select 'S12 a malformed source is ignored, the visit still counted: ' || (select count(*) from public.site_refs where ref <> 'sticker') || ', visits ' || (select count(*) from public.site_visits);
+update public.profiles set ref = 'sticker' where id = 'a0000000-0000-0000-0000-000000000001';
+insert into public.items (id, owner_id, title) values ('10000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000001', 'Lamp');
+select 'S13 a source that isn''t a plain word is refused: ' || pg_temp.try($q$update public.profiles set ref = 'x y' where id = 'b0000000-0000-0000-0000-000000000002'$q$);
+select 'S14 the funnel, by source: ' || string_agg(ref || ' ' || visitors || '/' || signups || '/' || posted || '/' || offered || '/' || traded, '; ' order by ref) from public.site_funnel;
+set role anon;
+select 'S15 a visitor reading the funnel: ' || pg_temp.try('select count(*) from public.site_funnel');
+reset role;
