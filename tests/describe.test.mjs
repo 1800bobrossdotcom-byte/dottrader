@@ -83,4 +83,19 @@ __db.verifications[0].status = "pending";
 [s, j] = await call("tA", { verification_id: "v1", proof_path: A + "/proof-1.png" });
 ok("…and when Claude is overloaded, the board is told with a code", s === 502 && j.code === "529", JSON.stringify(j));
 
+
+// Every format sent to Claude uses only what structured outputs accept: no number or length limits,
+// no list-of-types, and additionalProperties: false on every object. (A minimum/maximum is a 400.)
+const sent = __claude.calls.map((c) => c.output_config && c.output_config.format && c.output_config.format.schema).filter(Boolean);
+const bad = [];
+const walk = (n, path) => {
+  if (!n || typeof n !== "object") return;
+  for (const k of ["minimum", "maximum", "multipleOf", "minLength", "maxLength", "exclusiveMinimum", "exclusiveMaximum", "minItems", "maxItems"]) if (k in n) bad.push(path + "." + k);
+  if (Array.isArray(n.type)) bad.push(path + ".type[]");
+  if (n.type === "object" && n.additionalProperties !== false) bad.push(path + " additionalProperties");
+  for (const [k, v] of Object.entries(n)) if (typeof v === "object") walk(v, path + "." + k);
+};
+sent.forEach((sc, i) => walk(sc, "schema" + i));
+ok("both schemas sent to Claude use only what structured outputs accept", sent.length >= 2 && !bad.length, bad.slice(0, 6).join(", "));
+
 console.log(res.join("\n")); if (res.some((r) => !r.startsWith("PASS"))) process.exitCode = 1;

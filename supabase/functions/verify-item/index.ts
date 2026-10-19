@@ -39,7 +39,11 @@ const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
 
 // What the model must return. The API guarantees the response parses as this, so there is no
-// brace-hunting and no "AI response not parseable" path.
+// brace-hunting and no "AI response not parseable" path. Structured outputs reject number limits
+// (minimum/maximum) and list-of-types, so scores are plain integers, kept to 0–100 by n() below,
+// and "may be missing" is anyOf string/null.
+const SCORE = { type: "integer", description: "0 to 100" };
+const MAYBE = { anyOf: [{ type: "string" }, { type: "null" }] };
 const SCHEMA = {
   type: "object",
   additionalProperties: false,
@@ -47,18 +51,18 @@ const SCHEMA = {
              "code_char_matches", "item_visible", "item_description", "note_handwritten",
              "photo_authentic", "overall_confidence", "flags", "summary"],
   properties: {
-    name_match: { type: "integer", minimum: 0, maximum: 100 },
-    name_read: { type: ["string", "null"] },
-    date_match: { type: "integer", minimum: 0, maximum: 100 },
-    date_read: { type: ["string", "null"] },
-    code_match: { type: "integer", minimum: 0, maximum: 100 },
-    code_read: { type: ["string", "null"] },
+    name_match: SCORE,
+    name_read: MAYBE,
+    date_match: SCORE,
+    date_read: MAYBE,
+    code_match: SCORE,
+    code_read: MAYBE,
     code_char_matches: { type: "string", description: "One of Y, N or ? per position, e.g. YYNY" },
-    item_visible: { type: "integer", minimum: 0, maximum: 100 },
-    item_description: { type: ["string", "null"] },
-    note_handwritten: { type: "integer", minimum: 0, maximum: 100 },
-    photo_authentic: { type: "integer", minimum: 0, maximum: 100 },
-    overall_confidence: { type: "integer", minimum: 0, maximum: 100 },
+    item_visible: SCORE,
+    item_description: MAYBE,
+    note_handwritten: SCORE,
+    photo_authentic: SCORE,
+    overall_confidence: SCORE,
     flags: { type: "array", items: { type: "string" } },
     summary: { type: "string" },
   },
@@ -136,6 +140,7 @@ async function describe(service: ReturnType<typeof createClient>, url: string, u
       }],
     });
     if (res.stop_reason === "refusal") return json({ error: "couldn't read that photo" }, 422);
+    if (res.stop_reason === "max_tokens") return json({ error: "the photo reader is unavailable right now", code: "cut-off" }, 502);
     // deno-lint-ignore no-explicit-any
     const text = res.content.find((b: any) => b.type === "text");
     if (!text || text.type !== "text") return json({ error: "couldn't read that photo" }, 502);
@@ -239,7 +244,7 @@ Deno.serve(async (req) => {
   try {
     const res = await askClaude(client, {
       model: "claude-opus-5-5",
-      max_tokens: 2048,
+      max_tokens: 8192,
       output_config: { format: { type: "json_schema", schema: SCHEMA } },
       messages: [{
         role: "user",
@@ -250,6 +255,7 @@ Deno.serve(async (req) => {
       }],
     });
     if (res.stop_reason === "refusal") return json({ error: "the checker declined to look at this photo" }, 422);
+    if (res.stop_reason === "max_tokens") return json({ error: "the checker is unavailable right now", code: "cut-off" }, 502);
     // deno-lint-ignore no-explicit-any
     const text = res.content.find((b: any) => b.type === "text");
     if (!text || text.type !== "text") return json({ error: "empty verdict" }, 502);
