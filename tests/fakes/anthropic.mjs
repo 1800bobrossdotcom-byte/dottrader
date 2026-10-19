@@ -2,6 +2,7 @@
 // the test put in globalThis.__claude.next.
 export default class Anthropic {
   constructor(opts) { this.opts = opts; }
-  beta = { messages: { create: async (params) => { globalThis.__claude.calls.push(params); const n = globalThis.__claude.next; if (n instanceof Error) throw n; return n; } } };
+  beta = { messages: { create: async (params) => { globalThis.__claude.calls.push({ ...params, via: "beta" }); const n = globalThis.__claude.betaFails || globalThis.__claude.next; if (n instanceof Error) throw n; return n; } } };
+  messages = { create: async (params) => { globalThis.__claude.calls.push({ ...params, via: "plain" }); const n = globalThis.__claude.next; if (n instanceof Error) throw n; return n; } };
   static APIError = class APIError extends Error { constructor(status, message) { super(message); this.status = status; } };
 }

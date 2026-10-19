@@ -68,7 +68,7 @@ function readPhoto(url) {
   }).then(function (res) { return res.json().then(function (j) { return { ok: res.ok, status: res.status, j: j || {} }; }); }).then(function (r) {
     // Only the day's allowance is worth saying; anything else (an older function that doesn't read
     // photos yet, a hiccup) just leaves the form for the person to fill in.
-    if (!r.ok) return say(r.status === 429 ? t("That's enough photo reads for today — fill it in yourself.") : "");
+    if (!r.ok) { if (r.j.code) console.warn("photo reader:", r.status, r.j.code); return say(r.status === 429 ? t("That's enough photo reads for today — fill it in yourself.") : ""); }
     if (!r.j.sure || !r.j.title) return say(t("Couldn't tell what that is from the photo — name it yourself."));
     var filled = false;
     if (!$("f-title").value.trim()) { $("f-title").value = r.j.title; filled = true; }

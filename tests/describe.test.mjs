@@ -53,4 +53,34 @@ const before = __claude.calls.length;
 [s, j] = await call("tA", { action: "describe", photo_url: mine, cats: CATS });
 ok("after 30 reads in a day, the next is refused without calling Claude", s === 429 && __claude.calls.length === before, String(s));
 
+
+// When Claude can't be reached, the answer says why with a code, and the fallback option is optional.
+__db.photo_reads = [];
+const { default: Anthropic } = await import("./fakes/anthropic.mjs");
+__claude.betaFails = new Anthropic.APIError(400, "unknown beta"); __claude.next = answer({ title: "Lamp", category: "Other", details: "", sure: true });
+[s, j] = await call("tA", { action: "describe", photo_url: mine, cats: CATS });
+const last2 = __claude.calls.slice(-2);
+ok("an account that refuses the fallback option is asked again without it", s === 200 && j.title === "Lamp" && last2[0].via === "beta" && last2[1].via === "plain" && !("fallbacks" in last2[1]) && !("betas" in last2[1]), JSON.stringify(last2.map((c) => c.via)));
+__claude.betaFails = new Anthropic.APIError(401, "invalid x-api-key");
+[s, j] = await call("tA", { action: "describe", photo_url: mine, cats: CATS });
+ok("a bad key isn't retried, and the answer carries its code", s === 502 && j.code === "401" && __claude.calls.at(-1).via === "beta", JSON.stringify(j));
+__claude.betaFails = null;
+env.ANTHROPIC_API_KEY = "";
+[s, j] = await call("tA", { action: "describe", photo_url: mine, cats: CATS });
+ok("a missing key says so instead of crashing", s === 503 && j.code === "no-key", JSON.stringify(j));
+env.ANTHROPIC_API_KEY = "sk-ant-test";
+
+// The proof-of-item check itself goes through the same path.
+__db.verifications = [{ id: "v1", owner_id: A, item_id: "i1", code: "ACDE", status: "pending", expires_at: new Date(Date.now() + 3600e3).toISOString() }];
+__db.items = [{ id: "i1", title: "Game Boy" }]; __db.profiles = [{ id: A, name: "Alice" }];
+globalThis.fetch = async (url) => String(url).includes("/storage/v1/object/proofs/") ? new Response(PNG, { status: 200, headers: { "content-type": "image/png" } }) : realFetch(url);
+__claude.betaFails = new Anthropic.APIError(400, "unknown beta");
+__claude.next = answer({ name_match: 95, name_read: "Alice", date_match: 100, date_read: "today", code_match: 100, code_read: "ACDE", code_char_matches: "YYYY", item_visible: 90, item_description: "a Game Boy", note_handwritten: 95, photo_authentic: 90, overall_confidence: 90, flags: [], summary: "Clear note beside a Game Boy." });
+[s, j] = await call("tA", { verification_id: "v1", proof_path: A + "/proof-1.png" });
+ok("proof of item passes even when the fallback option is refused", s === 200 && j.passed === true && __claude.calls.at(-1).via === "plain", JSON.stringify(j).slice(0, 120));
+__claude.betaFails = new Anthropic.APIError(529, "overloaded");
+__db.verifications[0].status = "pending";
+[s, j] = await call("tA", { verification_id: "v1", proof_path: A + "/proof-1.png" });
+ok("…and when Claude is overloaded, the board is told with a code", s === 502 && j.code === "529", JSON.stringify(j));
+
 console.log(res.join("\n")); if (res.some((r) => !r.startsWith("PASS"))) process.exitCode = 1;

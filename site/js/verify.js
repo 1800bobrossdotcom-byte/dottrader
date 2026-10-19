@@ -62,7 +62,7 @@ function openVerify(it) {
       }).then(function (res) {
         return res.json().then(function (j) { return { status: res.status, body: j || {} }; });
       }).then(function (r) {
-        if (r.status >= 400) throw new Error(r.body.error || t("The check did not go through."));
+        if (r.status >= 400) throw new Error((r.body.error || t("The check did not go through.")) + (r.body.code ? " (" + t("code {code}", { code: r.body.code }) + ")" : ""));
         var b = r.body;
         if (b.passed) {
           say("<b>" + esc(t("Verified.")) + "</b> " + esc(b.summary || "") + " " + esc(t("Your listing now carries a Proof of item badge.")), "ok");

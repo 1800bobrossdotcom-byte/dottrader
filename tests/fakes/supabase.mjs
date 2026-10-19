@@ -15,5 +15,6 @@ export function createClient() {
     };
     return q;
   };
-  return { from: query, auth: { getUser: async (tok) => db.users[tok] ? { data: { user: { id: db.users[tok] } }, error: null } : { data: null, error: new Error("bad") } } };
+  const storage = { from: () => ({}) };
+  return { from: query, storage, auth: { getUser: async (tok) => db.users[tok] ? { data: { user: { id: db.users[tok] } }, error: null } : { data: null, error: new Error("bad") } } };
 }

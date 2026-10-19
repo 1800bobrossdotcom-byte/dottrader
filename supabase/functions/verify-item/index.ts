@@ -76,6 +76,24 @@ const describeSchema = (cats: string[]) => ({
     sure: { type: "boolean", description: "False if the photo is unclear or shows no single item to trade." },
   },
 });
+// One request to Claude. It asks for the refusal fallback first; an account that doesn't accept that
+// option (a 400 or 404 about it) gets the same request without it, so the check still runs.
+// deno-lint-ignore no-explicit-any
+async function askClaude(client: Anthropic, params: any) {
+  try {
+    return await client.beta.messages.create({ ...params, betas: ["server-side-fallback-2026-07-01"], fallbacks: "default" });
+  } catch (e) {
+    if (!(e instanceof Anthropic.APIError) || (e.status !== 400 && e.status !== 404)) throw e;
+    console.error("[claude] retrying without the fallback option:", `${e.status}: ${e.message}`);
+    return await client.messages.create(params);
+  }
+}
+// What went wrong, short enough to show on the board and read back: a status code, never a secret.
+function failCode(e: unknown) {
+  if (e instanceof Anthropic.APIError) return String(e.status ?? "api");
+  return e instanceof SyntaxError ? "unreadable" : "network";
+}
+
 const LANG_NAME: Record<string, string> = { en: "English", es: "Spanish", ja: "Japanese", pt: "Brazilian Portuguese" };
 
 async function describe(service: ReturnType<typeof createClient>, url: string, uid: string, body: Record<string, unknown>) {
@@ -102,13 +120,12 @@ async function describe(service: ReturnType<typeof createClient>, url: string, u
   for (let i = 0; i < bytes.length; i += 0x8000) b64 += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
   b64 = btoa(b64);
 
+  if (!Deno.env.get("ANTHROPIC_API_KEY")) return json({ error: "the photo reader is unavailable right now", code: "no-key" }, 503);
   const client = new Anthropic({ apiKey: Deno.env.get("ANTHROPIC_API_KEY") });
   try {
-    const res = await client.beta.messages.create({
+    const res = await askClaude(client, {
       model: "claude-opus-5-5",
       max_tokens: 4096,
-      betas: ["server-side-fallback-2026-07-01"],
-      fallbacks: "default",
       output_config: { effort: "low", format: { type: "json_schema", schema: describeSchema(cats) } },
       messages: [{
         role: "user",
@@ -119,14 +136,15 @@ async function describe(service: ReturnType<typeof createClient>, url: string, u
       }],
     });
     if (res.stop_reason === "refusal") return json({ error: "couldn't read that photo" }, 422);
-    const text = res.content.find((b) => b.type === "text");
+    // deno-lint-ignore no-explicit-any
+    const text = res.content.find((b: any) => b.type === "text");
     if (!text || text.type !== "text") return json({ error: "couldn't read that photo" }, 502);
     const out = JSON.parse(text.text);
     return json({ title: String(out.title ?? "").slice(0, 80), category: cats.includes(out.category) ? out.category : "Other", details: String(out.details ?? "").slice(0, 600), sure: !!out.sure });
   } catch (e) {
     const msg = e instanceof Anthropic.APIError ? `${e.status}: ${e.message}` : (e as Error).message;
     console.error("[describe]", msg);
-    return json({ error: "the photo reader is unavailable right now" }, 502);
+    return json({ error: "the photo reader is unavailable right now", code: failCode(e) }, 502);
   }
 }
 
@@ -215,14 +233,13 @@ Deno.serve(async (req) => {
   for (let i = 0; i < bytes.length; i += 0x8000) b64 += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
   b64 = btoa(b64);
 
+  if (!Deno.env.get("ANTHROPIC_API_KEY")) return json({ error: "the checker is unavailable right now", code: "no-key" }, 503);
   const client = new Anthropic({ apiKey: Deno.env.get("ANTHROPIC_API_KEY") });
   let scores: Record<string, unknown>;
   try {
-    const res = await client.beta.messages.create({
+    const res = await askClaude(client, {
       model: "claude-opus-5-5",
       max_tokens: 2048,
-      betas: ["server-side-fallback-2026-07-01"],
-      fallbacks: "default",
       output_config: { format: { type: "json_schema", schema: SCHEMA } },
       messages: [{
         role: "user",
@@ -233,13 +250,14 @@ Deno.serve(async (req) => {
       }],
     });
     if (res.stop_reason === "refusal") return json({ error: "the checker declined to look at this photo" }, 422);
-    const text = res.content.find((b) => b.type === "text");
+    // deno-lint-ignore no-explicit-any
+    const text = res.content.find((b: any) => b.type === "text");
     if (!text || text.type !== "text") return json({ error: "empty verdict" }, 502);
     scores = JSON.parse(text.text);
   } catch (e) {
     const msg = e instanceof Anthropic.APIError ? `${e.status}: ${e.message}` : (e as Error).message;
     console.error("[verify-item]", msg);
-    return json({ error: "the checker is unavailable right now" }, 502);
+    return json({ error: "the checker is unavailable right now", code: failCode(e) }, 502);
   }
 
   const dims = ["name_match", "code_match", "date_match", "item_visible", "note_handwritten", "photo_authentic"] as const;
