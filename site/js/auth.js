@@ -158,9 +158,10 @@ $("npBtn").addEventListener("click", function () {
     $("np-pass").value = ""; markPwAsked(); toast(t("Password set. Next time you can sign in with it."));
   });
 });
-$("signOut").addEventListener("click", function () {
+// The header's sign-out, and the one on the profile page (the header has no room for it on a phone).
+[$("signOut"), $("signOutP")].forEach(function (b) { b.addEventListener("click", function () {
   sb.auth.signOut().then(function () { location.reload(); });
-});
+}); });
 
 // Called on every auth event, including the silent hourly token refresh. Only a change of WHO is
 // signed in resets the view — before, every refresh threw people back to the Board tab mid-task.

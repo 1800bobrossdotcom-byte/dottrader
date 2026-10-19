@@ -98,6 +98,18 @@ function itemCard(it, opts) {
   h += "</div>";
   el.innerHTML = h;
 
+  if (!opts.manage) {
+    // On a phone the board shows small cards two to a row; tapping one opens it full width. On a
+    // wider screen these two buttons are hidden and every card is already whole.
+    if (openCard === it.id) el.classList.add("open");
+    var peek = document.createElement("button");
+    peek.type = "button"; peek.className = "peek"; peek.setAttribute("aria-label", it.title);
+    peek.addEventListener("click", function () { openUp(el); });
+    var shut = document.createElement("button");
+    shut.type = "button"; shut.className = "shut"; shut.setAttribute("aria-label", t("Close")); shut.textContent = "\u00d7";
+    shut.addEventListener("click", function () { el.classList.remove("open"); openCard = null; el.scrollIntoView({ block: "nearest" }); peek.focus({ preventScroll: true }); });
+    el.appendChild(peek); el.appendChild(shut);
+  }
   var gal = el.querySelector(".gallery");
   if (gal && gal.querySelector(".gnav")) wireGallery(gal);
   var foot = el.querySelector(".foot");
@@ -147,6 +159,16 @@ function itemCard(it, opts) {
     foot.appendChild(del);
   }
   return el;
+}
+
+// The one board card open full width on a phone. It stays open when the board redraws.
+var openCard = null;
+function openUp(el) {
+  var was = document.querySelector("#feed .item.open");
+  if (was && was !== el) was.classList.remove("open");
+  el.classList.add("open"); openCard = el.dataset.id;
+  el.scrollIntoView({ block: "start", behavior: "smooth" });
+  var s = el.querySelector(".shut"); if (s) s.focus({ preventScroll: true });
 }
 
 function wireGallery(g) {

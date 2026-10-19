@@ -28,7 +28,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="css/board.css?v=17">
+<link rel="stylesheet" href="css/board.css?v=18">
 </head>
 <body>
 
@@ -43,10 +43,11 @@
     </div>
     <button class="btn ok" type="button" id="signInTop" hidden>Sign in</button>
     <div class="tabs" role="tablist" id="tabs" hidden>
-      <button class="tab" id="t-browse" role="tab" aria-selected="true">Board</button>
-      <button class="tab" id="t-post" role="tab" aria-selected="false">+ Post</button>
-      <button class="tab" id="t-mine" role="tab" aria-selected="false">My trades <span class="badge" id="mineCount" hidden>0</span></button>
-      <button class="tab" id="t-activity" role="tab" aria-selected="false" hidden>Activity</button>
+      <button class="tab" id="t-browse" role="tab" aria-selected="true"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg>Board</button>
+      <button class="tab" id="t-post" role="tab" aria-selected="false"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>+ Post</button>
+      <button class="tab" id="t-mine" role="tab" aria-selected="false"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h14l-3.5-3.5M20 16H6l3.5 3.5"/></svg>My trades <span class="badge" id="mineCount" hidden>0</span></button>
+      <button class="tab" id="t-activity" role="tab" aria-selected="false" hidden><svg class="ti" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3-7 4 14 3-7h4"/></svg>Activity</button>
+      <button class="tab phone" id="t-profile" role="tab" aria-selected="false"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4.5 20.5c1.4-3.7 4.2-5.5 7.5-5.5s6.1 1.8 7.5 5.5"/></svg>Profile</button>
     </div>
   </div>
 </header>
@@ -249,6 +250,7 @@
           <label for="np-pass">Password <span class="hint">— optional · lets you sign back in without waiting for an email link</span></label>
           <div class="acts"><input id="np-pass" type="password" autocomplete="new-password" minlength="8" placeholder="At least 8 characters" style="flex:1 1 220px;width:auto"><button class="btn ghost" type="button" id="npBtn">Set password</button></div>
         </div>
+        <p class="phone" style="margin:14px 0 0"><button class="btn ghost" type="button" id="signOutP">Sign out of account</button></p>
     </div>
   </section>
 
@@ -278,19 +280,19 @@
 <script src="js/core.js?v=15"></script>
 <script src="js/assets.js?v=13"></script>
 <script src="js/state.js?v=13"></script>
-<script src="js/ui.js?v=16"></script>
+<script src="js/ui.js?v=17"></script>
 <script src="js/post.js?v=13"></script>
 <script src="js/wallet.js?v=13"></script>
-<script src="js/cards.js?v=13"></script>
+<script src="js/cards.js?v=14"></script>
 <script src="js/protect.js?v=15"></script>
 <script src="js/messages.js?v=13"></script>
 <script src="js/board.js?v=15"></script>
 <script src="js/history.js?v=15"></script>
 <script src="js/match.js?v=13"></script>
-<script src="js/map.js?v=13"></script>
+<script src="js/map.js?v=14"></script>
 <script src="js/verify.js?v=13"></script>
-<script src="js/actions.js?v=15"></script>
-<script src="js/auth.js?v=13"></script>
+<script src="js/actions.js?v=16"></script>
+<script src="js/auth.js?v=14"></script>
 <script src="js/boot.js?v=14"></script>
 </body>
 </html>

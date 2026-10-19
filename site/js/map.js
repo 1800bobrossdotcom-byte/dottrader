@@ -69,6 +69,7 @@ document.addEventListener("click", function (e) {
   if (!j) return;
   e.preventDefault();
   var card = document.querySelector('[data-id="' + j + '"]');
+  if (card && card.closest("#feed")) { card.classList.add("open"); openCard = j; }
   if (card) { card.scrollIntoView({ block: "center", behavior: "smooth" }); card.classList.add("lit"); setTimeout(function () { card.classList.remove("lit"); }, 2200); }
 });
 

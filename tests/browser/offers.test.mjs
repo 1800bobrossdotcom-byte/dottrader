@@ -91,7 +91,7 @@ async function run(hash, old) {
   ok("an email's /app#profile link opens the profile", await p.isVisible("#profile") && (await p.textContent("#profName")) === "Alice" && (await p.textContent("#profAv")) === "A");
   await p.setViewportSize({ width: 390, height: 800 }); await p.waitForTimeout(150);
   await p.screenshot({ path: OUT + "/profile-phone.png", fullPage: true });
-  ok("on a phone the profile button stays on screen", await p.isVisible("#profBtn"));
+  ok("on a phone the profile is in the tab bar, open", await p.isVisible("#t-profile") && (await p.getAttribute("#t-profile", "aria-selected")) === "true");
   await b.close(); }
 { const { b, p } = await run("", true);
   await p.click("#feed .item:has(h3:text-is('Pikachu promo')) button:has-text('Offer a trade')"); await p.waitForTimeout(200);

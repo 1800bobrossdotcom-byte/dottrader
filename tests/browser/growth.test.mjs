@@ -99,7 +99,7 @@ const browser = await chromium.launch({});
   const saved = writes.find((w) => /^saved_wants POST/.test(w)) || "";
   ok("…and saves it as public", /"label":"Zelda cartridge"/.test(saved) && /"public":true/.test(saved), saved);
   // invite link
-  await p.click("#profBtn"); await p.waitForTimeout(300);
+  await p.click("#t-profile"); await p.waitForTimeout(300);  // on a phone, Profile is in the tab bar
   ok("Profile has an invite link carrying the trader's source code", /\?ref=t-11111111$/.test(await p.inputValue("#p-invite")), await p.inputValue("#p-invite"));
   await ctx.close();
 }

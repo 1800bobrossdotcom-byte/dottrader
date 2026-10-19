@@ -80,6 +80,11 @@ function openProfile() {
 }
 $("nudgeGo").addEventListener("click", openProfile);
 $("profBtn").addEventListener("click", function () { show("profile"); window.scrollTo(0, 0); });
+// The phone tab bar's Profile tab: the same page the profile button opens on a wider screen.
+$("t-profile").addEventListener("click", function () {
+  if (!uid) return needAccount(t("Make an account to trade. It takes a minute."), function () { show("profile"); });
+  show("profile"); window.scrollTo(0, 0);
+});
 document.addEventListener("click", function (e) {
   var go = e.target && e.target.getAttribute && e.target.getAttribute("data-go");
   if (!go) return;

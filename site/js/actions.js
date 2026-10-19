@@ -348,7 +348,7 @@ function followLink() {
     if (!it || it.status === "removed") return toast(t("That listing isn't on the board any more."));
     show("browse");
     var card = document.querySelector('#feed [data-id="' + it.id + '"]');
-    if (card) { card.scrollIntoView({ block: "center" }); card.classList.add("lit"); setTimeout(function () { card.classList.remove("lit"); }, 2600); }
+    if (card) { card.classList.add("open"); openCard = it.id; card.scrollIntoView({ block: "center" }); card.classList.add("lit"); setTimeout(function () { card.classList.remove("lit"); }, 2600); }
     if (it.status !== "open") return toast(t("That one has already been traded."));
     if (uid && it.owner_id === uid) return;
     if (uid && offers.some(function (o) { return o.item_id === it.id && o.from_id === uid && (o.status === "pending" || o.status === "agreed"); })) return toast(t("You've already made an offer on that one — it's under My trades."));
