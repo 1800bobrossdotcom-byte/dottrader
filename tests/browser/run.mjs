@@ -13,6 +13,7 @@ const server = http.createServer((req, res) => {
   const p = path.normalize(decodeURIComponent(new URL(req.url, "http://x").pathname)).replace(/^(\.\.[/\\])+/, "");
   let file = path.join(SITE, p === "/" ? "index.html" : p);
   if (p.endsWith("/") && fs.existsSync(path.join(file, "index.html"))) file = path.join(file, "index.html");
+  if (!fs.existsSync(file) && fs.existsSync(file + ".html")) file += ".html";  // Vercel's cleanUrls
   if (!file.startsWith(SITE) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) { res.statusCode = 404; return res.end(); }
   res.setHeader("content-type", TYPES[path.extname(file)] || "application/octet-stream");
   fs.createReadStream(file).pipe(res);

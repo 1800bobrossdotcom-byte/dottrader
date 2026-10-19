@@ -543,3 +543,29 @@ h2 { font-family:var(--display); font-weight:700; font-size:28px; letter-spacing
   #feed .item:not(.open) .tag.proof { font-size:9px; padding:2px 6px; gap:4px; box-shadow:none; }
   #feed .item.open > .shut { display:flex; align-items:center; justify-content:center; position:absolute; top:8px; right:8px; z-index:3; width:38px; height:38px; padding:0; border-radius:50%; border:2px solid var(--ink); background:var(--card); color:var(--ink); font-size:24px; line-height:1; cursor:pointer; box-shadow:2px 2px 0 var(--ink); }
 }
+
+/* Phones: everything you tap is at least 44px (a fingertip), text fields are 16px so the browser
+   doesn't zoom in on them, and sheets rise from the bottom edge, full width, within thumb reach. */
+@media (max-width:640px) {
+  .btn, .chip, .catpick, .f input, .f select, .wlist a, .wlist button { min-height:44px; }
+  .btn, .chip { display:inline-flex; align-items:center; justify-content:center; gap:8px; }
+  .f input, .f textarea, .f select, .catpick, .gateform input { font-size:16px; }
+  .f input[type=checkbox], .f input[type=radio], .tick input { width:22px; height:22px; min-height:0; flex:none; }
+  .tick { min-height:44px; }
+  .kindpick input { width:1px; height:1px; }
+  #p-invite { min-height:44px; font-size:16px; }
+  .linkbtn { min-height:44px; padding-inline:6px; }
+  .langmenu summary, .wal { min-height:40px; }
+  #feed .item.open > .shut { width:44px; height:44px; }
+  .veil { padding:0; }
+  .sheet { max-width:none; max-height:88vh; border-radius:16px 16px 0 0; border-bottom:0; box-shadow:0 -4px 0 var(--ink); padding:26px 18px calc(18px + env(safe-area-inset-bottom)); position:relative; animation:sheetup .22s ease-out; }
+  .sheet::before { content:""; position:absolute; top:9px; left:50%; width:40px; height:5px; margin-left:-20px; border-radius:3px; background:var(--line-soft); }
+}
+@keyframes sheetup { from { transform:translateY(40%); opacity:.4; } to { transform:none; opacity:1; } }
+@media (prefers-reduced-motion: reduce) { .sheet { animation:none; } }
+
+/* The offer to install the board as an app (pwa.js). */
+.installbar { display:flex; align-items:center; gap:12px; flex-wrap:wrap; background:var(--card); border:var(--bw) solid var(--ink); border-radius:var(--r); padding:12px 14px; margin-bottom:18px; box-shadow:var(--sh); font-size:14px; color:var(--muted); }
+.installbar img { width:40px; height:40px; border-radius:9px; border:2px solid var(--ink); flex:none; }
+.installbar span { flex:1 1 200px; }
+.installbar b { color:var(--ink); display:block; font-family:var(--display); }

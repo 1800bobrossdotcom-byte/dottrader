@@ -92,7 +92,7 @@ function page(o) {
       I.alternates(o.path).map((a) => '<link rel="alternate" hreflang="' + a.lang + '" href="' + esc(SITE + a.href) + '">\n').join("") +
       '<link rel="alternate" hreflang="x-default" href="' + esc(SITE + o.path) + '">\n') +
     '<link rel="icon" href="/favicon.ico?v=5" sizes="48x48">\n<link rel="icon" href="/favicon.svg?v=5" type="image/svg+xml">\n' +
-    '<link rel="apple-touch-icon" href="/apple-touch-icon.png?v=5">\n<link rel="manifest" href="/manifest.webmanifest?v=5">\n' +
+    '<link rel="apple-touch-icon" href="/apple-touch-icon.png?v=5">\n<link rel="manifest" href="/manifest.webmanifest?v=6">\n' +
     '<meta property="og:site_name" content="Dot Trading Post">\n' +
     '<meta property="og:locale" content="' + I.META[lang].og + '">\n' +
     '<meta property="og:type" content="' + (o.ogType || "website") + '">\n' +
@@ -121,7 +121,7 @@ function page(o) {
       '<a href="' + P + '/trade">' + esc(tt("foot.ways")) + '</a><a href="/stickers">' + esc(tt("foot.stickers")) + '</a><a href="/terms">' + esc(tt("foot.terms")) + "</a>" +
       '<a class="makers" href="https://cbuy.ing" target="_blank" rel="noopener"><span>' + esc(tt("foot.makers")) + '</span><img src="/cbuy.png?v=1" alt="cbuy" width="75" height="32"></a>' +
       '<nav class="langs" aria-label="' + esc(tt("foot.lang")) + '">' + langLinks + "</nav>" + '<p class="site-stats" id="siteStats" aria-live="polite" hidden></p></footer>\n' +
-    '<script src="/js/share.js?v=6" defer></script>\n</body>\n</html>\n';
+    '<script src="/js/share.js?v=7" defer></script>\n</body>\n</html>\n';
 }
 // The board in a language: it reads ?lang= on arrival and remembers it.
 function appHref(lang, hash) { return "/app" + (lang && lang !== "en" ? "?lang=" + lang : "") + (hash || ""); }

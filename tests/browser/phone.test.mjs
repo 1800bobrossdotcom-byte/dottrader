@@ -83,7 +83,51 @@ const browser = await chromium.launch({});
   ok("the post form fits the screen, with nothing sticking out sideways", await p.isVisible("#postForm") && await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth), String(await p.evaluate(() => document.documentElement.scrollWidth)));
   await p.evaluate(() => toast("A message"));
   ok("a message pops up above the bar, not over it", (await box(p, ".toast")).b <= (await box(p, "#tabs")).y);
+  // everything tappable is fingertip-sized; sheets rise from the bottom edge
+  const tiny = await p.evaluate(() => [...document.querySelectorAll("main button, main select, main .chip, main label.tick, #tabs button")].filter((e) => e.offsetParent && e.getBoundingClientRect().height < 44).map((e) => e.id || e.className));
+  ok("every button on the profile page is at least 44px tall", !tiny.length, tiny.join(", "));
+  await p.click("#connectBtn"); await p.waitForTimeout(400);
+  const sh = await box(p, ".sheet");
+  ok("a sheet rises from the bottom edge, full width", Math.abs(sh.b - 844) < 2 && sh.w >= 389, JSON.stringify(sh));
+  await p.click(".sheet button:has-text('Close')").catch(() => p.keyboard.press("Escape")); await p.waitForTimeout(200);
+  // the install offer, as Android's Chrome makes it
+  await p.click("#t-browse"); await p.waitForTimeout(200);
+  ok("no install offer until the browser says installing is possible", await p.isHidden("#installBar"));
+  await p.evaluate(() => { const e = new Event("beforeinstallprompt", { cancelable: true }); e.prompt = () => { window.__prompted = true; }; e.userChoice = Promise.resolve({ outcome: "accepted" }); window.dispatchEvent(e); });
+  ok("then the board offers to install the app", await p.isVisible("#installBar"));
+  await p.click("#installBtn"); await p.waitForTimeout(200);
+  ok("…and Install opens the phone's own install prompt", await p.evaluate(() => window.__prompted === true) && await p.isHidden("#installBar"));
+  await p.evaluate(() => { const e = new Event("beforeinstallprompt", { cancelable: true }); e.prompt = () => {}; e.userChoice = Promise.resolve({ outcome: "dismissed" }); window.dispatchEvent(e); });
+  await p.click("#installNo"); await p.waitForTimeout(100);
+  ok("“Not now” hides it, and it stays hidden", await p.isHidden("#installBar") && Number(await p.evaluate(() => localStorage.getItem("dtp-install-no"))) > 0);
+  await p.click("#t-profile"); await p.waitForTimeout(200);
+  ok("…while the profile page still has Install", await p.isVisible("#p-installBtn"));
+  await p.click("#t-mine"); await p.waitForTimeout(200);
   ok("nothing on the page is hidden behind the bar", await p.evaluate(() => parseFloat(getComputedStyle(document.body).paddingBottom) >= document.getElementById("tabs").getBoundingClientRect().height - 1));
+  await ctx.close();
+}
+
+// Offline: a page that can't load shows the offline page instead of the browser's error
+{
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true });
+  const p = await ctx.newPage();
+  await p.route(/fonts\.|cdn|cdnjs|supabase/, (r) => r.fulfill({ status: 404, body: "" }));
+  await p.goto("http://127.0.0.1:8765/terms", { waitUntil: "load" });
+  const ready = await p.evaluate(() => navigator.serviceWorker.ready.then(() => true)).catch(() => false);
+  await p.reload({ waitUntil: "load" });  // so the worker controls the page
+  ok("the public pages install the service worker", ready && await p.evaluate(() => !!navigator.serviceWorker.controller));
+  // (Playwright's offline switch doesn't reach a service worker, so its answer is checked directly.)
+  const sw = {}, cached = {};
+  const self = { addEventListener: (k, f) => { sw[k] = f; }, skipWaiting: () => {}, clients: { claim: () => {} } };
+  const caches = { open: async () => ({ addAll: async (urls) => urls.forEach((u) => { cached[u] = "page " + u; }) }), keys: async () => ["dtp-offline-0"], delete: async () => true, match: async (u) => cached[u] };
+  new Function("self", "caches", "fetch", (await import("node:fs")).readFileSync(new URL("../../site/sw.js", import.meta.url), "utf8"))(self, caches, () => Promise.reject(new TypeError("offline")));
+  let wait; sw.install({ waitUntil: (x) => { wait = x; } }); await wait;
+  let answer = null; sw.fetch({ request: { mode: "navigate" }, respondWith: (x) => { answer = x; } });
+  ok("offline, opening a page gets the offline page", (await answer) === "page /offline");
+  answer = "untouched"; sw.fetch({ request: { mode: "cors" }, respondWith: (x) => { answer = x; } });
+  ok("…and everything else goes to the network untouched", answer === "untouched");
+  await p.goto("http://127.0.0.1:8765/offline", { waitUntil: "load" });
+  ok("the offline page says so, and links back to the board", /You're offline/.test(await p.textContent("h1")) && (await p.getAttribute("main a", "href")) === "/app");
   await ctx.close();
 }
 

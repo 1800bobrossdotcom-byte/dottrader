@@ -9,7 +9,7 @@
 <link rel="icon" href="/favicon.svg?v=5" type="image/svg+xml">
 <link rel="icon" href="/favicon-48.png?v=5" sizes="48x48" type="image/png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=5">
-<link rel="manifest" href="/manifest.webmanifest?v=5">
+<link rel="manifest" href="/manifest.webmanifest?v=6">
 <link rel="canonical" href="https://www.dottrader.app/app">
 <meta property="og:site_name" content="Dot Trading Post">
 <meta property="og:title" content="The board — Dot Trading Post">
@@ -78,6 +78,7 @@
 
   <section id="browse" hidden>
     <div class="nudge" id="nudge" hidden><span>Choose the name other traders see. Until you do, you're shown as an anonymous trader.</span><button class="btn" type="button" id="nudgeGo">Add name</button></div>
+    <div class="installbar" id="installBar" hidden><img src="/icon-192.png?v=5" alt="" width="40" height="40"><span><b>Get the app</b> Put Dot Trading Post on your home screen. It opens full screen, like any app.</span><button class="btn ok" type="button" id="installBtn">Install</button><button class="linkbtn" type="button" id="installNo">Not now</button></div>
     <div id="matchBox" hidden></div>
     <div class="bar">
       <label class="search">
@@ -239,6 +240,10 @@
         <p class="hint" style="margin:0" id="notifState">Changes save as you tick.</p>
       </div>
     </div>
+    <div class="panel" id="p-installwrap" hidden>
+      <div class="sub">The app</div>
+      <div class="acts"><span class="hint" style="flex:1 1 220px">Install the board on this phone: an icon on your home screen that opens it full screen.</span><button class="btn ok" type="button" id="p-installBtn">Install</button></div>
+    </div>
     <div class="panel">
       <div class="sub">Language</div>
       <div class="f"><label for="p-lang">The board, buttons and emails <span class="hint">— your listings and messages stay as you write them</span></label>
@@ -294,5 +299,6 @@
 <script src="js/actions.js?v=16"></script>
 <script src="js/auth.js?v=14"></script>
 <script src="js/boot.js?v=14"></script>
+<script src="js/pwa.js?v=1"></script>
 </body>
 </html>

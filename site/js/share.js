@@ -3,6 +3,8 @@
 // a quiet offer of this page in the visitor's own language. Never a redirect: search engines and
 // people who chose a language get exactly the page they asked for.
 "use strict";
+// The service worker that shows an offline page (and lets a phone install the board as an app).
+if ("serviceWorker" in navigator) window.addEventListener("load", function () { navigator.serviceWorker.register("/sw.js").catch(function () {}); });
 // The language menu closes when you tap elsewhere or press Escape.
 Array.prototype.forEach.call(document.querySelectorAll("details.langmenu"), function (d) {
   document.addEventListener("click", function (e) { if (d.open && !d.contains(e.target)) d.open = false; });
