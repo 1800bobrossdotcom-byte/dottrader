@@ -569,3 +569,14 @@ h2 { font-family:var(--display); font-weight:700; font-size:28px; letter-spacing
 .installbar img { width:40px; height:40px; border-radius:9px; border:2px solid var(--ink); flex:none; }
 .installbar span { flex:1 1 200px; }
 .installbar b { color:var(--ink); display:block; font-family:var(--display); }
+
+/* "Make a text graphic" (textart.js) */
+#f-photowrap .filebtn + .filebtn { margin-left:8px; }
+.artbtn { background:#FFF4D1; font-family:inherit; color:var(--ink); }
+.artsheet { max-width:560px; }
+.artcanvas { width:100%; height:auto; aspect-ratio:4/3; display:block; border:2px solid var(--ink); border-radius:8px; background:var(--sunk); }
+.swatches { display:flex; gap:10px; flex-wrap:wrap; margin-top:6px; }
+.swatches .sw { width:40px; height:40px; border-radius:50%; border:3px solid var(--ink); cursor:pointer; padding:0; box-shadow:2px 2px 0 var(--ink); }
+.swatches .sw[aria-checked="true"] { outline:3px solid var(--blue); outline-offset:3px; }
+.desc a { color:var(--blue); font-weight:600; text-underline-offset:2px; overflow-wrap:anywhere; }
+@media (max-width:640px) { #f-photowrap .filebtn + .filebtn { margin:10px 0 0; } .swatches .sw { width:44px; height:44px; } }

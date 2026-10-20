@@ -95,7 +95,7 @@ module.exports = async function handler(req, res) {
         "<h1>" + L.esc(it.title) + "</h1>" +
         '<div class="sides"><div class="side h"><span class="k">' + L.esc(t("i.offering")) + '</span><span class="v">' + L.esc(it.title) + '</span></div><div class="arrow" aria-hidden="true"></div>' +
           '<div class="side w"><span class="k">' + L.esc(t("mini.wants")) + '</span><span class="v">' + L.esc(want) + "</span></div></div>" +
-        (it.descr ? '<p class="desc">' + L.esc(it.descr) + "</p>" : "") +
+        (it.descr ? '<p class="desc">' + L.linkify(it.descr) + "</p>" : "") +
         assetLine(it, lang) +
         (done ? '<p class="traded">' + t("i.traded", { give: L.esc(done.give), who: L.esc(doneWith) }) + " · " + day(done.done_at) + "</p>" : "") +
         '<p class="by">' + t("i.listedBy", { name: L.esc(name) }) + (prof && prof.area ? " · " + L.esc(prof.area) : "") +

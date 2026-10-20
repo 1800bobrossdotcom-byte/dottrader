@@ -45,6 +45,25 @@ function esc(s) {
     return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
   });
 }
+
+// Plain text with its web addresses made into links ("gianniarone.com", "https://…", "www.…").
+// Escaped first; only http(s) addresses become links, never an email or a script: URL. The link
+// shows exactly what was typed, opens in a new tab, and carries nofollow/ugc so search engines
+// don't count it as the board vouching for it.
+var LINK_RE = /(^|[^@\w.\/-])((?:https?:\/\/|www\.)[^\s<>"']+|[a-z0-9][a-z0-9-]*(?:\.[a-z0-9-]+)*\.(?:com|net|org|io|app|dev|co|me|xyz|art|design|studio|shop|store|site|online|tech|ai|uk|ca|au|de|fr|es|jp|br|mx|us|tv|gg|link|page|blog|info)(?:\/[^\s<>"']*)?)(?![\w@-])/gi;
+function linkify(s) {
+  return String(s == null ? "" : s).replace(/[\u0000-\u0003]/g, "").split(/(\s+)/).map(function (part) {
+    return part.replace(LINK_RE, function (m, pre, url) {
+      var tail = /[.,;:!?)\]]+$/.exec(url); tail = tail ? tail[0] : ""; url = url.slice(0, url.length - tail.length);
+      var href = /^https?:\/\//i.test(url) ? url : "https://" + url;
+      return "\u0000" + pre + "\u0001" + href + "\u0002" + url + "\u0003" + tail;
+    });
+  }).join("").split("\u0000").map(function (seg, i) {
+    if (!i) return esc(seg);
+    var a = seg.indexOf("\u0001"), b = seg.indexOf("\u0002"), c = seg.indexOf("\u0003");
+    return esc(seg.slice(0, a)) + '<a href="' + esc(seg.slice(a + 1, b)) + '" target="_blank" rel="nofollow ugc noopener">' + esc(seg.slice(b + 1, c)) + "</a>" + esc(seg.slice(c + 1));
+  }).join("");
+}
 function ago(when) {
   if (!when) return "";
   var s = (Date.now() - new Date(when).getTime()) / 1000;

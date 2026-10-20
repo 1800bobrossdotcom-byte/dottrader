@@ -21,6 +21,24 @@ async function rest(path) {
 function esc(s) {
   return String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
+// The same as site/js/state.js linkify: keep the two in step.
+// Escaped first; only http(s) addresses become links, never an email or a script: URL. The link
+// shows exactly what was typed, opens in a new tab, and carries nofollow/ugc so search engines
+// don't count it as the board vouching for it.
+const LINK_RE = /(^|[^@\w.\/-])((?:https?:\/\/|www\.)[^\s<>"']+|[a-z0-9][a-z0-9-]*(?:\.[a-z0-9-]+)*\.(?:com|net|org|io|app|dev|co|me|xyz|art|design|studio|shop|store|site|online|tech|ai|uk|ca|au|de|fr|es|jp|br|mx|us|tv|gg|link|page|blog|info)(?:\/[^\s<>"']*)?)(?![\w@-])/gi;
+function linkify(s) {
+  return String(s == null ? "" : s).replace(/[\u0000-\u0003]/g, "").split(/(\s+)/).map(function (part) {
+    return part.replace(LINK_RE, function (m, pre, url) {
+      var tail = /[.,;:!?)\]]+$/.exec(url); tail = tail ? tail[0] : ""; url = url.slice(0, url.length - tail.length);
+      var href = /^https?:\/\//i.test(url) ? url : "https://" + url;
+      return "\u0000" + pre + "\u0001" + href + "\u0002" + url + "\u0003" + tail;
+    });
+  }).join("").split("\u0000").map(function (seg, i) {
+    if (!i) return esc(seg);
+    var a = seg.indexOf("\u0001"), b = seg.indexOf("\u0002"), c = seg.indexOf("\u0003");
+    return esc(seg.slice(0, a)) + '<a href="' + esc(seg.slice(a + 1, b)) + '" target="_blank" rel="nofollow ugc noopener">' + esc(seg.slice(b + 1, c)) + "</a>" + esc(seg.slice(c + 1));
+  }).join("");
+}
 // JSON inside a <script> block: "</script>" and friends must not end it early.
 function jsonLd(o) { return JSON.stringify(o).replace(/</g, "\\u003c").replace(/>/g, "\\u003e").replace(/&/g, "\\u0026"); }
 function clip(s, n) { s = String(s || "").replace(/\s+/g, " ").trim(); return s.length > n ? s.slice(0, n - 1).replace(/\s+\S*$/, "") + "…" : s; }
@@ -154,4 +172,4 @@ function miniCard(it, img, lang) {
     '<span class="mt">' + esc(it.title) + (it.local_only ? ' <span class="tag local">' + esc(I.t(lang, "mini.local")) + "</span>" : "") + '</span><span class="mw"><b>' + esc(I.t(lang, "mini.wants")) + "</b> " + esc(wantText(it, lang)) + "</span></a>";
 }
 
-module.exports = { I, appHref, titleSlug, itemPath, SB_URL, SB_KEY, SITE, rest, esc, jsonLd, clip, GROUPS, CATS, slug, catBySlug, hueOf, CHAINS, wantText, page, send, notFound, miniCard };
+module.exports = { I, appHref, titleSlug, itemPath, SB_URL, SB_KEY, SITE, rest, esc, linkify, jsonLd, clip, GROUPS, CATS, slug, catBySlug, hueOf, CHAINS, wantText, page, send, notFound, miniCard };

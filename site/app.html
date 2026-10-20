@@ -28,7 +28,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="css/board.css?v=18">
+<link rel="stylesheet" href="css/board.css?v=19">
 </head>
 <body>
 
@@ -130,6 +130,7 @@
       <div id="f-photowrap">
         <label>Photos <span class="hint" id="f-photohint">— up to 4 · location data is removed before upload</span></label>
         <label class="filebtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg><span>Add photos</span><input id="f-photos" type="file" accept="image/jpeg,image/png,image/webp" multiple></label>
+        <button class="filebtn artbtn" type="button" id="f-makeart"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 6V4h14v2M12 4v16M9 20h6"/></svg><span>Make a text graphic</span></button>
         <div class="thumbs" id="f-thumbs"></div>
         <p class="hint photonote" id="f-photonote" aria-live="polite" hidden></p>
       </div>
@@ -282,13 +283,14 @@
 <!-- Pinned by hash: if a CDN ever served a different file, the browser would refuse to run it. -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js" integrity="sha384-Rj26LVGvoeRVR6+mwQmFfcR3QOBEwT+ZmuCWpuiqeTzJpCs0ER4ITAWGb4Hiy3Ok" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js" integrity="sha384-Htz1SE4Sl5aitpvFgr2j0sfsGUIuSXI6t8hEyrlQ93zflEF3a29bH2AvkUROUw7J" crossorigin="anonymous"></script>
-<script src="js/core.js?v=15"></script>
+<script src="js/core.js?v=16"></script>
 <script src="js/assets.js?v=13"></script>
-<script src="js/state.js?v=13"></script>
+<script src="js/state.js?v=14"></script>
 <script src="js/ui.js?v=17"></script>
 <script src="js/post.js?v=13"></script>
+<script src="js/textart.js?v=1"></script>
 <script src="js/wallet.js?v=13"></script>
-<script src="js/cards.js?v=14"></script>
+<script src="js/cards.js?v=15"></script>
 <script src="js/protect.js?v=15"></script>
 <script src="js/messages.js?v=13"></script>
 <script src="js/board.js?v=15"></script>

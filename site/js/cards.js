@@ -72,7 +72,7 @@ function itemCard(it, opts) {
     h += '<div class="pics nft" data-art="' + artId + '"><div class="artph">' + esc(t("Fetching artwork from {chain}…", { chain: (CHAINS[it.asset_chain] || {}).name || t("the chain") })) + "</div></div>";
   }
   h += "<h3>" + esc(it.title) + "</h3>";
-  if (it.descr) h += '<p class="desc">' + esc(it.descr) + "</p>";
+  if (it.descr) h += '<p class="desc">' + linkify(it.descr) + "</p>";
   h += assetRow(it, walletsOf(it.owner_id), null, mine);
   h += '<div class="sides"><div class="side h"><span class="k">' + esc(t("Offering")) + '</span><span class="v">' + esc(it.title) + "</span></div>" +
     '<div class="arrow" aria-hidden="true"></div>' +

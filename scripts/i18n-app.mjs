@@ -16,8 +16,9 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const LANGS = ["es", "ja", "pt"];
 const mode = process.argv[2] || "";
 const norm = (s) => s.replace(/\s+/g, " ").trim();
-// Looked up by a variable, so not found by reading t("…") calls: the rank names (core.js RANKS).
-const DYNAMIC = ["New trader", "Known", "Trusted", "Well vouched", "Pillar of the post"];
+// Looked up by a variable, so not found by reading t("…") calls: the rank names (core.js RANKS)
+// and the text graphic's colors (textart.js ART_THEMES).
+const DYNAMIC = ["New trader", "Known", "Trusted", "Well vouched", "Pillar of the post", "Yellow", "Blue", "Red", "Green", "Pink", "Ink"];
 // Never translated: names, symbols, numbers, examples that are the same everywhere.
 const SAME = /^(Dot Trading Post|NFT|NFTs|Priya|cbuy|English|Español|日本語|Português|Português \(Brasil\)|0x…|1234|123456|\?|0|×|[\s\d·⇄→+−&;:#%—–.,()"'/…]*|&minus;3|\+[12]|&[a-z]+;|Chain [0-9]+)$/;
 
